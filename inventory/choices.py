@@ -75,6 +75,8 @@ class Manufacturer(models.TextChoices):
     HOFFMANN = 'hoffmann'
     SANDVIK = 'sandvik'
     TUNGALOY = 'tungaloy'
+    DUEMMEL = 'duemmel'
+    PHORN = 'phorn'
 
 class ToolType(models.TextChoices):
     END_MILL = 'Mill'
@@ -276,9 +278,11 @@ class DrillLengthCategory(models.TextChoices):
     CAT_8xd = '8xD'
     CAT_10xd = '10xD'
     CAT_12xd = '12xD'
+    CAT_15xd = '15xD'
     CAT_20xd = '20xD'
 
 class TapType(models.TextChoices):
+    UNKNOWN = Strings.UNKNOWN
     CUT = 'Cut'
     SPIRAL = 'Spiral'
     FORM = 'Form'

@@ -1,11 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
+from django.forms import modelform_factory
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Min, Max, ManyToManyField
+from django.db.models import Case, When, Value, IntegerField
 from django.contrib.contenttypes.models import ContentType
-from .models import Product, Order, ProductFactory
+from .models import *
+from inventory import models
+from inventory.choices import OrderStatus
 import json
 
 # Create your views here.
@@ -184,7 +188,18 @@ def create_order(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
 def orders_page(request):
-    orders = Order.objects.all().order_by('-order_date', 'status')
+    # Define custom ordering for statuses
+    status_ordering = Case(
+        When(status=OrderStatus.PENDING, then=Value(1)),
+        When(status=OrderStatus.ORDERED, then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField()
+    )
+
+    # Order by custom status ordering and then by order_date
+    orders = Order.objects.annotate(
+        custom_status_order=status_ordering
+    ).order_by( '-order_date', 'custom_status_order')
     status_choices = Order._meta.get_field('status').choices
     context = {
         'orders': orders,
@@ -222,3 +237,27 @@ def delete_order(request, order_id):
             pass
         # After attempting to delete the order, redirect to the orders page
         return HttpResponseRedirect(reverse('orders_page'))
+    
+def add_product_selection(request):
+    return render(request, 'inventory/add_product_selection.html')
+
+def add_product(request, product_type):
+    # Dynamically get the model class based on the product_type
+    model_class = getattr(models, product_type, None)
+    if not model_class:
+        # Handle the case where the model class doesn't exist
+        return redirect('index')  # or some error page
+
+    # Create a dynamic form for the model
+    ProductForm = modelform_factory(model_class, exclude=())
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('index')  # or wherever you want to redirect after creation
+    else:
+        form = ProductForm()
+
+    return render(request, 'inventory/product_form.html', {'form': form})
+

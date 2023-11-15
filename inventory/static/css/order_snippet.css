@@ -1,0 +1,35 @@
+/* order_snippet.css */
+
+/* Base styling for the order card */
+.order-card {
+    /* Add your base styles for the order card here */
+    /* Example: */
+    border: 2px solid #070000;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+/* Styles for the order status */
+.order-status-pending {
+    background-color: orange; /* Color for pending orders */
+}
+
+.order-status-ordered {
+    background-color: lightgreen; /* Color for ordered orders */
+}
+
+/* You can add more selectors and styles for different statuses as needed */
+/* Example for another status: */
+.order-status-delivered {
+    background-color: lightblue; /* Example color for delivered orders */
+}
+
+/* Additional styling specific to elements within the order card */
+/* Example: */
+.order-card-img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+}
+
+/* Add more styles as needed for different elements within your order card */

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MaterialToBeMachined, EndMill, ChamferMill, BallMIll, FaceMill, ThreadMill
+from .models import MaterialToBeMachined, EndMill, ChamferMill, BallMill, FaceMill, ThreadMill
 from .models import RadiusMill, LollipopMill, TSlotMill, CircularSaw, MillingBody
 from .models import Drill, Reamer, SpotDrill, Tap
 from .models import GeneralCutter, BoringCutter, GroovingExternalCutter
@@ -21,7 +21,7 @@ from .models import Order
 admin.site.register(MaterialToBeMachined)
 admin.site.register(EndMill)
 admin.site.register(ChamferMill)
-admin.site.register(BallMIll)
+admin.site.register(BallMill)
 admin.site.register(FaceMill)
 admin.site.register(ThreadMill)
 admin.site.register(RadiusMill)

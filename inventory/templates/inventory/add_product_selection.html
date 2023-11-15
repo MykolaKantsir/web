@@ -1,0 +1,87 @@
+{% extends 'inventory/index.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Add a New Product</h2>
+
+    <!-- Inserts Category -->
+    <div class="product-category">
+        <h3 class="category-header">Inserts</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='TurningInsert' %}">Turning Insert</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='ThreadInsert' %}">Threading Insert</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='DrillingInsert' %}">Drilling Insert</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='MillingInsert' %}">Milling Insert</a>
+        </div>
+    </div>
+
+    <!-- Turning Category -->
+    <div class="product-category">
+        <h3 class="category-header">Turning</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='GeneralCutter' %}">General</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='BoringCutter' %}">Boring</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='SolidBoringCutter' %}">Solid internal</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='SolidGroovingCutter' %}">Solid Grooving</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='GroovingExternalCutter' %}">Grooving External</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='GroovingInternalCutter' %}">Grooving Internal</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='SolidThreadCutter' %}">Solid Thread</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='ThreadExternalCutter' %}">Thread External</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='ThreadInternalCutter' %}">Thread Internal</a>
+        </div>
+    </div>
+
+    <!-- Drilling Category -->
+    <div class="product-category">
+        <h3 class="category-header">Drilling</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Drill' %}">Drill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Tap' %}">Tap</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='SpotDrill' %}">Spot Drill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Reamer' %}">Reamer</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='CenterDrill' %}">Center Drill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='U_Drill' %}">U-Drill</a>
+        </div>
+    </div>
+
+    <!-- Milling Category -->
+    <div class="product-category">
+        <h3 class="category-header">Milling</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='EndMill' %}">End Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='FaceMill' %}">Face Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='ChamferMill' %}">Chamfer Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='BallMill' %}">Ball Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='RadiusMill' %}">Radius Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='TSlotMill' %}">T-Slot Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='CircularSaw' %}">Circular Saw</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='LollipopMill' %}">Lollipop Mill</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='MillingBody' %}">Milling Body</a>
+        </div>
+    </div>
+
+    <!-- Items Category -->
+    <div class="product-category">
+        <h3 class="category-header">Items</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Screw' %}">Screw</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Screwdriver' %}">Screwdriver</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Key' %}">Key</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Wrench' %}">Wrench</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Shim' %}">Shim</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='PostMachining' %}">Post Machining Item</a>
+        </div>
+    </div>
+
+    <!-- Equipment Category -->
+    <div class="product-category">
+        <h3 class="category-header">Equipment</h3>
+        <div class="button-row">
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='Collet' %}">Collet</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='EquipmentTurning' %}">Turning Equipment</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='EquipmentMilling' %}">Milling Equipment</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='MeasuringEquipment' %}">Measuring Equipment</a>
+            <a class="btn btn-rectangular" href="{% url 'add_product' product_type='MillingHolder' %}">Milling Holder</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

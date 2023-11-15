@@ -17,7 +17,7 @@ import math
 # Describes general product model
 class Product(models.Model):
     code = models.CharField(max_length=255, default=defaults.DefaultProduct.CODE)
-    tool_type = models.CharField(max_length=50, default=defaults.DefaultProduct.TOOL_TYPE)
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=defaults.DefaultProduct.TOOL_TYPE)
     ean = models.CharField(max_length=50, unique=True, default=defaults.DefaultProduct.EAN, blank=True)
     manufacturer = models.CharField(max_length=50, choices=choices.Manufacturer.choices, default=defaults.DefaultProduct.MANUFACTURER)
     description = models.TextField(default=defaults.DefaultProduct.DESCRIPTION)
@@ -169,6 +169,7 @@ class DrillingTool(Tool):
 
 # Describes an end Mill
 class EndMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.END_MILL)
     length_category = models.CharField(max_length=50, choices=choices.MillLengthCategory.choices, default=defaults.DefaultEndMill.LENGTH_CATEGORY)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='end_mills')
     facet_fields = [
@@ -190,6 +191,7 @@ class EndMill(MillingTool):
   
 # Describes a chamfer mill
 class ChamferMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.CHAMFER_MILL)
     angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultChamferMill.CHAMFER_ANGLE)
     point_diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultChamferMill.POINT_DIAMETER)
     max_chamfer_width = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultChamferMill.MAX_CHAMFER_WIDTH)
@@ -230,7 +232,8 @@ class ChamferMill(MillingTool):
         self.max_chamfer_width = math.floor(chamfer_width * 10) / 10.0
 
 # Describes a ball mill
-class BallMIll(MillingTool):
+class BallMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.BALL_MILL)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='ball_mills')
     facet_fields = [
         ('corner_radius', 'Corner radius', choices.Facet.numerical),
@@ -257,6 +260,7 @@ class BallMIll(MillingTool):
 
 # Describes a face mill
 class FaceMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.FACE_MILL)
     face_angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultFaceMill.FACE_ANGLE)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='face_mills')
     facet_fields = [
@@ -283,6 +287,7 @@ class FaceMill(MillingTool):
 
 # Describes a thread mill
 class ThreadMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.THREAD_MILL)
     thread = models.CharField(max_length=20, default=defaults.DefaultThreadMill.THREAD)
     thread_series = models.CharField(max_length=20, default=defaults.DefaultThreadMill.THREAD_SERIES)
     thread_pitch = models.CharField(max_length=20, default=defaults.DefaultThreadMill.THREAD_PITCH)
@@ -321,6 +326,7 @@ class ThreadMill(MillingTool):
 
 # Describes a radius mill
 class RadiusMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.RADIUS_MILL)
     radius = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultRadiusMill.RADIUS)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='radius_mills')
     facet_fields = [
@@ -350,6 +356,7 @@ class RadiusMill(MillingTool):
 
 # Describes a lollipop mill
 class LollipopMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.LOLLIPOP_MILL)
     neck_diameter = models.DecimalField(max_digits=5, decimal_places=2, default=defaults.DefaultLollipopMill.NECK_DIAMETER)
     mtbm = models.ManyToManyField(
         MaterialToBeMachined,
@@ -378,6 +385,7 @@ class LollipopMill(MillingTool):
 
 # Describes a T-slot mill
 class TSlotMill(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.TSLOT_MILL)
     thickness = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultTSlotMill.THICKNESS)
     cutting_depth_max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultTSlotMill.CUTTING_DEPTH_MAX)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='tslot_mills')
@@ -404,6 +412,7 @@ class TSlotMill(MillingTool):
     
 # Describes a milling body
 class MillingBody(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.MILLING_BODY)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='milling_bodies')
 
     def __str__(self):
@@ -420,6 +429,7 @@ class MillingBody(MillingTool):
 
 # Describes a circular saw
 class CircularSaw(MillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.CIRCULAR_SAW)
     thickness = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultCircularSaw.THICKNESS)
     cutting_depth_max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultCircularSaw.CUTTING_DEPTH_MAX)
     inner_diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultCircularSaw.INNER_DIAMETER)
@@ -450,6 +460,7 @@ class CircularSaw(MillingTool):
 
 # Describes a drill
 class Drill(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.DRILL)
     length_category = models.CharField(max_length=50, choices=choices.DrillLengthCategory.choices, default=defaults.DefaultDrill.LENGTH_CATEGORY)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='drills')
     facet_fields = [
@@ -495,6 +506,7 @@ class Drill(DrillingTool):
 
 # Describes a spot drill
 class SpotDrill(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SPOT_DRILL)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='spot_drills')
     facet_fields = [
         ('diameter', 'Diameter', choices.Facet.numerical),
@@ -513,6 +525,7 @@ class SpotDrill(DrillingTool):
 
 # Describes a reamer
 class Reamer(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.REAMER)
     tolerance = models.CharField(max_length=50, default=defaults.DefaultReamer.TOLERANCE)
     upper_tolerance = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultReamer.UPPER_TOLERANCE)
     lower_tolerance = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultReamer.LOWER_TOLERANCE)
@@ -540,13 +553,14 @@ class Reamer(DrillingTool):
 
 # Describes a tap
 class Tap(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.TAP)
     diameter = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultTap.DIAMETER)
     shank_diameter = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultTap.SHANK_DIAMETER)
     pitch = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultTap.PITCH)
     thread = models.CharField(max_length=20, default=defaults.DefaultTap.THREAD)
     thread_series = models.CharField(max_length=20, default=defaults.DefaultTap.THREAD_SERIES)
     thread_class = models.CharField(max_length=20, default=defaults.DefaultTap.THREAD_CLASS)
-    tap_type = models.CharField(max_length=20, default=defaults.DefaultTap.TAP_TYPE)
+    tap_type = models.CharField(max_length=20, choices=choices.TapType.choices, default=defaults.DefaultTap.TAP_TYPE)
     tap_hole_diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultTap.TAP_HOLE_DIAMETER)
     tap_thread_length = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultTap.TAP_THREAD_LENGTH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='taps')
@@ -573,6 +587,7 @@ class Tap(DrillingTool):
 
 # Describes a center drill
 class CenterDrill(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.CENTER_DRILL)
     step_angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultCenterDrill.STEP_ANGLE)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='center_drills')
     facet_fields = [
@@ -591,6 +606,7 @@ class CenterDrill(DrillingTool):
 
 # Deascribes a U-drill
 class U_Drill(DrillingTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.U_DRILL)
     max_diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultU_Drill.MAX_DIAMETER)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='udrills')
     facet_fields = [
@@ -657,6 +673,7 @@ class InternalCutter(Tool):
 
 # Describes a general external cutter
 class GeneralCutter(ExternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.GENERAL_CUTTER)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='general_cutters')
     facet_fields = [
         ('cutter_iso_code', 'Cutter ISO code', choices.Facet.categorical),
@@ -684,6 +701,7 @@ class GeneralCutter(ExternalCutter):
 
 # Desribes a boring cutter
 class BoringCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.BORING_CUTTER)
     angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultBoringCutter.ANGLE)
     facet_fields = [
         ('min_bore_diameter', 'Min bore diameter', choices.Facet.numerical),
@@ -721,6 +739,7 @@ class BoringCutter(InternalCutter):
 
 # Describes a solid internal cutter
 class SolidBoringCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SOLID_BORING_CUTTER)
     material = models.CharField(max_length=50, default=defaults.DefaultSolidBoringCutter.MATERIAL)
     angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultSolidBoringCutter.ANGLE)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='solid_boring_cutters')
@@ -736,7 +755,7 @@ class SolidBoringCutter(InternalCutter):
     ]
 
     class Meta:
-        verbose_name_plural = "Boring cutters"
+        verbose_name_plural = "Solid boring cutters"
 
 
     def __str__(self):
@@ -749,6 +768,7 @@ class SolidBoringCutter(InternalCutter):
 
 # Describes an external grooving cutter
 class GroovingExternalCutter(ExternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.GROOVING_EXTERNAL_CUTTER)
     cutting_width = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGroovingExternalCutter.CUTTING_WIDTH)
     max_cutting_depth = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGroovingExternalCutter.MAX_CUTTING_DEPTH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='grooving_external_cutters')
@@ -780,6 +800,7 @@ class GroovingExternalCutter(ExternalCutter):
 
 # Describes an internal grooving cutter
 class GroovingInternalCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.GROOVING_INTERNAL_CUTTER)
     cutting_width = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGroovingInternalCutter.CUTTING_WIDTH)
     max_cutting_depth = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGroovingInternalCutter.MAX_CUTTING_DEPTH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='grooving_internal_cutters')
@@ -814,6 +835,7 @@ class GroovingInternalCutter(InternalCutter):
 
 # Describe a solid grooving cutter
 class SolidGroovingCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SOLID_GROOVING_CUTTER)
     cutting_width = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultSolidGroovingCutter.CUTTING_WIDTH)
     max_cutting_depth = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultSolidGroovingCutter.MAX_CUTTING_DEPTH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='solid_grooving_cutters')
@@ -840,6 +862,7 @@ class SolidGroovingCutter(InternalCutter):
     
 # Describes a thread external cutter
 class ThreadExternalCutter(ExternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.THREAD_EXTERNAL_CUTTER)
     is_metric = models.BooleanField(default=defaults.DefaultThreadCutter.IS_METRIC)
     is_inch = models.BooleanField(default=defaults.DefaultThreadCutter.IS_INCH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='thread_external_cutters')
@@ -868,6 +891,7 @@ class ThreadExternalCutter(ExternalCutter):
     
 # Describes a thread internal cutter
 class ThreadInternalCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.THREAD_INTERNAL_CUTTER)
     is_metric = models.BooleanField(default=defaults.DefaultThreadCutter.IS_METRIC)
     is_inch = models.BooleanField(default=defaults.DefaultThreadCutter.IS_INCH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='thread_internal_cutters')
@@ -898,6 +922,7 @@ class ThreadInternalCutter(InternalCutter):
 
 # Describes a solid thread cutter
 class SolidThreadCutter(InternalCutter):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SOLID_THREAD_CUTTER)
     is_metric = models.BooleanField(default=defaults.DefaultThreadCutter.IS_METRIC)
     is_inch = models.BooleanField(default=defaults.DefaultThreadCutter.IS_INCH)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='solid_thread_cutters')
@@ -935,6 +960,7 @@ class Insert(Tool):
 
 # Describes a milling insert
 class MillingInsert(Insert):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.INSERT_MILLING)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='milling_inserts')
     facet_fields = [
         ('manufacturer', 'Manufacturer', choices.Facet.categorical),
@@ -950,6 +976,7 @@ class MillingInsert(Insert):
 
 # Describes a drilling insert
 class DrillingInsert(Insert):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.INSERT_DRILLING)
     mtbm = models.ManyToManyField(MaterialToBeMachined, related_name='drilling_inserts')
     facet_fields = [
         ('manufacturer', 'Manufacturer', choices.Facet.categorical),
@@ -965,6 +992,7 @@ class DrillingInsert(Insert):
 
 # Describes a turning insert
 class TurningInsert(Insert):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.INSERT_TURNING)
     isocode = models.CharField(max_length=20, default=defaults.DefaultInsertTurning.ISOCODE)
     shape = models.CharField(max_length=20, default=defaults.DefaultInsertTurning.SHAPE)
     relief_angle = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultInsertTurning.RELIEF_ANGLE)
@@ -1021,6 +1049,7 @@ class TurningInsert(Insert):
 
 # Describes a thread insert
 class ThreadInsert(Insert):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.INSERT_THREAD)
     thread_type = models.CharField( # Internal or external
         max_length=20,
         default=defaults.DefaultInsertThreading.THREAD_TYPE
@@ -1088,6 +1117,7 @@ class ThreadInsert(Insert):
 
 # Describes a grooving insert
 class GroovingInsert(Insert):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.INSERT_GROOVING)
     width = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultInsertGrooving.WIDTH)
     max_cut_depth = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultInsertGrooving.MAX_CUT_DEPTH_GR)
     min_cut_diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultInsertGrooving.MIN_CUT_DIAMETER)
@@ -1123,18 +1153,21 @@ class Equipment(Product):
     
 # Describes a milling equipment
 class EquipmentMilling(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.EQUIPMENT_MILLING)
     class Meta:
         ordering = ['code']
         verbose_name_plural = 'Equipments Milling'
     
 # Describes a turning equipment
 class EquipmentTurning(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.EQUIPMENT_TURNING)
     class Meta:
         ordering = ['code']
         verbose_name_plural = 'Equipments Turning'
     
 # Describes a measuring equipment
 class MeasuringEquipment(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.MEASURING)
     min = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.MIN)
     max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.MAX)
     precision = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.PRECISION)
@@ -1149,6 +1182,7 @@ class MeasuringEquipment(Equipment):
 
 # Describes a milling holder
 class MillingHolder(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.MILLING_HOLDER)
     name = models.CharField( # SK40-25-100
         max_length=50, 
         default=defaults.DefaultMillingHolder.NAME
@@ -1171,6 +1205,7 @@ class MillingHolder(Equipment):
 
 # Describes a collet
 class Collet(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.COLLET)
     type = models.CharField(max_length=20, default=defaults.DefaultCollet.TYPE)
     diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultCollet.DIAMETER)
     is_sealed = models.BooleanField(default=defaults.DefaultCollet.IS_SEALED)
@@ -1207,11 +1242,13 @@ class Item(Product):
     
 # Describes a shim
 class Shim(Item):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SHIM)
     class Meta:
         ordering = ['code']
 
 # Describes a screw
 class Screw(Item):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SCREW)
     class Meta:
         ordering = ['code']
 
@@ -1222,6 +1259,7 @@ class ManualTool(Item):
 
 # Describes a screwdriver
 class Screwdriver(ManualTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.SCREWDRIVER)
     screwdriver_size = models.CharField(max_length=20, default=defaults.DefaultScrewdriver.SCREWDRIVER_SIZE)
     facet_fields = [
         ('screwdriver_size', 'Screwdriver size', choices.Facet.categorical),
@@ -1238,6 +1276,7 @@ class Screwdriver(ManualTool):
 
 # Describes a key tool
 class Key(ManualTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.KEY)
     key_size = models.CharField(max_length=20, default=defaults.DefaultKey.KEY_SIZE)
     facet_fields = [
         ('key_size', 'Key size', choices.Facet.categorical),
@@ -1254,16 +1293,19 @@ class Key(ManualTool):
 
 # Describes a wrench
 class Wrench(ManualTool):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.WRENCH)
     class Meta:
         ordering = ['code']
         verbose_name_plural = 'Wrenches'
 
 # Describes items that are used in post machining (helicoil inserts, etc.)
 class PostMachining(Item):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.POST_MACHINING)
     class Meta:
         ordering = ['code']
         verbose_name_plural = 'Post machining items'
 
+# Product factory class
 class ProductFactory():
     def get_product(self, product: Product=None, tool_type_str: str=None):
         # Determine the tool type

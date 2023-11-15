@@ -5,6 +5,8 @@
     
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/facet.css' %}">
+    <link rel="stylesheet" href="{% static 'css/add_product.css' %}">
+    <link rel="stylesheet" href="{% static 'css/order_snippet.css' %}">
     <title>Inventory Index</title>
 </head>
 <body>
@@ -14,6 +16,7 @@
         <a class="navbar-brand" href="{% url 'index' %}">Inventory</a>
         <!-- Add more navigation items here -->
         <a class="navbar-brand" href="{% url 'orders_page' %}">View orders</a>
+        <a class="navbar-brand" href="{% url 'add_product_selection' %}">Add product</a>
     </nav>
     <!-- Main Content -->
     {% block content %}
@@ -33,6 +36,7 @@
                 <div id="turningSubButtons" class="d-none ml-2">
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="General cutter">General</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Boring cutter">Boring</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Solid boring cutter">Solid internal</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Solid grooving cutter">Solid grooving</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Grooving external cutter">Grooving external</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Grooving internal cutter">Grooving internal</button>
