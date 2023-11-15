@@ -1,0 +1,13 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('search_product/', views.search_product, name='search_product'),
+    path('search_category/', views.search_category, name='search_category'),
+    path('create_order/', views.create_order, name='create_order'),
+    path('orders/', views.orders_page, name='orders_page'),
+    path('change_order_status/<int:order_id>/', views.change_order_status, name='change_order_status'),
+    path('delete_order/<int:order_id>/', views.delete_order, name='delete_order'),
+    # Add more app-specific URLs here
+]

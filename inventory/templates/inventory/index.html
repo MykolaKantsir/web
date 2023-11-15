@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/facet.css' %}">
+    <title>Inventory Index</title>
+</head>
+<body>
+    
+    <!-- Navigation Panel -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{% url 'index' %}">Inventory</a>
+        <!-- Add more navigation items here -->
+        <a class="navbar-brand" href="{% url 'orders_page' %}">View orders</a>
+    </nav>
+    <!-- Main Content -->
+    {% block content %}
+    <div class="container mt-5 text-center">
+        <div class="row">
+            <!-- Left Column (Filters) -->
+            <div div style="width: 180px; flex: none;">
+                <p>Categories</p>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#insertsSubButtons">Inserts</button>
+                <div id="insertsSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert turning">Turning inserts</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert thread">Threading inserts</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Drill insert">Drilling inserts</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert milling">Milling inserts</button>
+                </div>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#turningSubButtons">Turning</button>
+                <div id="turningSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="General cutter">General</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Boring cutter">Boring</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Solid grooving cutter">Solid grooving</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Grooving external cutter">Grooving external</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Grooving internal cutter">Grooving internal</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Solid thread cutter">Solid thread</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Thread external cutter">Thread external</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Thread internal cutter">Thread internal</button>
+                </div>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#drillingSubButtons">Drilling</button>
+                <div id="drillingSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Drill">Drills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Tap">Taps</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Spot drill">Spot drills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Reamer">Reamers</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Center drill">Center drills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="U-Drill">U-Drills</button>
+                </div>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#millingSubButtons">Milling</button>
+                <div id="millingSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Mill">End mills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Face mill">Face mills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Chamfer mill">Chamfers</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Ball mill">Ball mill</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Radius mill">Radius mills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="T-Slot mill">T-Slot mills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Circular saw">Saws</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Lollipop mill">Lollipop mills</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Milling body">Milling bodies</button>
+                </div>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#itemsSubButtons">Items</button>
+                <div id="itemsSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Screw">Screws</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Screwdriver">Screwdrivers</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Key">Keys</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Wrench">Wrenches</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Shim">Shim</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Post machining">Post machining</button>
+                </div>
+                <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#equipmentSubButtons">Equipment</button>
+                <div id="equipmentSubButtons" class="d-none ml-2">
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Collet">Collets</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Equipment turning">Turning</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Equipment milling">Milling</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Measuring">Measuring</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Milling holder">Holders</button>
+                </div>
+            </div>
+            
+            <!-- Right Column (Main Content) -->
+            <div class="col-md-9">
+                <h2>Product Search</h2>
+                <div class="input-group mb-3">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Enter search term...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchButton">Search</button>
+                </div>
+                <!-- Facets -->
+                <div class="row" id="facets">
+                    <div class="facets-container" id="facets">
+                        <!-- Facets will be placed here -->
+                    </div>
+                </div>
+                <div class="row" id="searchResults">
+                    <!-- Search results will be placed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    
+    <!-- Footer -->
+    <footer class="mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Inventory &copy; 2023</span>
+        </div>
+    </footer>
+    
+<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+<script src="{% static 'js/filters_handler.js' %}"></script>
+<script src="{% static 'js/search_script.js' %}"></script>
+<script src="{% static 'js/order_logic.js' %}"></script>
+<script src="{% static 'js/facet.js' %}"></script>
+<script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

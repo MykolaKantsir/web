@@ -1,0 +1,107 @@
+<!-- Facets -->
+<div class="row" id="facetsBlock">
+{% for facet in facets_data %}
+    {% if facet.type == "categorical" %}
+        <!-- Render categorical facet -->
+        <div class="facet-container">
+            <button class="facet" data-toggle="facet-filter" data-target="#facetContents_{{ facet.name }}">
+                <div class="facetLabel">{{ facet.display_name|title }}</div>
+                <div class="icon-wrapper">▼</div>
+            </button>
+            <div id="facetContents_{{ facet.name }}" class="facet-contents category-facet d-none">
+                <!-- Search Field -->
+                <div><input type="text" class="facet-search" placeholder="Search..."></div>
+                
+                <!-- Scrollable Checkboxes Container -->
+                <div class="scrollable-content">
+                    {% for option in facet.options %}
+                        <div>
+                            <input type="checkbox" name="{{ facet.name }}" value="{{ option }}" id="{{ facet.name }}_{{ option }}">
+                            <label for="{{ facet.name }}_{{ option }}">{{ option }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Submit Button -->
+                <div><button type="submit" class="submit-btn">Submit</button></div>
+            </div>
+        </div>
+
+    {% elif facet.type == "numerical" %}
+        <!-- Render numerical facet -->
+        <div class="facet-container">
+            <button class="facet" data-toggle="facet-filter" data-target="#facetContents_{{ facet.name }}">
+                <div class="facetLabel">{{ facet.display_name|title }}</div>
+                <div class="icon-wrapper">▼</div>
+            </button>
+            <div id="facetContents_{{ facet.name }}" class="facet-contents numerical-facet d-none">
+                <!-- Range Display -->
+                <div class="price-range"><span id="min_{{ facet.name }}">{{ facet.min }}</span> - <span id="max_{{ facet.name }}">{{ facet.max }}</span></div>
+
+
+                <!-- Min Slider -->
+                <div class="slider-label">Min:</div>
+                <input type="range" id="minSlider_{{ facet.name }}" class="minSlider" min="{{ facet.min }}" max="{{ facet.max }}" value="{{ facet.min }}" class="slider">
+                <!-- Max Slider -->
+                <div class="slider-label">Max:</div>
+                <input type="range" id="maxSlider_{{ facet.name }}" class="maxSlider" min="{{ facet.min }}" max="{{ facet.max }}" value="{{ facet.max }}" class="slider">
+                <!-- Submit Button -->
+                <div><button type="submit" class="submit-btn">Submit</button></div>
+            </div>
+        </div>
+
+    {% elif facet.type == "boolean" %}
+        <!-- Render boolean facet -->
+        <div class="facet-container">
+            <button class="facet" data-toggle="facet-filter" data-target="#facetContents_{{ facet.name }}">
+                <div class="facetLabel">{{ facet.display_name|title }}</div>
+                <div class="icon-wrapper">▼</div>
+            </button>
+            <div id="facetContents_{{ facet.name }}" class="facet-contents boolean-facet d-none">
+                <!-- Radio Buttons Container -->
+                <div>
+                    <input type="radio" id="yesOption_{{ facet.name }}" name="{{ facet.name }}" value="{{ facet.options.option_true }}" data-bool-value="true">
+                    <label for="yesOption_{{ facet.name }}">{{ facet.options.option_true }}</label>
+                </div>
+                <div>
+                    <input type="radio" id="noOption_{{ facet.name }}" name="{{ facet.name }}" value="{{ facet.options.option_false }}" data-bool-value="false">
+                    <label for="noOption_{{ facet.name }}">{{ facet.options.option_false }}</label>
+                </div>
+                <!-- Submit Button -->
+                <div><button type="submit" class="submit-btn">Submit</button></div>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
+{% for name, value in applied_filters.items %}
+    <input type="hidden" id="appliedFilter_{{ name }}" value="{{ value }}">
+{% endfor %}
+</div>
+
+<!-- Applied Filters -->
+<div class="row" id="appliedFiltersBlock">
+</div>
+
+<!-- Template for Categorical Filter -->
+<template id="categoricalFilterTemplate">
+    <div class="applied-filter">
+        <span class="filter-name"></span>
+        <button class="remove-filter">✖</button>
+    </div>
+</template>
+
+<!-- Template for Numerical Filter -->
+<template id="numericalFilterTemplate">
+    <div class="applied-filter">
+        <span class="filter-name"></span>
+        <button class="remove-filter">✖</button>
+    </div>
+</template>
+
+<!-- Template for Boolean Filter -->
+<template id="booleanFilterTemplate">
+    <div class="applied-filter">
+        <span class="filter-name"></span>
+        <button class="remove-filter">✖</button>
+    </div>
+</template>

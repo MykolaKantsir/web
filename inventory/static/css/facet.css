@@ -1,0 +1,168 @@
+#facetsBlock {
+    padding: 0 20px;  /* Adds 20px of space to the left and right of the entire block */
+}
+
+#facetsBlock .facet-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;  /* Adjusts the space between individual facets */
+    justify-content: space-between;  /* Distributes the facets evenly across the row */
+}
+
+#facets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* space between the facets */
+}
+
+.facet-container {
+    flex: 1;
+    min-width: 150px;
+    margin-bottom: 20px;  /* Adds space beneath each facet */
+    display: inline-block;  /* This will restrict the width to its content */
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;  /* Adjusted padding to make it slightly wider than its content */
+    margin-bottom: 10px;  /* Space between facets */
+    position: relative; /* This allows absolute positioning of child elements relative to this container */
+
+}
+
+.facetLabel {
+    padding-right: 10px;
+}
+
+.icon-wrapper {
+    padding-left: 10px;
+}
+
+.svgIcon-caret-down {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.facet {
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 0;
+    height: 35px;  /* Height when collapsed */
+}
+
+.facet-dropdown {
+    position: absolute;
+    width: max-content;
+    max-width: 300px;
+    max-height: 400px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 1;  /* ensure it's above other elements */
+}
+
+.facet:focus {
+    outline: none;
+}
+
+.icon-wrapper {
+    padding-left: 10px;
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+}
+
+.facet-container.expanded .icon-wrapper {
+    transform: rotate(180deg);
+}
+
+.facet-contents {
+    display: flex;
+    text-align: left;
+    flex-direction: column;  /* Stack children vertically */
+    gap: 10px;  /* Spacing between children */
+    position: absolute; /* This takes the dropdown out of the flow of the page and positions it according to its closest relative parent */
+    top: 100%; /* Positions the top of the dropdown right at the bottom of its parent */
+    left: 0; /* Aligns the dropdown to the left edge of its parent */
+    z-index: 10; /* To ensure the dropdown appears above other elements */
+    border: 1px solid #ccc; /* Border to match the button */
+    border-radius: 5px; /* Border radius to match the button */
+    background-color: #f0f0f0; /* Background color to match the button */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* Slight shadow for depth */
+    padding: 10px; /* Padding around the inner contents */
+    min-width: 300px; /* Minimum width of the dropdown */
+}
+
+
+.facet-search {
+    width: calc(100% - 20px); /* Adjust the width of the search bar to ensure it doesn't occupy the entire width of its parent */
+    margin-bottom: 10px; /* Creates space between the search bar and the first checkbox */
+}
+
+.facet .facet-contents input[type="checkbox"] {
+    display: block;
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.scrollable-content {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.submit-btn {
+    margin-top: 10px;
+    padding: 5px 15px;
+    background-color: #4CAF50;  /* Green background */
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: block; /* This makes the button a block-level element */
+    margin: 10px auto; /* Centers the button horizontally and adds vertical space */
+}
+
+.submit-btn:hover {
+    background-color: #45a049;  /* Darker green on hover */
+}
+
+/* Applied Filters Styles */
+#appliedFiltersBlock {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.applied-filter {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #e9e9e9;
+    border-radius: 5px;
+}
+
+.remove-filter {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 5px;
+    font-weight: bold;
+    color: red;
+}
+
+#removeAllFilters {
+    display: block;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    border-radius: 5px;
+}

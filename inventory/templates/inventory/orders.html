@@ -1,0 +1,12 @@
+<!-- orders.html -->
+{% extends 'inventory/index.html' %}  <!-- or your base template -->
+{% block content %}
+    <h1>Orders</h1>
+    <div class="orders-container">
+        {% for order in orders %}
+            {% include 'inventory/order_snippet.html' with order=order %}
+        {% empty %}
+            <p>No orders found.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
