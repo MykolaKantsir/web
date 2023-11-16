@@ -26,10 +26,17 @@ SECRET_KEY = 'django-insecure-z658x@s630t*f$vfx+d0%vpr(%1x+vjuhh%c-$_ru+qtf*1)j7
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'gastoninternal.azurewebsites.net',
-]
+    'localhost', 
+    '127.0.0.1', 
+    'gastoninternal.azurewebsites.net', 
+    'https://gastoninternal.azurewebsites.net'
+    ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://gastoninternal.azurewebsites.net',
+    ]
+
+
 
 
 # Application definition
