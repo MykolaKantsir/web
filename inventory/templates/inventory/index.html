@@ -4,10 +4,11 @@
     {% load static %}
     
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <link rel="stylesheet" href="{% static 'css/facet.css' %}">
-    <link rel="stylesheet" href="{% static 'css/add_product.css' %}">
-    <link rel="stylesheet" href="{% static 'css/order_snippet.css' %}">
-    <title>Inventory Index</title>
+    <link rel="stylesheet" href="{% static 'css/product_card.css' %}">
+    {% block extra_styles %}{% endblock %}    
+    <title>{% block title %}Inventory Index{% endblock %}</title>
 </head>
 <body>
     
@@ -106,17 +107,19 @@
     {% endblock %}
     
     <!-- Footer -->
-    <footer class="mt-5 py-3 bg-light">
+    <footer class="mt-5 py-3">
         <div class="container text-center">
             <span class="text-muted">Inventory &copy; 2023</span>
         </div>
     </footer>
     
-<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+
+    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+{% block extra_scripts %}
 <script src="{% static 'js/filters_handler.js' %}"></script>
 <script src="{% static 'js/search_script.js' %}"></script>
-<script src="{% static 'js/order_logic.js' %}"></script>
 <script src="{% static 'js/facet.js' %}"></script>
-<script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+{% endblock %}
 </body>
 </html>

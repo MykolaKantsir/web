@@ -77,6 +77,7 @@ class Manufacturer(models.TextChoices):
     TUNGALOY = 'tungaloy'
     DUEMMEL = 'duemmel'
     PHORN = 'phorn'
+    SKENEJARN = 'skene järn'
 
 class ToolType(models.TextChoices):
     END_MILL = 'Mill'

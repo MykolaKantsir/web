@@ -1,4 +1,9 @@
 {% extends 'inventory/index.html' %}
+{% load static %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{% static 'css/add_product.css' %}">
+{% endblock %}
+{% block title %}Add Product{% endblock %}
 {% block content %}
 <div class="container mt-5">
     <h2>Add a New Product</h2>
@@ -84,4 +89,6 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_scripts %}
 {% endblock %}

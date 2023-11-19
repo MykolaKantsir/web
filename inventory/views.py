@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.forms import modelform_factory
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.functions import ExtractWeek, ExtractYear
 from django.db.models import Q, Min, Max, ManyToManyField
 from django.db.models import Case, When, Value, IntegerField
 from django.contrib.contenttypes.models import ContentType
@@ -199,10 +200,22 @@ def orders_page(request):
     # Order by custom status ordering and then by order_date
     orders = Order.objects.annotate(
         custom_status_order=status_ordering
-    ).order_by( '-order_date', 'custom_status_order')
+    ).annotate(
+        year=ExtractYear('order_date'),
+        week=ExtractWeek('order_date')
+    ).order_by('-year', '-week', '-order_date', 'custom_status_order')
+
+    # Group orders by year and week
+    orders_grouped = {}
+    for order in orders:
+        year_week = (order.year, order.week)
+        if year_week not in orders_grouped:
+            orders_grouped[year_week] = []
+        orders_grouped[year_week].append(order)
+
     status_choices = Order._meta.get_field('status').choices
     context = {
-        'orders': orders,
+        'orders_grouped': orders_grouped,
         'status_choices': status_choices
     }
     return render(request, 'inventory/orders.html', context)
@@ -218,11 +231,11 @@ def change_order_status(request, order_id):
             order.status = new_status
             # Save the changes to the database
             order.save()
+            return JsonResponse({'status': 'success', 'message': 'Order status updated'})
         except Order.DoesNotExist:
-            # If the order does not exist, do nothing and pass
-            pass
-        # After attempting to change the order status, redirect to the orders page
-        return HttpResponseRedirect(reverse('orders_page'))
+            return JsonResponse({'status': 'error', 'message': 'Order not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
 def delete_order(request, order_id):
     # Check if the request method is POST

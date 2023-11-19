@@ -1,35 +1,124 @@
 /* order_snippet.css */
 
+#dynamicElementsGroup > .btn {
+    max-width: 160px;
+    min-width: 140px;
+}
+
+#bulkStatusSelect{
+    min-width: 200px;
+}
+
+.bulk-status-change {
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* to ensure it stays on top of other content */
+    padding: 10px 0; /* optional, for some spacing */
+}
+
+.bulk-status-change .dropdown-toggle {
+    min-width: 158px;
+}
+
 /* Base styling for the order card */
 .order-card {
-    /* Add your base styles for the order card here */
-    /* Example: */
-    border: 2px solid #070000;
+    border-radius: 20px;
+    border: 2px solid #1a337e;
     margin-bottom: 10px;
     padding: 10px;
 }
 
-/* Styles for the order status */
+.card-title-container {
+    background-color: #1a337e;  /* Dark blue background */
+    border-radius: 10px;        /* Rounded corners */
+    padding: 10px;              /* Some padding around the text */
+    text-align: center;         /* Center the text */
+}
+
+.card-title-container a {
+    color: white;               /* Black text color */
+    text-decoration: none;      /* Remove underline from the link */
+}
+
 .order-status-pending {
-    background-color: orange; /* Color for pending orders */
+    background-color: #FFD700;
 }
 
 .order-status-ordered {
-    background-color: lightgreen; /* Color for ordered orders */
+    background-color: #008080;
 }
 
-/* You can add more selectors and styles for different statuses as needed */
-/* Example for another status: */
 .order-status-delivered {
-    background-color: lightblue; /* Example color for delivered orders */
+    background-color: lightblue;
 }
 
-/* Additional styling specific to elements within the order card */
-/* Example: */
+.order-status-cancelled {
+    background-color: #8B0000;
+}
+
+.order-status-shipped {
+    background-color: #f0f0f0;
+}
+
 .order-card-img {
-    max-width: 100%;
-    max-height: 200px;
+    border-radius: 20px;
+    width: 100%;
+    max-height: 160px; /* Adjust as needed */
     object-fit: contain;
+    display: block; /* Ensure the image fills the container */
 }
 
-/* Add more styles as needed for different elements within your order card */
+.image-container {
+    position: relative;
+}
+
+.checkmark-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.5); /* Half transparent white background */
+    display: none; /* Initially hidden */
+    justify-content: center;
+    align-items: center;
+}
+
+.checkmark-overlay::before {
+    content: '\2713'; /* Checkmark symbol */
+    font-size: 120px; /* Adjust size as needed */
+    color: #1a337e; /* Checkmark color */
+}
+
+.checkmark-overlay.visible {
+    display: flex; /* Show when class 'visible' is added */
+}
+
+.multi-panel,
+.week-container {
+    background-color: white;
+    border-radius: 20px;
+    border: 2px solid #1a337e;
+    margin-bottom: 10px;
+    overflow: hidden; /* Ensures rounded corners for inner elements */
+}
+
+.week-header {
+    padding: 10px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    border-bottom: 2px solid #1a337e;
+}
+
+.week-header h3 {
+    margin-bottom: 0;
+}
+
+.week-content {
+    padding: 10px;
+}
+
+.week-header:hover {
+    background-color: #e2e6ea;
+}
+

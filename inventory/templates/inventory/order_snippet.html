@@ -1,32 +1,42 @@
-<!-- order_snippet.html -->
-<div class="order-card mb-3 {% if order.status == 'Pending' %}order-status-pending{% elif order.status == 'Ordered' %}order-status-ordered{% endif %}">
+<div id="order-card-{{ order.id }}" 
+class="order-card mb-3 order-status-{{ order.status|lower }}" 
+data-status="{{ order.status|lower }}"
+data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
+    <input type="checkbox" class="order-checkbox" data-order-id="{{ order.id }}" hidden>
     <div class="row no-gutters">
         <div class="col-md-4">
-            <img src="{{ order.product_content_object.picture }}" alt="Product Image" class="order-card-img" style="max-width: 100%; height: auto;">
+            <div class="image-container">
+                <img src="{{ order.product_content_object.picture }}" alt="Product Image" class="order-card-img">
+                <div class="checkmark-overlay"></div>
+            </div>
         </div>
         <div class="col-md-8">
             <div class="card-body d-flex flex-column justify-content-between">
-                <h5 class="card-title">{{ order.product_content_object.code }} - {{ order.quantity }} st</h5>
+                <div class="card-title-container">
+                    <a href="{{ order.product_content_object.link }}" target="_blank">
+                        <h5 class="card-title">{{ order.product_content_object.code }} - {{ order.quantity }} st</h5>
+                    </a>
+                </div>
                 <p class="card-text">Description: {{ order.product_content_object.description }}</p>
-                <p class="card-text">Date: {{ order.order_date }}</p>
-                <a href="{{ order.product_content_object.link }}" target="_blank" class="mb-2" style="font-size: 1.2em;">Link</a>
-                
+                <div class="d-flex justify-content-between">
+                    <p class="card-text">Date: {{ order.order_date }}</p>
+                    <p class="card-text">{{ order.product_content_object.manufacturer | title }}</p>
+                </div>
                 <div class="d-flex justify-content-between">
                     <form method="post" action="{% url 'change_order_status' order.id %}" class="form-inline">
                         {% csrf_token %}
                         <div class="form-group mr-2">
-                            <select name="status" id="statusSelect{{ order.id }}" class="form-control">
+                            <select name="status" id="statusSelect{{ order.id }}" class="form-control" onchange="changeOrderStatus({{ order.id }}, this.value)">
                                 {% for status, status_display in status_choices %}
                                     <option value="{{ status }}" {% if order.status == status %}selected{% endif %}>{{ status_display }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-warning">Change Status</button>
                     </form>
 
                     <form method="post" action="{% url 'delete_order' order.id %}" class="form-inline ml-auto">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Delete Order</button>
+                        <button type="submit" class="btn btn-danger" hidden>Delete Order</button>
                     </form>
                 </div>
             </div>

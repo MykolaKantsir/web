@@ -1,9 +1,9 @@
 .product-category {
-    background-color: #f8f9fa; /* Light grey background, adjust as needed */
+    background-color: #f0f0f0; /* Light grey background, adjust as needed */
     border: 1px solid #dee2e6; /* Light border, adjust as needed */
     padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
+    border-radius: 30px;
+    margin-bottom: 10px;
     float: left; /* For floating behavior */
     width: 100%; /* Adjust width as needed */
 }
@@ -18,12 +18,12 @@
 }
 
 .btn-rectangular {
-    background-color: #007bff; /* Bootstrap primary color, adjust as needed */
-    color: white;
+    background-color: #1a337e; /* Bootstrap primary color, adjust as needed */
+    color: #f0f0f0;
     text-align: center;
     margin-right: 10px;
     margin-bottom: 10px;
-    border-radius: 0; /* Rectangular shape */
+    border-radius: 20px;
     padding: 10px 15px;
 }
 

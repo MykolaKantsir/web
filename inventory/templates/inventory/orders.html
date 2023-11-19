@@ -1,12 +1,68 @@
 <!-- orders.html -->
 {% extends 'inventory/index.html' %}  <!-- or your base template -->
+{% load static %}
+
+{% block title %}
+Orders
+{% endblock %}
+
+
+{% block extra_styles %}
+    <link rel="stylesheet" href="{% static 'css/order_snippet.css' %}">
+{% endblock %}
+
 {% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
     <h1>Orders</h1>
+    <!-- Display the status change and sorting panel -->
+    <div class="bulk-status-change d-flex justify-content-between align-items-center">
+        <!-- Group for the dynamic elements -->
+        <div id="dynamicElementsGroup" class="d-flex align-items-center">
+            <select id="bulkStatusSelect" class="form-control mr-2" hidden>
+                {% for status, status_display in status_choices %}
+                    <option value="{{ status }}">{{ status_display }}</option>
+                {% endfor %}
+            </select>
+            <button id="bulkStatusChangeButton" class="btn btn-secondary" hidden>Change status</button>
+            <button id="clearSelectionButton" class="btn btn-secondary" hidden>Clear</button>
+        </div>
+    
+        <!-- Sorting Dropdown Button -->
+        <div class="btn-group btn-sorting">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="sortingButton" data-bs-toggle="dropdown" aria-expanded="false">
+                Sorting
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                <li><a class="dropdown-item" id="sortByStatus" href="#">By Status</a></li>
+                <li><a class="dropdown-item" id="sortByManufacturer" href="#">By Manufacturer</a></li>
+            </ul>
+        </div>
+    </div>
+</br>
+    <!-- Display oders -->
     <div class="orders-container">
-        {% for order in orders %}
-            {% include 'inventory/order_snippet.html' with order=order %}
+        {% for year_week, week_orders in orders_grouped.items %}
+            {% with year=year_week.0 week=year_week.1 %}
+                <!-- Display the year and week -->
+                <div class="week-container" id="week-{{ year }}-{{ week }}">
+                    <div class="week-header" data-toggle="collapse" data-target="#week-content-{{ year }}-{{ week }}">
+                        <h3>Week {{ week }}/{{ year }}</h3>
+                    </div>
+                    <div class="week-content collapse {% if forloop.first %}show{% endif %}" id="week-content-{{ year }}-{{ week }}">
+                        <!-- Loop through each order for this week -->
+                        {% for order in week_orders %}
+                            {% include 'inventory/order_snippet.html' with order=order %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endwith %}
         {% empty %}
             <p>No orders found.</p>
         {% endfor %}
     </div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'js/order_logic.js' %}"></script>
 {% endblock %}
