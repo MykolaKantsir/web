@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.forms import modelform_factory
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
+from django.views.decorators.http import require_POST
 from django.db.models.functions import ExtractWeek, ExtractYear
 from django.db.models import Q, Min, Max, ManyToManyField
 from django.db.models import Case, When, Value, IntegerField
@@ -188,6 +189,7 @@ def create_order(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
+# view for the orders page
 def orders_page(request):
     # Define custom ordering for statuses
     status_ordering = Case(
@@ -220,6 +222,32 @@ def orders_page(request):
     }
     return render(request, 'inventory/orders.html', context)
 
+# view to add a comment to an order
+@require_POST
+def add_comment(request, order_id):
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        data = json.loads(request.body)
+        comment_text = data.get('comment_text')
+        
+        # Prevent creating empty comments
+        if not comment_text.strip():
+            return JsonResponse({'status': 'error', 'message': 'Comment text cannot be empty.'}, status=400)
+
+        order = get_object_or_404(Order, pk=order_id)
+        comment = Comment.objects.create(order=order, text=comment_text)
+
+        # Prepare and send JSON response
+        return JsonResponse({
+            'status': 'success',
+            'comment': {
+                'text': comment.text,
+                'id': comment.id
+            }
+        })
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+# view to change the status of an order
 def change_order_status(request, order_id):
     # Check if the request method is POST
     if request.method == 'POST':
@@ -236,7 +264,8 @@ def change_order_status(request, order_id):
             return JsonResponse({'status': 'error', 'message': 'Order not found'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
+
+# view to delete an order
 def delete_order(request, order_id):
     # Check if the request method is POST
     if request.method == 'POST':

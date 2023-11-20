@@ -58,6 +58,21 @@ class Order(models.Model):
         verbose_name_plural = "Orders"
         ordering = ['-order_date']
 
+# Describe a comment for an order
+class Comment(models.Model):
+    order = models.ForeignKey(Order, related_name='comments', on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    # add in author later
+    # author = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        if len(self.text) < 30:
+            return f'{self.order} - {self.text}'
+        text_beginning = self.text[:30]
+        return f'{self.order} - {text_beginning}...'
+
+
 # Describes a material group to be machined [P, M, K, N, S, H, O]
 class MaterialToBeMachined(models.Model):
     name = models.CharField(max_length=50, default=defaults.DefaultMaterialToBeMachined.NAME)

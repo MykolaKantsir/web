@@ -9,7 +9,7 @@ from .models import MillingInsert, DrillingInsert, TurningInsert, ThreadInsert, 
 from .models import EquipmentMilling, EquipmentTurning, MeasuringEquipment, MillingHolder
 from .models import Collet, Workholding, Shim, Screw, PostMachining
 from .models import Screwdriver, Key, Wrench
-from .models import Order
+from .models import Order, Comment
 
 # Register your models here.
 
@@ -60,3 +60,4 @@ admin.site.register(Screwdriver)
 admin.site.register(Key)
 admin.site.register(Wrench)
 admin.site.register(Order)
+admin.site.register(Comment)

@@ -11,5 +11,6 @@ urlpatterns = [
     path('delete_order/<int:order_id>/', views.delete_order, name='delete_order'),
     path('add_product/', views.add_product_selection, name='add_product_selection'),
     path('add_product/<str:product_type>/', views.add_product, name='add_product'),
+    path('add_comment/<int:order_id>/', views.add_comment, name='add_comment'),
     # Add more app-specific URLs here
 ]

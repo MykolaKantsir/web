@@ -256,3 +256,63 @@ document.getElementById('sortByManufacturer').addEventListener('click', function
         });
     });
 });
+
+// Comments section
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach event listener to comment forms
+    document.querySelectorAll('.comment-form-container form').forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent the default form submission
+            submitComment(this);
+        });
+    });
+});
+
+// Submit a comment
+function submitComment(form) {
+    var orderId = form.getAttribute('data-order-id'); // Extract orderId from form action
+    var commentText = form.querySelector('textarea[name="comment_text"]').value;
+    var csrfToken = getCsrfToken(); // Reuse existing function to get CSRF token
+
+    fetch(`/inventory/add_comment/${orderId}/`, {  
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ comment_text: commentText })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update the comments section in the UI
+            updateCommentsUI(orderId, data.comment);
+            // Clear the textarea after submission
+            form.querySelector('textarea[name="comment_text"]').value = '';
+        } else {
+            showAlert("Error: " + data.message);
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+// Update the comments section in the UI
+function updateCommentsUI(orderId, newComment) {
+    var commentsContainer = document.getElementById('order-card-' + orderId).querySelector('.order-comments');
+    var commentsList = document.getElementById('comments-list-' + orderId);
+
+    // Create a new list item for the comment
+    var newCommentElement = document.createElement('li');
+    newCommentElement.textContent = newComment.text; // Assuming the response includes the comment text
+
+    // Append the new comment
+    commentsList.appendChild(newCommentElement);
+
+    // If the comments container is hidden, show it
+    if (commentsContainer.style.display === 'none') {
+        commentsContainer.style.display = 'block';
+    }
+}

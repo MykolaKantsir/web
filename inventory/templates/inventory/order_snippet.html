@@ -1,28 +1,38 @@
+<!--Order snippet.html-->
+<!--order container-->
 <div id="order-card-{{ order.id }}" 
 class="order-card mb-3 order-status-{{ order.status|lower }}" 
 data-status="{{ order.status|lower }}"
 data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
+    <!--hidden checkbox-->
     <input type="checkbox" class="order-checkbox" data-order-id="{{ order.id }}" hidden>
     <div class="row no-gutters">
+        <!--image container-->
         <div class="col-md-4">
             <div class="image-container">
                 <img src="{{ order.product_content_object.picture }}" alt="Product Image" class="order-card-img">
                 <div class="checkmark-overlay"></div>
             </div>
         </div>
+        <!--order info container-->
         <div class="col-md-8">
             <div class="card-body d-flex flex-column justify-content-between">
+                <!--order title container-->
                 <div class="card-title-container">
                     <a href="{{ order.product_content_object.link }}" target="_blank">
                         <h5 class="card-title">{{ order.product_content_object.code }} - {{ order.quantity }} st</h5>
                     </a>
                 </div>
+                <!--order description-->
                 <p class="card-text">Description: {{ order.product_content_object.description }}</p>
+                <!--order date and manufacturer container-->
                 <div class="d-flex justify-content-between">
                     <p class="card-text">Date: {{ order.order_date }}</p>
                     <p class="card-text">{{ order.product_content_object.manufacturer | title }}</p>
                 </div>
+                <!--order status container-->
                 <div class="d-flex justify-content-between">
+                    <!-- Order Status Select -->
                     <form method="post" action="{% url 'change_order_status' order.id %}" class="form-inline">
                         {% csrf_token %}
                         <div class="form-group mr-2">
@@ -33,13 +43,42 @@ data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
                             </select>
                         </div>
                     </form>
-
+                    <!-- Delete Order Button -->
                     <form method="post" action="{% url 'delete_order' order.id %}" class="form-inline ml-auto">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger" hidden>Delete Order</button>
                     </form>
+                    <!-- Add Comment Button -->
+                    <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-form-container-{{ order.id }}" aria-expanded="false" aria-controls="comment-form-container-{{ order.id }}">
+                        Add Comment
+                    </button>
                 </div>
             </div>
+        </div>
+    </div>
+    <!--order comment container-->
+    <div class="order-comments" style="{% if order.comments.all %}display: block;{% else %}display: none;{% endif %}">
+        <h4>Comments</h4>
+        <ul id="comments-list-{{ order.id }}">
+            {% for comment in order.comments.all %}
+            <li>{{ comment.text }}</li>
+            <!-- If you want to display the author of the comment, uncomment the following line -->
+            {% comment %} <li><strong>{{ comment.author.username }}:</strong> {{ comment.text }}</li> {% endcomment %}
+            {% empty %}
+            <!-- If there are no comments, display a message -->
+            {% comment %} <li>No comments yet.</li> {% endcomment %}
+            {% endfor %}
+        </ul>
+    </div>
+    <!-- Add a form or input field for submitting new comments -->
+    <!-- Comment form, initially collapsed -->
+    <div class="collapse comment-form-container" id="comment-form-container-{{ order.id }}">
+        <div class="card card-body">
+            <form method="post" action="{% url 'add_comment' order.id %}" data-order-id="{{ order.id }}">
+                {% csrf_token %}
+                <textarea name="comment_text" required></textarea>
+                <button type="submit" class="btn btn-success">Submit Comment</button>
+            </form>
         </div>
     </div>
 </div>
