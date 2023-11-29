@@ -14,6 +14,32 @@ from inventory import models
 from inventory.choices import OrderStatus
 import json
 
+# singleton class to get all non-abstract subclasses of Product
+# can be used later to get all subclasses of a class
+# might be moved to a separate file later
+class ProductSubclasses:
+    _instance = None
+    subclasses = []
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        self.subclasses = self._get_all_subclasses(Product)
+
+    def _get_all_subclasses(self, cls):
+        subclasses = cls.__subclasses__()
+        for subclass in subclasses:
+            subclasses.extend(self._get_all_subclasses(subclass))
+        return [cls for cls in subclasses if not cls._meta.abstract]
+
+# Usage in views
+non_abstract_subclasses = ProductSubclasses.get_instance().subclasses
+
 # Create your views here.
 def index(request):
     return render(request, 'inventory/index.html')
@@ -44,6 +70,47 @@ def search_product(request):
     
     # Render the product cards and return as HTML response
     return render(request, 'inventory/product_card.html', {'products': matched_products})
+
+# function to check if a product exists
+# used in the scanner view
+def product_exists(barcode):
+    exists = False
+
+    # Check in ProductToBeAdded first
+    if ProductToBeAdded.objects.filter(barcode=barcode).exists():
+        return 'review'
+
+    def query_subclasses(klass):
+        nonlocal exists
+        if not getattr(klass._meta, 'abstract', False):
+            if klass.objects.filter(Q(ean=barcode)).exists():
+                exists = True
+        else:
+            for subclass in klass.__subclasses__():
+                query_subclasses(subclass)
+
+    query_subclasses(Product)
+    return 'exists' if exists else 'new'
+
+# view to scan barcodes
+def scanner(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        barcode = data.get('barcode', '').strip()
+
+        status = product_exists(barcode)
+        if status == 'exists':
+            return JsonResponse({'message': f'Product {barcode} already exists'}, status=200)
+        elif status == 'review':
+            return JsonResponse({'message': f'Product {barcode} is already under review'}, status=200)
+        else:
+            # Add to ProductToBeAdded if not exists
+            ProductToBeAdded.objects.get_or_create(barcode=barcode)
+            return JsonResponse({'message': f'Product {barcode} added to be reviewed'}, status=201)
+    else:
+        # Fetch all barcodes from ProductToBeAdded
+        existing_barcodes = ProductToBeAdded.objects.all().order_by('-date_added')
+        return render(request, 'inventory/scanner.html', {'existing_barcodes': existing_barcodes})
 
 def get_all_subclasses(cls):
     """Recursively get all subclasses of a class"""

@@ -18,6 +18,7 @@
         <!-- Add more navigation items here -->
         <a class="navbar-brand" href="{% url 'orders_page' %}">View orders</a>
         <a class="navbar-brand" href="{% url 'add_product_selection' %}">Add product</a>
+        <a class="navbar-brand" href="{% url 'scanner' %}">Barcode Scanner</a>
     </nav>
     <!-- Main Content -->
     {% block content %}
@@ -30,7 +31,8 @@
                 <div id="insertsSubButtons" class="d-none ml-2">
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert turning">Turning inserts</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert thread">Threading inserts</button>
-                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Drill insert">Drilling inserts</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert grooving ">Cutoff inserts</button>
+                    <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert drilling">Drilling inserts</button>
                     <button class="btn btn-outline-secondary mb-2 w-100" data-search="Insert milling">Milling inserts</button>
                 </div>
                 <button class="btn btn-outline-primary mb-2 w-100" data-toggle="filter" data-target="#turningSubButtons">Turning</button>

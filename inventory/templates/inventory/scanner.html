@@ -1,0 +1,35 @@
+{% extends 'inventory/index.html' %}
+{% load static %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{% static 'css/scanner.css' %}">
+{% endblock %}
+{% block title %}Barcode Scanner{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Scan Product Barcode</h2>
+    <!-- Custom Alert Box -->
+    <div id="custom-alert" style="display: none;">
+        <p id="alert-message"></p>
+    </div>
+    <div class="barcode-scanner">
+        <form id="barcode-form">
+            {% csrf_token %}
+            <input type="text" id="barcode-input" class="form-control" placeholder="Enter Barcode" required autofocus>
+            <button type="submit" class="btn btn-primary mt-2">Search</button>
+        </form>
+    </div>
+    <div class="existing-barcodes mt-4">
+        <h3>Products to be added</h3>
+        <ul class="list-group">
+            {% for barcode in existing_barcodes %}
+            <li class="list-group-item">{{ barcode.barcode }} (Added on: {{ barcode.date_added|date:"Y-m-d H:i" }})</li>
+            {% empty %}
+            <li class="list-group-item">No barcodes added yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'js/scanner.js' %}"></script>
+{% endblock %}

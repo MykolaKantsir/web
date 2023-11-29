@@ -42,6 +42,14 @@ class Product(models.Model):
     class Meta:
         abstract = True
 
+# Describes a barcode of the product to be added
+class ProductToBeAdded(models.Model):
+    barcode = models.CharField(max_length=255, unique=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.barcode
+
 # Describes an order
 class Order(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -193,6 +201,8 @@ class EndMill(MillingTool):
         ('flute_length', 'Flute length', choices.Facet.numerical),
         ('usable_length', 'Usable length', choices.Facet.numerical),
         ('overall_length', 'Overall length', choices.Facet.numerical),
+        ('corner_radius', 'Corner radius', choices.Facet.numerical),
+        ('corner_chamfer', 'Corner chamfer', choices.Facet.numerical),
         ('mtbm', 'MTBM', choices.Facet.categorical),
         ('manufacturer', 'Manufacturer', choices.Facet.categorical),
         ('number_of_flutes', 'Number of flutes', choices.Facet.numerical),
