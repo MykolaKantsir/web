@@ -32,11 +32,12 @@ class Strings():
 class OrderStatus(models.TextChoices):
     PENDING = 'Pending'
     SHIPPED = 'Shipped'
-    DELIVERED = 'Delivered'
     RECEIVED = 'Received'
     CANCELLED = 'Cancelled'
     ORDERED = 'Ordered'
     UNKNOWN = Strings.UNKNOWN
+
+orderStatusChangingOrder = [OrderStatus.PENDING, OrderStatus.ORDERED, OrderStatus.SHIPPED, OrderStatus.RECEIVED]
 
 # Choices for the mill length category
 class MillLengthCategory(models.TextChoices):

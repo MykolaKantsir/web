@@ -17,12 +17,12 @@
             "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
         },
         {
-            "name": "normilize_thread_inserts",
+            "name": "tungaloy_add_barcode",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\manage.py",
             "args": [
-                "normilize_thread_inserts",
+                "tungaloy_add_barcode",
             ],
             "django": true,
             "justMyCode": true,

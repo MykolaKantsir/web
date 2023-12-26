@@ -4,6 +4,7 @@ from . import choices
 class DefaultProduct:
     CODE = '0000'
     EAN = '0000000000000'
+    BARCODE = '0000000000000'
     MANUFACTURER = choices.Strings.UNKNOWN
     DESCRIPTION = choices.Strings.UNKNOWN
     LINK = choices.Strings.UNKNOWN

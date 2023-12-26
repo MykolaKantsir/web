@@ -4,4 +4,127 @@
     margin-bottom: 10px;
     padding: 10px;
     background-color: #f0f0f0;
+    min-height: auto; /* Allow the container to grow with the content */
+}
+
+/* Ensure that the compact order card takes full width of the parent */
+.compact-order-card {
+    width: 100%;
+}
+
+
+.order-status-pending {
+    background-color: #FFD700;
+    color : #000000;
+}
+
+.order-status-ordered {
+    background-color: #008080;
+    color: #FFFFFF;
+}
+
+.order-status-recieved {
+    background-color: lightblue;
+    color: #000000;
+}
+
+.order-status-cancelled {
+    background-color: #8B0000;
+    color: #FFFFFF;
+}
+
+.order-status-shipped {
+    background-color: #f5b184;
+    color: #000000;
+}
+
+/* Flexbox utility classes for alignment and spacing */
+.d-flex {
+    display: flex;
+    align-items: center; /* Center items vertically */
+    justify-content: center; /* Center items horizontally */
+}
+
+/* Remove spacing between columns */
+.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.no-gutters > .col,
+.no-gutters > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+/* Vertical dividers */
+.border-right {
+    border-right: 1px solid #dee2e6; /* Bootstrap's default border color */
+}
+
+/* Adjust the status-change div to match the provided design */
+.status-change-div {
+    margin: 0; /* Remove margin to use full column space */
+    border: 2px solid #0056b3; /* Adjusted border color to match design */
+    background-color: #0056b3; /* Button background color */
+    color: #fff; /* Button text color */
+    padding: 8px 16px; /* Padding to increase size */
+    border-radius: 20px; /* Rounded corners for the button */
+    font-weight: bold; /* Make button text bold */
+    text-transform: uppercase; /* Optional: Transform text to uppercase */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add subtle shadow */
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.status-change-div:hover {
+    background-color: #004190; /* Darken the button on hover */
+    color: #e2e6ea; /* Lighten text color on hover */
+}
+/* Ensure that the compact order card takes full width of the parent */
+.compact-order-card {
+    width: 100%;
+}
+
+/* Flexbox utility classes for alignment and spacing */
+.d-flex {
+    display: flex;
+    align-items: center; /* Center items vertically */
+    justify-content: center; /* Center items horizontally */
+}
+
+/* Remove spacing between columns */
+.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.no-gutters > .col,
+.no-gutters > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+/* Vertical dividers */
+.border-right {
+    border-right: 1px solid #dee2e6; /* Bootstrap's default border color */
+}
+
+/* Adjust the status-change div to match the provided design */
+.status-change-div {
+    margin: 0; /* Remove margin to use full column space */
+    border: 2px solid #0056b3; /* Adjusted border color to match design */
+    background-color: #0056b3; /* Button background color */
+    color: #fff; /* Button text color */
+    padding: 8px 16px; /* Padding to increase size */
+    border-radius: 20px; /* Rounded corners for the button */
+    font-weight: bold; /* Make button text bold */
+    text-transform: uppercase; /* Optional: Transform text to uppercase */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add subtle shadow */
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.status-change-div:hover {
+    background-color: #004190; /* Darken the button on hover */
+    color: #e2e6ea; /* Lighten text color on hover */
 }

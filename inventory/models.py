@@ -19,6 +19,7 @@ class Product(models.Model):
     code = models.CharField(max_length=255, default=defaults.DefaultProduct.CODE)
     tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=defaults.DefaultProduct.TOOL_TYPE)
     ean = models.CharField(max_length=50, unique=True, default=defaults.DefaultProduct.EAN, blank=True)
+    barcode = models.CharField(max_length=50, blank=True, db_index=True)
     manufacturer = models.CharField(max_length=50, choices=choices.Manufacturer.choices, default=defaults.DefaultProduct.MANUFACTURER)
     description = models.TextField(default=defaults.DefaultProduct.DESCRIPTION)
     link = models.URLField(max_length=300, default=defaults.DefaultProduct.LINK, blank=True)

@@ -1,0 +1,15 @@
+<div class="compact-order-card" data-order-id="{{ order.pk }}">
+    <div class="row no-gutters">
+        <div class="col-4 d-flex align-items-center justify-content-center border-right">
+            <p><strong>{{ order.quantity }}</strong> ordered on <strong>{{ order.order_date|date:"d/m/Y" }}</strong></p>
+        </div>
+        <div class="col-4 d-flex align-items-center justify-content-center border-right status-circle order-status-{{order.status | lower}}">
+                <p>{{ order.status }}</p>
+        </div>
+        <div class="col-4 d-flex align-items-center justify-content-center">
+            <div class="status-change-div" data-order-id="{{ order.pk }}">
+                Change Status
+            </div>
+        </div>
+    </div>
+</div>

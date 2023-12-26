@@ -1,5 +1,5 @@
-
 document.addEventListener("DOMContentLoaded", function() {
+
 
     // Event listener for buttons with data-toggle="filter"
     $("[data-toggle='filter']").click(function(){
@@ -161,5 +161,7 @@ document.addEventListener("DOMContentLoaded", function() {
             fetchFilteredProducts(appliedFilters);  // Fetch products with updated filters
         }
     });
+
+
 
 });

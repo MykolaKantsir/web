@@ -1,4 +1,5 @@
 $(document).ready(function(){
+
     // Function to handle search
     function handleSearch() {
         const searchTerm = $("#searchInput").val().trim(); // Trim whitespace
@@ -26,12 +27,19 @@ $(document).ready(function(){
     }
 
     // Event listener for click on search button
-    $("#searchButton").click(handleSearch);
+    $("#searchButton").on('click', function() {    
+        handleSearch();
+        $("#searchInput").val(''); // Clear the input field immediately
+    });
 
     // Event listener for Enter key press in search input
     $("#searchInput").keypress(function(event){
         if (event.which === 13) { // 13 is the Enter key
             handleSearch();
+            $("#searchInput").val(''); // Clear the input field immediately
         }
     });
+
+
+    $("#searchInput").focus();
 });

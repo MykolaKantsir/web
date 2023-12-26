@@ -1,4 +1,6 @@
+from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.forms import modelform_factory
@@ -12,6 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from .models import *
 from inventory import models
 from inventory.choices import OrderStatus
+from inventory.functions import get_next_order_status
 import json
 
 # singleton class to get all non-abstract subclasses of Product
@@ -44,7 +47,38 @@ non_abstract_subclasses = ProductSubclasses.get_instance().subclasses
 def index(request):
     return render(request, 'inventory/index.html')
 
+# fuction to add recent orders to a queryset of products
+def annotate_products_with_orders(products_queryset, product_factory):
+    # Define the date for three weeks ago from today
+    three_weeks_ago = timezone.now() - timedelta(weeks=6)
 
+    # Convert the queryset to a list to sort in Python
+    products_list = list(products_queryset)
+
+    # Iterate over the products queryset and annotate each product
+    for product in products_queryset:
+        # Use the factory to get the specific product class based on tool_type or similar attribute
+        specific_product_class = product_factory.get_product(tool_type_str=product.tool_type)
+        product_type = type(specific_product_class)
+        product_content_type = ContentType.objects.get_for_model(product_type)
+
+        # Get orders in the last three weeks for each product
+        recent_orders = Order.objects.filter(
+            content_type=product_content_type, 
+            object_id=product.id,
+            order_date__gte=three_weeks_ago
+        ).order_by('-order_date')
+
+        # Set is_ordered to True if there are recent orders, and attach the orders to the product
+        product.is_ordered = recent_orders.exists()
+        product.recent_orders = recent_orders if product.is_ordered else []
+
+    # Now sort the list so that products with recent orders come first
+    products_list.sort(key=lambda x: x.is_ordered, reverse=True)
+
+    return products_list
+
+# view to search for products by id, description, or barcode
 def search_product(request):
     # Fetching the single search query
     search_term = request.GET.get('search_term', '')    
@@ -55,8 +89,8 @@ def search_product(request):
         if not getattr(klass._meta, 'abstract', False):
             matched_products.extend(
                 list(klass.objects.filter(
+                    Q(barcode__icontains=search_term) |
                     Q(code__icontains=search_term) |
-                    Q(tool_type__icontains=search_term) |
                     Q(ean__icontains=search_term)
                 ))
             )
@@ -66,10 +100,17 @@ def search_product(request):
                 query_subclasses(subclass)
 
     # Start the recursive querying with the Product model
-    query_subclasses(Product)
+    query_subclasses(Product)        
+
+    # Annotate the matched products with orders
+    annotated_products = annotate_products_with_orders(matched_products, ProductFactory())
+
+    context = {
+        'products': annotated_products,
+    }
     
     # Render the product cards and return as HTML response
-    return render(request, 'inventory/product_card.html', {'products': matched_products})
+    return render(request, 'inventory/product_card.html', context)
 
 # function to check if a product exists
 # used in the scanner view
@@ -83,7 +124,7 @@ def product_exists(barcode):
     def query_subclasses(klass):
         nonlocal exists
         if not getattr(klass._meta, 'abstract', False):
-            if klass.objects.filter(Q(ean=barcode)).exists():
+            if klass.objects.filter(Q(ean=barcode) | Q(barcode=barcode) | Q(code=barcode)).exists():
                 exists = True
         else:
             for subclass in klass.__subclasses__():
@@ -119,6 +160,7 @@ def get_all_subclasses(cls):
         subclasses.extend(get_all_subclasses(subclass))
     return subclasses
 
+# view to search for products by category with facets
 def search_category(request):
     category = request.GET.get('category', "").strip()
     # Extract facet selections from the request
@@ -167,7 +209,6 @@ def search_category(request):
             else:  # Boolean facet
                 queryset = queryset.filter(**{facet: selections})
 
-        products_context = {'products': queryset}
         facet_fields = product_class.facet_fields
 
         facets_data = []
@@ -215,12 +256,17 @@ def search_category(request):
                                     }
                     })
 
+        # Annotate the products with orders
+        annotated_products = annotate_products_with_orders(queryset, ProductFactory())
+        products_context = {'products': annotated_products}
+
         # Render facets and products
         facets_html = render_to_string('inventory/facet.html', {'facets_data': facets_data})
         products_html = render_to_string('inventory/product_card.html', products_context)
 
+
         results = {
-            'products': products_html,
+            'products': products_html, 
             'facets': facets_html,
             'applied_filters': facet_selections  # Include the applied filters here
         }
@@ -316,17 +362,25 @@ def add_comment(request, order_id):
 
 # view to change the status of an order
 def change_order_status(request, order_id):
-    # Check if the request method is POST
     if request.method == 'POST':
         try:
-            new_status = request.POST.get('status')
             # Try to get the order by its primary key (id)
             order = Order.objects.get(pk=order_id)
+
+            # Determine if a new status is provided or should be determined automatically
+            if 'status' in request.POST and request.POST.get('status'):
+                # Use the provided new status
+                new_status = request.POST.get('status')
+            else:
+                # No new status provided, determine automatically based on current status
+                new_status = get_next_order_status(order.status)
+
             # If the order exists, change its status to the new status
             order.status = new_status
             # Save the changes to the database
             order.save()
-            return JsonResponse({'status': 'success', 'message': 'Order status updated'})
+
+            return JsonResponse({'status': 'success', 'message': 'Order status updated', 'new_status': new_status})
         except Order.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Order not found'}, status=404)
         except Exception as e:

@@ -42,22 +42,27 @@
 
 .order-status-pending {
     background-color: #FFD700;
+    color : #000000;
 }
 
 .order-status-ordered {
     background-color: #008080;
+    color: #FFFFFF;
 }
 
-.order-status-delivered {
+.order-status-recieved {
     background-color: lightblue;
+    color: #000000;
 }
 
 .order-status-cancelled {
     background-color: #8B0000;
+    color: #FFFFFF;
 }
 
 .order-status-shipped {
-    background-color: #f0f0f0;
+    background-color: #f5b184;
+    color: #000000;
 }
 
 .order-card-img {
