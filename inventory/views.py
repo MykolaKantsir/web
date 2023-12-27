@@ -427,8 +427,6 @@ def create_custom_order(request):
             # Handle exceptions and return an error response
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-
-
 # view to delete an order
 def delete_order(request, order_id):
     # Check if the request method is POST
