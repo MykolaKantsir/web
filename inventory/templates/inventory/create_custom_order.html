@@ -1,0 +1,39 @@
+<!-- create_custom_order.html -->
+{% extends 'inventory/index.html' %}  <!-- Extending the same base template -->
+{% load static %}
+
+{% block extra_styles %}
+<!-- Include the custom CSS file for styling the page -->
+<!-- scanner.css has a similar alert styling -->
+<link rel="stylesheet" href="{% static 'css/scanner.css' %}">
+{% endblock %}
+
+
+{% block title %}
+Custom Order
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create Custom Order</h1>
+    <div id="custom-alert" style="display: none;">
+        <p id="alert-message"></p>
+    </div>    
+    <form id="customOrderForm">
+        <div class="form-group">
+            <label for="quantity">Quantity:</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" required min="1" value="1">
+        </div>
+        <div class="form-group">
+            <label for="description">Product Description or Link:</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Order</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Include the custom JS file for handling AJAX submission -->
+<script type="module" src="{% static 'js/custom_order_logic.js' %}"></script>
+{% endblock %}

@@ -16,8 +16,16 @@
     <!-- Navigation Panel -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="{% url 'index' %}">Inventory</a>
-        <!-- Add more navigation items here -->
-        <a class="navbar-brand" href="{% url 'orders_page' %}">View orders</a>
+        <!-- Dropdown for Orders -->
+        <div class="nav-item dropdown">
+            <a class="navbar-brand dropdown-toggle" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Orders
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="ordersDropdown">
+                <li><a class="dropdown-item" href="{% url 'orders_page' %}">View orders</a></li>
+                <li><a class="dropdown-item" href="{% url 'create_custom_order' %}">Create custom</a></li>
+            </ul>
+        </div>
         <a class="navbar-brand" href="{% url 'add_product_selection' %}">Add product</a>
         <a class="navbar-brand" href="{% url 'scanner' %}">Barcode Scanner</a>
     </nav>

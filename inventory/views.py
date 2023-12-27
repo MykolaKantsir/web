@@ -7,6 +7,7 @@ from django.forms import modelform_factory
 from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import ExtractWeek, ExtractYear
 from django.db.models import Q, Min, Max, ManyToManyField
 from django.db.models import Case, When, Value, IntegerField
@@ -15,6 +16,7 @@ from .models import *
 from inventory import models
 from inventory.choices import OrderStatus
 from inventory.functions import get_next_order_status
+from inventory.defaults import default_custom_order_barcode
 import json
 
 # singleton class to get all non-abstract subclasses of Product
@@ -385,6 +387,47 @@ def change_order_status(request, order_id):
             return JsonResponse({'status': 'error', 'message': 'Order not found'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+# view to create a custom order, without a product
+
+@csrf_exempt  # Use this decorator to exempt CSRF for AJAX calls if needed
+def create_custom_order(request):
+    if request.method == 'GET':
+        # Render the form for custom orders
+        return render(request, 'inventory/create_custom_order.html')
+    elif request.method == 'POST':
+        try:
+            # Decode the JSON data from the request
+            data = json.loads(request.body)
+            quantity = data.get('quantity')
+            description = data.get('description')
+            barcode = default_custom_order_barcode  # Default barcode 
+
+            # Retrieve the placeholder or blank product
+            blank_product = PostMachining.objects.get(barcode=barcode)  # Assuming barcode is unique
+            product_type = type(blank_product)
+            product_model_name = product_type.__name__
+            product_model = ContentType.objects.get(model=product_model_name.lower())
+
+            # Create the new order with the placeholder product
+            new_order = Order.objects.create(
+                content_type=product_model,
+                object_id=blank_product.id,
+                quantity=quantity,
+                # Other fields as needed
+            )
+
+            # Create a comment with the user's custom description or link
+            Comment.objects.create(order=new_order, text=description)
+
+            # Return a success response
+            return JsonResponse({'status': 'success', 'message': 'Custom order placed successfully.'})
+
+        except Exception as e:
+            # Handle exceptions and return an error response
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
 
 # view to delete an order
 def delete_order(request, order_id):

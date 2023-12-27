@@ -17,12 +17,12 @@
             "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
         },
         {
-            "name": "tungaloy_add_barcode",
+            "name": "hoffmann_modify_codes",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\manage.py",
             "args": [
-                "tungaloy_add_barcode",
+                "hoffmann_modify_codes",
             ],
             "django": true,
             "justMyCode": true,

@@ -18,6 +18,10 @@ class DefaultOrder:
     QUANTITY = choices.Strings.ONE_INT
     STATUS = choices.OrderStatus.PENDING
 
+# thisn is the barcode for the custom order product
+# all custom orders will have this PostMachine product
+default_custom_order_barcode = '2023122711263'
+
 class DefaultMaterialToBeMachined:
     NAME = choices.Strings.UNDEFINED
     COLOUR = choices.Strings.BLACK
