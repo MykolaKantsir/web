@@ -101,6 +101,10 @@ class MaterialToBeMachined(models.Model):
         return cls.objects.exclude(name=choices.Strings.UNDEFINED).all()
     
     @classmethod
+    def get_undefined(cls):
+        return cls.objects.get(name=choices.Strings.UNDEFINED)
+
+    @classmethod
     def get_default_mtbm(cls):
         return cls.objects.get(name=defaults.DefaultMaterialToBeMachined.NAME).id
     
@@ -135,7 +139,20 @@ class Tool(Product):
     def save(self, *args, **kwargs):
         self.material = choices.normalize_tool_material(self.material)
         super(Tool, self).save(*args, **kwargs)
-        
+    
+    def add_mtbm(self, mtbm: MaterialToBeMachined):
+        # Check if the mtbm to be added is the default one and should not be added
+        if mtbm.name == defaults.DefaultTool.MTBM.NAME:
+            # Perhaps log some message or handle the case where mtbm is the default one
+            return
+
+        # Remove the default MTBM if it's currently associated
+        if self.mtbm.filter(name=defaults.DefaultTool.MTBM).exists():
+            self.mtbm.remove(MaterialToBeMachined.objects.get(name=defaults.DefaultTool.MTBM))
+
+        # Add the new MaterialToBeMachined to the mtbm set
+        self.mtbm.add(mtbm)
+
     class Meta:
         abstract = True
    
@@ -212,6 +229,31 @@ class EndMill(MillingTool):
     def __str__(self):
         return f'{self.tool_type} {self.diameter} x {self.flute_length} x {self.usable_length} | {self.length_category}'
     
+        # method to construct length category 
+    def construct_length_category(self) -> None:
+        if self.length_category.value == defaults.DefaultEndMill.LENGTH_CATEGORY.value:
+            # Calculate the numeric ratio using the polynomial regression formula
+            d = self.diameter
+            l = self.usable_length
+            # change this formula to correct one
+            numeric_ratio = l/d
+
+            # Map the numeric ratio to predefined categories
+            if numeric_ratio <= 1:
+                self.length_category = choices.MillLengthCategory.EXTRA_SHORT
+            elif numeric_ratio <= 2:
+                self.length_category = choices.MillLengthCategory.SHORT
+            elif numeric_ratio <= 3.5:
+                self.length_category = choices.MillLengthCategory.MEDIUM
+            elif numeric_ratio <= 4.5:
+                self.length_category = choices.MillLengthCategory.MEDIUM_PLUS
+            elif numeric_ratio <= 5.5:
+                self.length_category = choices.MillLengthCategory.LONG
+            elif numeric_ratio <= 20:
+                self.length_category = choices.MillLengthCategory.EXTRA_LONG
+            else:
+                self.length_category = choices.MillLengthCategory.UNKNOWN
+
     class Meta:
         verbose_name_plural = "End mills"
   
@@ -610,6 +652,7 @@ class Tap(DrillingTool):
 
     def construct_from_thread(self, series = None):
         self.diameter = utils.get_tap_diameter(self.thread, series=series)
+
 
 # Describes a center drill
 class CenterDrill(DrillingTool):
@@ -1363,7 +1406,7 @@ class ProductFactory():
         elif tool_type == choices.ToolType.INSERT_GROOVING:
             return GroovingInsert()
         elif tool_type == choices.ToolType.BALL_MILL:
-            return BallMIll()
+            return BallMill()
         elif tool_type == choices.ToolType.INSERT_MILLING:
             return MillingInsert()
         elif tool_type == choices.ToolType.THREAD_MILL:
@@ -1427,8 +1470,7 @@ class ProductFactory():
         else:
             logger.error(f'No product for {product.manufacturer} : {product.tool_type}')
             return Product()
-        
-        
+               
     @staticmethod
     def set_attributes_from_json(product: Product, json_object: dict):
         for key, in json_object.items():
@@ -1452,8 +1494,6 @@ class ProductFactory():
         except Exception as e:
             print(f"Failed to create product: {e}")
             return None
-
-
 
 # constructor is used to write all parameters to the product from the dataframe
 class ProductConstructor():

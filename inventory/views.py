@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from .models import *
 from inventory import models
 from inventory.choices import OrderStatus
-from inventory.functions import get_next_order_status
+from inventory.utils import get_next_order_status
 from inventory.defaults import default_custom_order_barcode
 import json
 

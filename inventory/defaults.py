@@ -31,6 +31,7 @@ class DefaultMaterialToBeMachined:
 class DefaultTool:
     MATERIAL = choices.ToolMaterial.UNDEFINED
     COATING = choices.ToolCoating.UNDEFINED
+    MTBM = DefaultMaterialToBeMachined()
 
 class DefaultMillingTool:
     DIAMETER = choices.Strings.ZERO_FLOAT
@@ -80,6 +81,15 @@ class DefaultCircularSaw:
     INNER_DIAMETER = choices.Strings.ZERO_FLOAT
 
 class DefaultDrillingTool:
+    DIAMETER = choices.Strings.ZERO_FLOAT
+    OVERALL_LENGTH = choices.Strings.ZERO_FLOAT
+    POINT_ANGLE = choices.Strings.ZERO_FLOAT
+    NUMBER_OF_FLUTES = choices.Strings.ONE_INT
+    FLUTE_LENGTH = choices.Strings.ZERO_FLOAT
+    SHANK_DIAMETER = choices.Strings.ZERO_FLOAT
+    USABLE_LENGTH = choices.Strings.ZERO_FLOAT
+
+class DefaultDrillTool:
     DIAMETER = choices.Strings.ZERO_FLOAT
     OVERALL_LENGTH = choices.Strings.ZERO_FLOAT
     POINT_ANGLE = choices.Strings.ZERO_FLOAT

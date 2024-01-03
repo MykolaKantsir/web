@@ -1,5 +1,6 @@
 from django.db import models
 from collections import namedtuple
+from enum import Enum
 from typing import Dict
 
 # Strings used in the project
@@ -139,10 +140,11 @@ class ToolMaterial(models.TextChoices):
     def to_json(self):
         return {"name": self.name, "value": self.value}
 
+
 # Normalize the tool material string to the ToolMaterial
 def normalize_tool_material(material: str) -> str:
     """Normalize the tool material string to the ToolMaterial choice"""
-    CARBIDE_VARIANTS = ['Carbide', 'CARBIDE', 'HC', 'HPC', 'VHM', 'SOLID CARBIDE', 'Solid hårdmetall']
+    CARBIDE_VARIANTS = ['Carbide', 'CARBIDE', 'HC', 'HPC', 'VHM', 'SOLID CARBIDE', 'SOLID', 'Solid hårdmetall']
     HSS_VARIANTS = ['HSS', 'HSS Co 5', 'HSCO', 'HSSE', 'HSS-E', 'HSS E', 'HSS-PM', 'HSSE-PM', 'HSS-E-PM', 'HSS E PM']
 
     if material in CARBIDE_VARIANTS:
@@ -312,3 +314,71 @@ class Facet():
 
 SELENIUM_MANUFACTURERS = [Manufacturer.SANDVIK, Manufacturer.CERATIZIT, Manufacturer.TUNGALOY]
 BS_MANUFACTURERS = [Manufacturer.HOFFMANN, Manufacturer.GUEHRING]
+
+# These classes are used only for scraping
+# This class is used only for scraping
+class ToolMaterial_enum(Enum):
+    UNDEFINED = 'Undefined'
+    CARBIDE = 'Carbide'
+    HSS = 'HSS'
+    HSS_E = 'HSS-E'
+    HSS_E_PM = 'HSS-E-PM'
+    HSS_PM = 'HSS-PM'
+    CERMET = 'Cermet'
+    CERAMIC = 'Ceramic'
+    CBN = 'CBN'
+    PCD = 'PCD'
+    DIAMOND = 'Diamond'
+    CARBIDE_TIPPED = 'Carbide tipped'
+    CARBIDE_TIPPED_HSS = 'Carbide tipped HSS'
+    CARBIDE_TIPPED_HSS_E = 'Carbide tipped HSS-E'
+    CARBIDE_TIPPED_HSS_E_PM = 'Carbide tipped HSS-E-PM'
+    CARBIDE_TIPPED_HSS_PM = 'Carbide tipped HSS-PM'
+    CARBIDE_TIPPED_CERMET = 'Carbide tipped Cermet'
+    CARBIDE_TIPPED_CERAMIC = 'Carbide tipped Ceramic'
+    CARBIDE_TIPPED_CBN = 'Carbide tipped CBN'
+    CARBIDE_TIPPED_PCD = 'Carbide tipped PCD'
+    CARBIDE_TIPPED_DIAMOND = 'Carbide tipped Diamond'
+    HSS_CARBIDE = 'HSS Carbide'
+    HSS_E_CARBIDE = 'HSS-E Carbide'
+    HSS_E_PM_CARBIDE = 'HSS-E-PM Carbide'
+    HSS_PM_CARBIDE = 'HSS-PM Carbide'
+    CERMET_CARBIDE = 'Cermet Carbide'
+    CERAMIC_CARBIDE = 'Ceramic Carbide'
+    CBN_CARBIDE = 'CBN Carbide'
+    PCD_CARBIDE = 'PCD Carbide'
+    DIAMOND_CARBIDE = 'Diamond Carbide'
+    HSS_CARBIDE_TIPPED = 'HSS Carbide tipped'
+    HSS_E_CARBIDE_TIPPED = 'HSS-E Carbide tipped'
+    HSS_E_PM_CARBIDE_TIPPED = 'HSS-E-PM Carbide tipped'
+    HSS_PM_CARBIDE_TIPPED = 'HSS-PM Carbide tipped'
+    
+    def to_json(self):
+        return {"name": self.name, "value": self.value}
+
+# Material to be machined
+Tool_material = namedtuple('Tool_material', ['name', 'color', 'group'])
+
+# This class is used only for scraping
+class Mtbm(Enum):
+    UNDEFINED = Tool_material('Undefined', 'black', 'U')
+    STEEL = Tool_material('Steel', 'blue', 'P')
+    STAINLESS_STEEL = Tool_material('Stainless steel', 'yellow', 'M')
+    CAST_IRON = Tool_material('Cast iron', 'red', 'K')
+    NON_FERROUS_METAL = Tool_material('Non-ferrous metal', 'green', 'N')
+    SUPERALLOY = Tool_material('Superallyos', 'brown', 'S') # Superalloys and titanium
+    HARDENED_MATERIAL = Tool_material('Hardened material', 'grey', 'H')
+    NON_METALLIC_MATERIAL = Tool_material('Non-metallic material', 'white', 'O')
+
+    def to_json(self) -> Dict:
+        tool_material = self.value._asdict()  # Converts namedtuple to a dict
+        return {
+            "name": self.name,  # This is the name of the Enum member (e.g., "STEEL")
+            "tool_material": tool_material  # This is the dict of the Tool_material namedtuple
+        }
+    
+    @classmethod
+    def all_mtbm(self) -> list:
+        res = [mtbm for mtbm in Mtbm if mtbm != Mtbm.UNDEFINED]
+        return res
+

@@ -1,9 +1,596 @@
 import re
 import os
 import math
+from inventory.choices import OrderStatus, orderStatusChangingOrder
+from inventory.choices import Manufacturer
 from .logging_config import logger
 
 
+# Class to identify manufacturer from barcodes
+class ManufacturerIdentifier:
+    """
+    A class to identify manufacturer from barcodes using various methods.
+    It tries methods in the following order:
+    1. Prefix matching
+    2. Heuristic-based identification
+    3. Machine learning model prediction
+    """
+
+    def __init__(self):
+        # Load resources
+        self.unique_prefixes = {
+            'hoffmann' : {
+                'characters' : 6,
+                'prefixes' : [
+                    '404519',
+                    '406240',
+                    '203054',
+                    '496066',
+                    '205000',
+                    '404636',
+                    '402077',
+                    '401328',
+                    '403061',
+                    '401613',
+                    '403772',
+                    '403074',
+                    '401920',
+                    '426071',
+                    '494636',
+                    '403145',
+                    '763004',
+                    '404612',
+                    '692390',
+                    '405919',
+                    '137150',
+                    '425026',
+                    '404732',
+                    '739139',
+                    '500882',
+                    '400300',
+                    '425036',
+                    '405427',
+                    '541131',
+                    '500511',
+                    '731255',
+                    '404671',
+                    '101114',
+                    '729000',
+                    '400921',
+                    '613548',
+                    '313437',
+                    '400189',
+                    '048011',
+                    '426049',
+                    '403707',
+                    '900317',
+                    '500480',
+                    '401012',
+                    '761073',
+                    '726680',
+                    '425015',
+                    '501259',
+                    '541238',
+                    '402493',
+                    '497536',
+                    '732254',
+                    '100764',
+                    '324542',
+                    '076490',
+                    '400819',
+                    '401620',
+                    '426002',
+                    '805552',
+                    '405798',
+                    '450798',
+                    '033552',
+                    '403110',
+                    '571520',
+                    '731061',
+                    '401875',
+                    '406726',
+                    ],
+                },
+            'guehring' : {
+                'characters' : 6,
+                'prefixes' : [
+                    '404984',
+                    '403109',
+                    ],
+                },
+            'ceratizit' : {
+                'characters' : 5,
+                'prefixes' : [
+                    '54611',
+                    '10113',
+                    '70779',
+                    '53554',
+                    '53562',
+                    '70258',
+                    '10200',
+                    '50991',
+                    '23120',
+                    '23240',
+                    '10522',
+                    '54059',
+                    '53520',
+                    '53519',
+                    '54006',
+                    '50615',
+                    '52211',
+                    '53518',
+                    '52806',
+                    '50609',
+                    '52345',
+                    '54072',
+                    '50975',
+                    '54610',
+                    '53615',
+                    '54590',
+                    '52802',
+                    '53616',
+                    '52942',
+                    '50958',
+                    '53643',
+                    '52786',
+                    '52784',
+                    '52932',
+                    '52349',
+                    '52230',
+                    '53613',
+                    '52228',
+                    '53569',
+                    '53611',
+                    '53639',
+                    '50944',
+                    '52158',
+                    '52159',
+                    '50990',
+                    '52050',
+                    '52804',
+                    '53052',
+                    '50803',
+                    '53053',
+                    '53012',
+                    '53050',
+                    '53003',
+                    '54700',
+                    '11705',
+                    '11715',
+                    '11603',
+                    '10110',
+                    '10107',
+                    '10235',
+                    '10130',
+                    '10171',
+                    '10700',
+                    '11702',
+                    '11704',
+                    '11629',
+                    '10772',
+                    '10788',
+                    '10270',
+                    '10710',
+                    '10781',
+                    '11620',
+                    '11623',
+                    '11700',
+                    '11770',
+                    '11706',
+                    '10225',
+                    '10161',
+                    '10103',
+                    '10703',
+                    '10532',
+                    '40140',
+                    '23114',
+                    '23124',
+                    '23814',
+                    '23162',
+                    '23160',
+                    '23026',
+                    '23810',
+                    '23122',
+                    '22163',
+                    '23112',
+                    '23410',
+                    '23372',
+                    '22107',
+                    '10913',
+                    '10912',
+                    '10880',
+                    '70688',
+                    '70773',
+                    '70780',
+                    '70663',
+                    '70845',
+                    '70844',
+                    '71280',
+                    '70716',
+                    '70892',
+                    '71282',
+                    '73104',
+                    '51016',
+                    '73322',
+                    '51113',
+                    '51055',
+                    '53008',
+                    '53007',
+                    '51051',
+                    '50876',
+                    '50477',
+                    '93090',
+                    '10923',
+                    '10830',
+                    '10822',
+                    '76250',
+                    '70248',
+                    '75210',
+                    '76252',
+                    '76135',
+                    '76132',
+                    '75011',
+                    '76256',
+                    '70263',
+                    '71163',
+                    '75213',
+                    '75304',
+                    '76258',
+                    '75305',
+                    '76246',
+                    '76136',
+                    '76263',
+                    '76134',
+                    '75014',
+                    '70270',
+                    '76146',
+                    '76138',
+                    '75006',
+                    '76255',
+                    '76277',
+                    '71330',
+                    '71189',
+                    '71331',
+                    '70282',
+                    '70277',
+                    '70280',
+                    '76288',
+                    '70167',
+                    '76131',
+                    '71228',
+                    '71264',
+                    '71220',
+                    '71272',
+                    '71224',
+                    '71222',
+                    '70351',
+                    '70363',
+                    '70349',
+                    '70342',
+                    '70346',
+                    '70350',
+                    '80950',
+                    '83535',
+                    '82483',
+                    '83271',
+                    '83272',
+                    '83453',
+                    '83950',
+                    '85299',
+                    '82415',
+                    '82310',
+                    '82315',
+                    '84578',
+                    '84596',
+                    '82684',
+                    '84580',
+                    '82685',
+                    '84581',
+                    '82686',
+                    '70950',
+                    '71950',
+                    '10950',
+                    '73082',
+                    '80393',
+                    '83357',
+                    '10773',
+                    '70748',
+                    '73004',
+                    '73012',
+                    '73004',
+                    '76276',
+                    '50477',
+                    '75022',
+                    '75310',
+                    '75023',
+                    '70193',
+                    '70260',
+                    '84950',
+                    '70263',
+                    '75305',
+                    '76251',
+                    '70343',
+                    '73314',
+                    '73520',
+                    '53015',
+                    '50234',
+                    '50886',
+                    '50451',
+                    '53001',
+                    '54063',
+                    '50955',
+                    '53612',
+                    '50965',
+                    '53524',
+                    '40150',
+                    '23010',
+                    '22501',
+                    '50965',
+                    '50591',
+                    '10718',
+                    '23144',
+                    '10523',
+                    '52291',
+                    '50900',
+                    '11021',
+                    '53587',
+                    '50901',
+                    '10170',
+                    '10791',
+                    '11786',
+                    '50815',
+                    '52346',
+                    ],
+                },
+            'sandvik' : {
+                'characters' : 5,
+                'prefixes' : [
+                        '73232',
+                        '10378',
+                        '26537',
+                        '12090',
+                        '12384',
+                        '26138',
+                        '12160',
+                        '10529',
+                        '25961',
+                        '12055',
+                        '26770',
+                        '10001',
+                        '12460',
+                        '12373',
+                        '10503',
+                        '12442',
+                        '25857',
+                        '12374',
+                        '12324',
+                        '11588',
+                        '11170',
+                        '12375',
+                        '12358',
+                        '12379',
+                        '12356',
+                        '12360',
+                        '12313',
+                        '11093',
+                        '12290',
+                        '26532',
+                        '26426',
+                        '25966',
+                        '10069',
+                        '12277',
+                        '12449',
+                        '12286',
+                        '10979',
+                        '10335',
+                        '10284',
+                        '10197',
+                        '10164',
+                        '11256',
+                        '11947',
+                        '11778',
+                        '11367',
+                        '26539',
+                        '26433',
+                        '26427',
+                        '12177',
+                        '12179',
+                        '12237',
+                        '12343',
+                        '12368',
+                        '12357',
+                        '11313',
+                        '11192',
+                        '11370',
+                        '11094',
+                        '12445',
+                        '12443',
+                        '12357',
+                        '12301',
+                        '10896',
+                        '12205',
+                        '26261',
+                        '25847',
+                        '26350',
+                        '12237',
+                        '25860',
+                        '12441',
+                        '12342',
+                ],
+                },
+            'phorn' : {
+                'characters' : 4,
+                'prefixes' : [
+                    'LA10',
+                    'S223',
+                    'RS11',
+                    '3110',
+                    'SH11',
+                    'SB10',
+                    'B105',
+                    'R105',
+                    'R111',
+                    'L105',
+                    'N105',
+                    ],
+                },    
+            'tungaloy' : {
+                'characters' : 3,
+                'prefixes' : [
+                    '056',
+                    '068',
+                    '069',
+                    '033',
+                    '067',
+                    '074',
+                    '043',
+                    '070',
+                    ],
+                },
+        }
+
+    def find_manufacturer(self, barcode):
+        """
+        Tries to identify the manufacturer based on known prefixes.
+        """
+        prefix_lengths = [6, 5, 4, 3]  # Adjust based on actual lengths in your data
+        for manufacturer, details in self.unique_prefixes.items():
+            char_length = details['characters']
+            if char_length in prefix_lengths:
+                for prefix in details['prefixes']:
+                    if barcode.startswith(prefix):
+                        return manufacturer, "prefix"
+        return None, None
+
+    def identify_manufacturer(self, barcode):
+        """
+        Tries to identify the manufacturer based on heuristic rules.
+        """
+        manufacturer = None
+        # Example heuristic rules, replace with actual logic
+        if barcode.startswith("0"):
+            manufacturer = 'tungaloy'
+        if re.match(r"^\d{6}\s", barcode):
+            manufacturer = 'hoffmann'
+        if re.match(r"^[RLN]\d", barcode):
+            manufacturer = 'phorn'
+        # ... Add other heuristics as necessary
+            
+        if manufacturer:
+            return manufacturer, "heuristic"
+        return None, None
+
+
+    def identify(self, barcode):
+        """
+        Identifies the manufacturer by sequentially trying all methods.
+        """
+        order_of_methods = [
+            self.find_manufacturer,
+            self.identify_manufacturer,
+            ]
+        for method in order_of_methods:
+            manufacturer, method_used = method(barcode)
+            if manufacturer:
+                return manufacturer, method_used
+            
+        # If all methods fail, return a message indicating such
+        return None, "unknown"
+
+# Class to get manufacturer's search page and xpath for the search field
+class ManufacturerSearchPage:
+    MANUFACTURER_INFO = {
+        Manufacturer.HOFFMANN.value : {
+            'homepage': 'https://www.hoffmann-group.com/SE/sv/ravema/', 
+            'search_bar_xpath': '//*[@id="search"]',
+            'search_button_xpath': '',
+            'first_search_result_xpath': '//*[@id="autosuggest-products"]/ul/li[1]',
+            'cookie_button_xpath': '//*[@id="privacy-cat-modal"]/div/div/div[3]/div[1]/div/button[1]',
+            'barcode_xpath': '//*[@id="technicalData"]/table[2]/tbody/tr[2]/td[3]/input',
+            'code_xpath': '//*[@id="technicalData"]/table[2]/tbody/tr[1]/td[3]/input',
+            'picture_xpath': '//*[@id="productImagesSlider"]/div/figure[1]/a/div/img',
+            'description_xpath': '/html/body/div[1]/main/section[2]/div[1]/div/div/div/div[1]/div[2]/h1',
+            },
+        Manufacturer.GUEHRING.value : {
+            'homepage': 'https://webshop.guehring.se/',
+            'search_bar_xpath': '//*[@id="proLineSearchQuery"]',
+            'search_button_xpath': '',
+            'first_search_result_xpath': '//*[@id="proline-autocomplete-store-search"]/div[2]/div[2]/div/div[1]',
+            'first_search_result_xpath': '//*[@id="proline-autocomplete-store-search"]/div[2]/div[2]/div/div[1]',
+            'cookie_button_xpath': '//*[@id="uc-center-container"]/div[2]/div/div[1]/div/button[4]',
+            'barcode_xpath': '//*[@id="maincontent"]/div[3]/div/div[3]/div[1]/div[2]/div',
+            'code_xpath': '//*[@id="maincontent"]/div[3]/div/div[3]/div[1]/div[1]/div',
+            'picture_xpath': '//*[@id="maincontent"]/div[3]/div/div[5]/div[2]/div[2]/div[2]/div[1]/div[3]/div[1]/img',
+            'description_xpath': '//*[@id="maincontent"]/div[1]/h1/span',
+            },
+        Manufacturer.CERATIZIT.value : {
+            'homepage': 'https://cuttingtools.ceratizit.com/se/en.html',
+            'search_button_xpath': '/html/body/div[1]/div[2]/div/div/div/div/div[1]/div/div/div/div[2]/button',
+            'search_bar_xpath': '/html/body/div[1]/div[3]/div[1]/div[3]/div[2]/div/div/input',
+            'first_search_result_xpath': '/html/body/div[1]/div[3]/div[1]/div[3]/div[2]/div/div/div/div/div/ul/li[1]/div[1]/div[1]/div',
+            'cookie_button_xpath': '//*[@id="truste-consent-button"]',
+            'barcode_xpath': '/html/body/div[3]/div[6]/div/div[1]/div[2]/span',
+            'code_xpath': '/html/body/div[3]/div[6]/div/div[1]/div[2]/span',
+            'picture_xpath': '//*[@id="expandedImg"]',
+            'description_xpath': '/html/body/div[3]/div[6]/div/div[2]/div[1]/div[2]/div[1]',
+            },
+        Manufacturer.SANDVIK.value : {
+            'homepage': 'https://www.sandvik.coromant.com/sv-se',
+            'search_bar_xpath': '//div[contains(@class, "coromant-main-search")]//input[contains(@class, "main-search-box") and @type="text"]',
+            'search_button_xpath': '',
+            'first_search_result_xpath': '',
+            'cookie_button_xpath': '//*[@id="onetrust-accept-btn-handler"]',
+            'barcode_xpath': '//*[@id="searchcontent"]/div[1]/div/div[3]/product-price-information-add-to-cart-v5/div/div[1]/product-details-codes-v5/div[4]',
+            'code_xpath': '//*[@id="searchcontent"]/div[1]/div/div[1]/product-header-v5/div/div[1]/h1',
+            'picture_xpath': '//*[@id="searchcontent"]/div[1]/div/div[2]/div/product-details-image-gallery-v5/div/div[1]/div/img',
+            'description_xpath': '//*[@id="searchcontent"]/div[1]/div/div[1]/product-header-v5/div/div[1]/div/h5',
+            },
+        Manufacturer.PHORN.value : {
+            'homepage': 'https://www.phorn.de/en/',
+            'search_bar_xpath': '//*[@id="main-search-input"]',
+            'search_button_xpath': '',
+            'first_search_result_xpath': '',
+            'cookie_button_xpath': '',
+            'barcode_xpath': '',
+            'code_xpath': '',
+            'picture_xpath': '',
+            'description_xpath': '',
+            },
+        Manufacturer.TUNGALOY.value : {
+            'homepage': 'https://www.tungaloy.com/se/',
+            'search_bar_xpath': '//*[@id="content_txttungaSearchValue"]',
+            'search_button_xpath': '',
+            'first_search_result_xpath': '',
+            'cookie_button_xpath': '',
+            'barcode_xpath': '',
+            'code_xpath': '',
+            'picture_xpath': '',
+            },
+        }
+
+    def get_info(self, manufacturer: str, info_type: str) -> str:
+        return self.MANUFACTURER_INFO.get(manufacturer, {}).get(info_type)
+
+    def get_all_links(self) -> dict:
+        return {manufacturer: info['homepage'] for manufacturer, info in self.MANUFACTURER_INFO.items()}
+
+# Function to get the next order status
+def get_next_order_status(current_order_status):
+    try:
+        # Find the index of the current status in the changing order list
+        current_index = orderStatusChangingOrder.index(current_order_status)
+
+        # Get the next status if the current status is not the last; otherwise, return the same status
+        if current_index < len(orderStatusChangingOrder) - 1:
+            return orderStatusChangingOrder[current_index + 1]
+        else:
+            # If current status is the last in the sequence or not in the sequence, return current status
+            return current_order_status
+    except ValueError:
+        # Current order status not in the changing order list, return as 'UNKNOWN' or current status
+        return OrderStatus.UNKNOWN
+
+# function to reverse a dict
 def reverse_dict(dict):
     return {str(v): k for k, v in dict.items()}
 
@@ -175,6 +762,13 @@ def get_tap_diameter(s: str, series: str = None) -> float:
     else:
         raise ValueError(f"No number found in string: {s}")
 
+def get_tap_thread_series(s: str) -> str:
+    # For M threads return 'M'
+    if s.startswith('M') and not s.startswith('MF'):
+        return 'M'
+    if s.startswith('MF'):
+        return 'MF'
+
 def tpi_to_pitch(tpi: int) -> float:
     if  not int(tpi):
         return tpi
@@ -231,6 +825,7 @@ def get_from_ceratizit_specification(s: str) -> str:
     u = s[64:]
     s = u[:u.find('_')]
     return s
+
 
 def get_file_path(filename):
     # Get the directory where the calling script is located

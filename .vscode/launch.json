@@ -17,16 +17,37 @@
             "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
         },
         {
-            "name": "hoffmann_modify_codes",
+            "name": "products_to_csv_EAN",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\manage.py",
             "args": [
-                "hoffmann_modify_codes",
+                "products_to_csv_EAN",
+                "D:\\Projects\\Gaston_V1_03\\temp\\products_EAN_V3.csv",
             ],
             "django": true,
             "justMyCode": true,
             "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
-        }
+        },
+        {
+            "name": "add_product_from_barcode",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "add_product_from_barcode",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
+        },
+        {
+            "name": "Run Current Python Script",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe",
+            "justMyCode": true
+        },
     ]
 }
