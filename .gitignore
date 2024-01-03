@@ -10,3 +10,7 @@ inventory/management/
 to do.md
 django_db.sql
 temp/
+predicton_models/
+scraper.py
+dialogScript.js
+product_constructors.py
