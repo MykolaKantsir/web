@@ -43,16 +43,16 @@ Orders
 </br>
     <!-- Display oders -->
     <div class="orders-container">
-        {% for year_week, week_orders in orders_grouped.items %}
+        {% for week_order in week_orders %}
             {% with year=year_week.0 week=year_week.1 %}
                 <!-- Display the year and week -->
-                <div class="week-container" id="week-{{ year }}-{{ week }}">
-                    <div class="week-header" data-toggle="collapse" data-target="#week-content-{{ year }}-{{ week }}">
-                        <h3>Week {{ week }}/{{ year }}</h3>
+                <div class="week-container" id="week-{{ week_order.year }}-{{ week_order.week }}">
+                    <div class="week-header" data-toggle="collapse" data-target="#week-content-{{ week_order.year }}-{{ week_order.week }}">
+                        <h3>Week {{ week_order.week }}/{{ week_order.year }}</h3>
                     </div>
-                    <div class="week-content collapse {% if forloop.first %}show{% endif %}" id="week-content-{{ year }}-{{ week }}">
+                    <div class="week-content collapse {% if forloop.first %}show{% endif %}" id="week-content-{{ week_order.year }}-{{ week_order.week }}">
                         <!-- Loop through each order for this week -->
-                        {% for order in week_orders %}
+                        {% for order in week_order.orders.all %}
                             {% include 'inventory/order_snippet.html' with order=order %}
                         {% endfor %}
                     </div>
@@ -61,6 +61,23 @@ Orders
         {% empty %}
             <p>No orders found.</p>
         {% endfor %}
+    </div>
+    <div class="pagination d-flex justify-content-center">
+        <span class="step-links">
+            {% if week_orders.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ week_orders.previous_page_number }}">previous</a>
+            {% endif %}
+    
+            <span class="current">
+                Page {{ week_orders.number }} of {{ week_orders.paginator.num_pages }}.
+            </span>
+    
+            {% if week_orders.has_next %}
+                <a href="?page={{ week_orders.next_page_number }}">next</a>
+                <a href="?page={{ week_orders.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
     </div>
 {% endblock %}
 {% block extra_scripts %}

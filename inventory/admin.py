@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import MaterialToBeMachined, EndMill, ChamferMill, BallMill, FaceMill, ThreadMill
 from .models import RadiusMill, LollipopMill, TSlotMill, CircularSaw, MillingBody
-from .models import Drill, Reamer, SpotDrill, Tap
+from .models import Drill, Reamer, SpotDrill, Tap, CenterDrill
 from .models import GeneralCutter, BoringCutter, GroovingExternalCutter
 from .models import GroovingInternalCutter, SolidGroovingCutter, SolidBoringCutter
 from .models import ThreadExternalCutter, ThreadInternalCutter, SolidThreadCutter
@@ -9,7 +9,7 @@ from .models import MillingInsert, DrillingInsert, TurningInsert, ThreadInsert, 
 from .models import EquipmentMilling, EquipmentTurning, MeasuringEquipment, MillingHolder
 from .models import Collet, Workholding, Shim, Screw, PostMachining
 from .models import Screwdriver, Key, Wrench
-from .models import Order, Comment, ProductToBeAdded
+from .models import Order, WeekOrders, Comment, ProductToBeAdded
 
 # Register your models here.
 
@@ -32,6 +32,7 @@ admin.site.register(MillingBody)
 admin.site.register(Drill)
 admin.site.register(Reamer)
 admin.site.register(SpotDrill)
+admin.site.register(CenterDrill)
 admin.site.register(Tap)
 admin.site.register(GeneralCutter)
 admin.site.register(BoringCutter)
@@ -59,6 +60,14 @@ admin.site.register(PostMachining)
 admin.site.register(Screwdriver)
 admin.site.register(Key)
 admin.site.register(Wrench)
-admin.site.register(Order)
 admin.site.register(Comment)
 admin.site.register(ProductToBeAdded)
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('order_date', 'content_type', 'quantity', 'status')  # Adjust fields as needed
+    search_fields = ['id']  # Define searchable fields
+
+@admin.register(WeekOrders)
+class WeekOrdersAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['orders']

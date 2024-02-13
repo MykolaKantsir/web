@@ -81,6 +81,7 @@ class Manufacturer(models.TextChoices):
     DUEMMEL = 'duemmel'
     PHORN = 'phorn'
     SKENEJARN = 'skene järn'
+    PRECISION_DETALJER = 'precision detaljer'
 
 class ToolType(models.TextChoices):
     END_MILL = 'Mill'

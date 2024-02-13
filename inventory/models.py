@@ -60,12 +60,34 @@ class Order(models.Model):
     quantity = models.PositiveIntegerField(default=defaults.DefaultOrder.QUANTITY)
     status = models.CharField(max_length=50, choices=choices.OrderStatus.choices, default=defaults.DefaultOrder.STATUS)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Call the real save() method
+        WeekOrders.add_order_to_week(self)  # Add this order to the appropriate WeekOrders
+
     def __str__(self):
         return f'Order: {self.quantity}, {self.content_type}, {self.order_date}, {self.status}'
     
     class Meta:
         verbose_name_plural = "Orders"
         ordering = ['-order_date']
+
+# Describes a week orders
+class WeekOrders(models.Model):
+    year = models.IntegerField()
+    week = models.IntegerField()
+    orders = models.ManyToManyField(Order, related_name='week_orders')
+
+    class Meta:
+        unique_together = ('year', 'week')
+
+    def __str__(self):
+        return f"Week {self.week} of {self.year}"
+
+    @classmethod
+    def add_order_to_week(cls, order):
+        year, week, _ = order.order_date.isocalendar()
+        week_orders, created = cls.objects.get_or_create(year=year, week=week)
+        week_orders.orders.add(order)
 
 # Describe a comment for an order
 class Comment(models.Model):

@@ -5,11 +5,12 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.forms import modelform_factory
 from django.template.loader import render_to_string
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import ExtractWeek, ExtractYear
-from django.db.models import Q, Min, Max, ManyToManyField
+from django.db.models import Q, Min, Max, ManyToManyField, Prefetch
 from django.db.models import Case, When, Value, IntegerField
 from django.contrib.contenttypes.models import ContentType
 from .models import *
@@ -44,6 +45,7 @@ class ProductSubclasses:
 
 # Usage in views
 non_abstract_subclasses = ProductSubclasses.get_instance().subclasses
+status_choices = Order._meta.get_field('status').choices
 
 # Create your views here.
 def index(request):
@@ -306,35 +308,30 @@ def create_order(request):
     
 # view for the orders page
 def orders_page(request):
-    # Define custom ordering for statuses
-    status_ordering = Case(
-        When(status=OrderStatus.PENDING, then=Value(1)),
-        When(status=OrderStatus.ORDERED, then=Value(2)),
-        default=Value(3),
-        output_field=IntegerField()
+    # Step 1: Fetch week_orders and apply pagination.
+    week_orders_queryset = WeekOrders.objects.all().order_by('-year', '-week')
+    paginator = Paginator(week_orders_queryset, 4)  # Adjust the number per page as needed.
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Step 2: Prefetch related orders for the paginated WeekOrders instances.
+    # This step is optimized by determining the WeekOrders IDs on the current page and then prefetching only those.
+    week_orders_ids = [week_order.id for week_order in page_obj]
+    prefetched_week_orders = WeekOrders.objects.filter(id__in=week_orders_ids).prefetch_related(
+        Prefetch('orders', queryset=Order.objects.all().order_by('order_date'))
     )
 
-    # Order by custom status ordering and then by order_date
-    orders = Order.objects.annotate(
-        custom_status_order=status_ordering
-    ).annotate(
-        year=ExtractYear('order_date'),
-        week=ExtractWeek('order_date')
-    ).order_by('-year', '-week', '-order_date', 'custom_status_order')
+    # Create a map of week_order id to prefetched week_order for efficient lookup.
+    week_orders_map = {week_order.id: week_order for week_order in prefetched_week_orders}
 
-    # Group orders by year and week
-    orders_grouped = {}
-    for order in orders:
-        year_week = (order.year, order.week)
-        if year_week not in orders_grouped:
-            orders_grouped[year_week] = []
-        orders_grouped[year_week].append(order)
+    # Replace the objects in page_obj with their prefetched counterparts.
+    # This is a bit of a workaround since page_obj.object_list is normally read-only.
+    page_obj.object_list = [week_orders_map[week_order.id] for week_order in page_obj]
 
-    status_choices = Order._meta.get_field('status').choices
     context = {
-        'orders_grouped': orders_grouped,
+        'week_orders': page_obj,
         'status_choices': status_choices
-    }
+        }
     return render(request, 'inventory/orders.html', context)
 
 # view to add a comment to an order

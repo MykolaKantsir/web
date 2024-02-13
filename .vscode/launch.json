@@ -39,7 +39,45 @@
             ],
             "django": true,
             "justMyCode": true,
-            "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
+            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
+        },
+        {
+            "name": "delete_jobs_and_cycles",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "delete_jobs_and_c",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
+        },
+        {
+            "name": "delete_cycles_after_datetime",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "delete_cycles_after_datetime",
+                "202-VF2SS",
+                "2023-01-09 19:50:50",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
+        },
+        {
+            "name": "current_management_command",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "current_management_command",
+            ],
+            "django": true,
+            "justMyCode": true,
+            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
         },
         {
             "name": "Run Current Python Script",

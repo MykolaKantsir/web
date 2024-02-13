@@ -1,0 +1,37 @@
+<div class="card" >
+    <div id="{{machine.name}}" class="card-body" style="background-color:white">
+      <h5 class="card-title">{{machine.name}}</h5>
+      <table class="table table-striped">
+        <tbody>
+          <tr name="status">
+            <th scope="row">Status:</td>
+            <td class='status'>{{machine.status}}</td>
+          </tr>
+          <tr name="this-cycle">
+            <th scope="row">Current cycle:</td>
+            <td class='this_cycle_duration'>{{machine.this_cycle_duration}}</td>
+          </tr>
+          <tr name="remain-time" class="remain-time-row">
+            <th scope="row">Remain time:</td>
+            <td class='remain_time'>{{machine.remain_time}}</td>
+          </tr>
+          <tr name="last-cycle">
+            <th scope="row">Last cycle:</td>
+            <td class='last_cycle_duration'>{{machine.last_cycle_duration}}</td>
+          </tr>
+          <tr name="current-tool">
+            <th scope="row">Current tool:</td>
+            <td class='current_tool'>{{machine.current_tool}}</td>
+          </tr>
+          <tr name="active_nc_program">
+            <th scope="row">Active program:</td>
+            <td class='active_nc_program'>{{machine.active_nc_program}}</td>
+          </tr>
+          <tr name="time-stamp">
+            <th scope="row">Time:</td>
+            <td class='current_machine_time'>{{machine.current_machine_time}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>

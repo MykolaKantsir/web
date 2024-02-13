@@ -43,6 +43,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 INSTALLED_APPS = [
     'inventory',
+    'monitoring',
     'django_extensions',
     'django.contrib.admin',
     'django.contrib.auth',

@@ -1,0 +1,17 @@
+<div class="card" >  
+  <div class="container">
+    <div id="{{machine.name}}_active_job" class="job-body" style="background-color:white">
+      <a name="active_job">Active job: {{machine.active_job.project}}</a></br>
+      <a name="nc_program">NC Program: {{machine.active_job.nc_program}}</a></br>
+      <a name="quantity">Parts: {{machine.active_job.currently_made_quantity}} of {{machine.active_job.required_quantity}}</a></br>
+      <a name="cycle_time">Cycle time: {{machine.active_job.cycle_time}}</a></br>
+      <a name="changing_time">Changing time: {{machine.active_job.part_changing_time}}</a></br>
+      {% if machine.active_job.operation %}
+      <a name="operation">Operation: {{machine.active_job.operation}} of 
+        {{machine.active_job.operations_total}}</a></br>
+      {% endif %}
+      <a name="started">Started: {{machine.active_job.started}}</a></br>
+      <a name="finished">Will end: {{machine.active_job.will_end_at}}</a></br>
+    </div>
+  </div>
+</div>
