@@ -340,6 +340,7 @@ class ManufacturerIdentifier:
                     '11786',
                     '50815',
                     '52346',
+                    '10718'
                     ],
                 },
             'sandvik' : {
@@ -474,6 +475,8 @@ class ManufacturerIdentifier:
             manufacturer = 'hoffmann'
         if re.match(r"^[RLN]\d", barcode):
             manufacturer = 'phorn'
+        if re.match(r"^\d{4}\s\d{1,2}[.,]", barcode):
+            manufacturer = 'guehring'
         # ... Add other heuristics as necessary
             
         if manufacturer:

@@ -9,76 +9,88 @@ Orders
 
 {% block extra_styles %}
     <link rel="stylesheet" href="{% static 'css/order_snippet.css' %}">
+    <style>
+        /* Custom CSS to mimic container-fluid on smaller screens */
+        @media (max-width: 767.98px) { /* Adjust this breakpoint as needed */
+          .container.custom-fluid {
+            width: 100%;
+            max-width: none; /* Removes the max-width on small screens */
+          }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container custom-fluid">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-    <h1>Orders</h1>
-    <!-- Display the status change and sorting panel -->
-    <div class="bulk-status-change d-flex justify-content-between align-items-center">
-        <!-- Group for the dynamic elements -->
-        <div id="dynamicElementsGroup" class="d-flex align-items-center">
-            <select id="bulkStatusSelect" class="form-control mr-2" hidden>
-                {% for status, status_display in status_choices %}
-                    <option value="{{ status }}">{{ status_display }}</option>
-                {% endfor %}
-            </select>
-            <button id="bulkStatusChangeButton" class="btn btn-secondary" hidden>Change status</button>
-            <button id="clearSelectionButton" class="btn btn-secondary" hidden>Clear</button>
-        </div>
-    
-        <!-- Sorting Dropdown Button -->
-        <div class="btn-group btn-sorting">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="sortingButton" data-bs-toggle="dropdown" aria-expanded="false">
-                Sorting
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                <li><a class="dropdown-item" id="sortByStatus" href="#">By Status</a></li>
-                <li><a class="dropdown-item" id="sortByManufacturer" href="#">By Manufacturer</a></li>
-            </ul>
-        </div>
-    </div>
-</br>
-    <!-- Display oders -->
-    <div class="orders-container">
-        {% for week_order in week_orders %}
-            {% with year=year_week.0 week=year_week.1 %}
-                <!-- Display the year and week -->
-                <div class="week-container" id="week-{{ week_order.year }}-{{ week_order.week }}">
-                    <div class="week-header" data-toggle="collapse" data-target="#week-content-{{ week_order.year }}-{{ week_order.week }}">
-                        <h3>Week {{ week_order.week }}/{{ week_order.year }}</h3>
-                    </div>
-                    <div class="week-content collapse {% if forloop.first %}show{% endif %}" id="week-content-{{ week_order.year }}-{{ week_order.week }}">
-                        <!-- Loop through each order for this week -->
-                        {% for order in week_order.orders.all %}
-                            {% include 'inventory/order_snippet.html' with order=order %}
+        <div class="col-12 col-md-10">
+            <h1>Orders</h1>
+            <!-- Display the status change and sorting panel -->
+            <div class="bulk-status-change d-flex justify-content-between align-items-center">
+                <!-- Group for the dynamic elements -->
+                <div id="dynamicElementsGroup" class="d-flex align-items-center">
+                    <select id="bulkStatusSelect" class="form-control mr-2" hidden>
+                        {% for status, status_display in status_choices %}
+                            <option value="{{ status }}">{{ status_display }}</option>
                         {% endfor %}
-                    </div>
+                    </select>
+                    <button id="bulkStatusChangeButton" class="btn btn-secondary" hidden>Change status</button>
+                    <button id="clearSelectionButton" class="btn btn-secondary" hidden>Clear</button>
                 </div>
-            {% endwith %}
-        {% empty %}
-            <p>No orders found.</p>
-        {% endfor %}
+            
+                <!-- Sorting Dropdown Button -->
+                <div class="btn-group btn-sorting">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="sortingButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Sorting
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <li><a class="dropdown-item" id="sortByStatus" href="#">By Status</a></li>
+                        <li><a class="dropdown-item" id="sortByManufacturer" href="#">By Manufacturer</a></li>
+                    </ul>
+                </div>
+            </div>
+            </br>
+            <!-- Display oders -->
+            <div class="orders-container">
+                {% for week_order in week_orders %}
+                    {% with year=year_week.0 week=year_week.1 %}
+                        <!-- Display the year and week -->
+                        <div class="week-container" id="week-{{ week_order.year }}-{{ week_order.week }}">
+                            <div class="week-header" data-toggle="collapse" data-target="#week-content-{{ week_order.year }}-{{ week_order.week }}">
+                                <h3>Week {{ week_order.week }}/{{ week_order.year }}</h3>
+                            </div>
+                            <div class="week-content collapse {% if forloop.first %}show{% endif %}" id="week-content-{{ week_order.year }}-{{ week_order.week }}">
+                                <!-- Loop through each order for this week -->
+                                {% for order in week_order.orders.all %}
+                                    {% include 'inventory/order_snippet.html' with order=order %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endwith %}
+                {% empty %}
+                    <p>No orders found.</p>
+                {% endfor %}
+            </div>
+            <div class="pagination d-flex justify-content-center">
+                <span class="step-links">
+                    {% if week_orders.has_previous %}
+                        <a href="?page=1">&laquo; first</a>
+                        <a href="?page={{ week_orders.previous_page_number }}">previous</a>
+                    {% endif %}
+            
+                    <span class="current">
+                        Page {{ week_orders.number }} of {{ week_orders.paginator.num_pages }}.
+                    </span>
+            
+                    {% if week_orders.has_next %}
+                        <a href="?page={{ week_orders.next_page_number }}">next</a>
+                        <a href="?page={{ week_orders.paginator.num_pages }}">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
     </div>
-    <div class="pagination d-flex justify-content-center">
-        <span class="step-links">
-            {% if week_orders.has_previous %}
-                <a href="?page=1">&laquo; first</a>
-                <a href="?page={{ week_orders.previous_page_number }}">previous</a>
-            {% endif %}
-    
-            <span class="current">
-                Page {{ week_orders.number }} of {{ week_orders.paginator.num_pages }}.
-            </span>
-    
-            {% if week_orders.has_next %}
-                <a href="?page={{ week_orders.next_page_number }}">next</a>
-                <a href="?page={{ week_orders.paginator.num_pages }}">last &raquo;</a>
-            {% endif %}
-        </span>
-    </div>
+</div>
 {% endblock %}
 {% block extra_scripts %}
 <script src="{% static 'js/order_logic.js' %}"></script>

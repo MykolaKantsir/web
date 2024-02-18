@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 import socket
 import pytz
 from statistics import median
@@ -31,9 +31,11 @@ class Job(models.Model):
     setup_total_time = models.DurationField(default=defaults.duration_zero)
     setup_active_time = models.DurationField(default=defaults.duration_zero)
     setup_idle_time = models.DurationField(default=defaults.duration_zero)
+    machining_time = models.DurationField(default=defaults.duration_zero)
     cycle_time = models.DurationField(default=defaults.duration_one_minute)
     parts_per_cycle = models.IntegerField(default=1)
     will_end_at = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    is_finished = models.BooleanField(default=False)
 
     
     class Meta:
@@ -217,11 +219,67 @@ class Job(models.Model):
 
     # Method to do when job is finished
     def finished(self):
-        # get all cycles of the job
-        # calculate the active setup time and the idle setup time
-        # delete all setting cycles
-        # delete all mdi cycles not associated with the job
-        pass
+        cycles = Cycle.objects.filter(job=self)
+        mdi_cycles = Cycle.objects.filter(started__gte=self.started, started__lte=self.ended, job=None)
+        setup_cycles = []
+        warm_up_cycles = []
+        setup_time = defaults.duration_zero
+        idle_time = defaults.duration_zero
+        machining_time = defaults.duration_zero
+        unrelated_machining_time = defaults.duration_zero  # includes warm up cycles
+
+        for cycle in cycles:
+            if cycle.is_setting_cycle and cycle.mode == strings.mode_auto:
+                setup_time += cycle.duration
+                setup_time += cycle.changing_time
+                setup_cycles.append(cycle)
+            elif cycle.is_warm_up:
+                unrelated_machining_time += cycle.duration
+                idle_time += cycle.changing_time
+                warm_up_cycles.append(cycle)
+            elif cycle.is_full_cycle:
+                machining_time += cycle.duration
+                machining_time += cycle.changing_time
+            else:
+                print(f'Not described case: {cycle}')
+                setup_time += cycle.duration
+                setup_time += cycle.changing_time
+                setup_cycles.append(cycle)
+
+        # Optimized deletion of setup cycles
+        setup_cycle_ids = [cycle.id for cycle in setup_cycles]
+        cycles.filter(id__in=setup_cycle_ids).delete()
+
+        warm_up_cycles_ids = [cycle.id for cycle in warm_up_cycles]
+        cycles.filter(id__in=warm_up_cycles_ids).delete()
+
+
+        # Calculate additional times for MDI cycles and delete them efficiently
+        mdi_cycle_ids = [cycle.id for cycle in mdi_cycles if cycle.job is None]
+        for cycle in mdi_cycles.filter(id__in=mdi_cycle_ids):
+            setup_time += cycle.duration
+            setup_time += cycle.changing_time
+        mdi_cycles.filter(id__in=mdi_cycle_ids).delete()
+
+        # Archiving and deleting full cycles
+        full_cycles = cycles.filter(is_full_cycle=True)
+        archived_cycles = []
+        for cycle in full_cycles:
+            archived_cycle = Archived_cycle()  # Create a new instance
+            archived_cycle.copy_from_cycle(cycle)  # Populate and get the instance back
+            archived_cycles.append(archived_cycle)  # Append the populated instance to the list
+        
+        self.full_cycle = None
+
+        with transaction.atomic():
+            Archived_cycle.objects.bulk_create(archived_cycles)
+            full_cycles.delete()
+        
+        self.setup_active_time += setup_time
+        self.setup_idle_time += idle_time
+        self.setup_total_time = self.setup_active_time + self.setup_idle_time
+        self.machining_time = machining_time
+        self.is_finished = True
 
 
 # Machine state, all dynamic data of the machine's state
@@ -479,10 +537,18 @@ class Machine(models.Model):
     
     # Method to handle jobs started by selecting NC program
     def handle_middle_job(self):
-        # Method handles the case where a job is started by selecting an NC program
-        # this method handels both, a job and it's cycles
-        print('Handling middle job is not implemented yet')
-        pass
+        recent_jobs = Job.objects.all().order_by('-started')[:2]
+        middle_job = None
+        for job in recent_jobs:
+            if job.nc_program != self.active_nc_program:
+                middle_job = self.active_job
+                break
+        if middle_job and not middle_job.is_finished:
+            middle_job.ended = self.current_machine_time
+            middle_job.finished()
+            middle_job.save()
+
+
     
     # Method to start new Job
     def start_new_job(self):
@@ -515,6 +581,7 @@ class Machine(models.Model):
     def job_finished(self):
         if self.active_job:
             self.active_job.ended = self.current_machine_time
+            self.active_job.finished()
             self.active_job.save()
             self.active_job = None
 
@@ -756,22 +823,32 @@ class Day_activity_log(models.Model):
 class Cycle(models.Model):
     # change this to on_delete default and write default machine
     machine = models.ForeignKey(Machine, on_delete=models.SET_DEFAULT, default=Machine.get_default_pk)
-    job = models.ForeignKey(Job, on_delete=models.SET_DEFAULT, default=None, blank=True, null=True) 
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_DEFAULT,
+        default=None,
+        blank=True,
+        null=True,
+        db_index=True
+        ) 
     duration = models.DurationField(default=defaults.duration_zero)
     tool_sequence = models.TextField(default=strings.empty_string)
     changing_time = models.DurationField(default=defaults.duration_zero)
-    started = models.DateTimeField(auto_now=False, auto_now_add=False)
-    mode = models.CharField(max_length=25, default=strings.mode_auto)
+    started = models.DateTimeField(auto_now=False, auto_now_add=False, db_index=True, default=defaults.midnight_january_first)
+    mode = models.CharField(max_length=25, default=strings.mode_auto, db_index=True)
     is_still_running = models.BooleanField(default=True)
     is_setting_cycle = models.BooleanField(default=True)
     is_full_cycle = models.BooleanField(default=False)
     # this is warm up boolean attribute, cant name it is_warm_up_cycle because of django migrations
     is_warm_up = models.BooleanField(default=False)
-    ended = models.DateTimeField(auto_now=False, auto_now_add=False, null=True)
+    ended = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, db_index=True, default=None)
     finished_by = models.CharField(max_length=50, default=strings.empty_string)
 
     class Meta:
         ordering = ['-started']
+        indexes = [
+            models.Index(fields=['started', 'ended', 'job', 'mode']),
+        ]
     
     def __str__(self):
         total_seconds = int(self.duration.total_seconds())
@@ -846,7 +923,6 @@ class Cycle(models.Model):
         if self.tool_sequence == strings.empty_string:
             self.tool_sequence = machine.current_tool
         
-
     # Method to write what was the cycle finished by
     def ended_by(self) -> str:
         return_string = f'Finished by unknown reason'
@@ -885,5 +961,37 @@ class Cycle(models.Model):
                     self.save()
                     return True
                     
+class Archived_cycle(models.Model):
+    id = models.AutoField(primary_key=True)
+    machine = models.ForeignKey(Machine, on_delete=models.SET_DEFAULT, default=Machine.get_default_pk)
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_DEFAULT,
+        default=None,
+        blank=True,
+        null=True,
+        db_index=True
+        ) 
+    duration = models.DurationField(default=defaults.duration_zero)
+    tool_sequence = models.TextField(default=strings.empty_string)
+    changing_time = models.DurationField(default=defaults.duration_zero)
+    started = models.DateTimeField(auto_now=False, auto_now_add=False, db_index=True, default=defaults.midnight_january_first)
+    ended = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, db_index=True, default=None)
+    finished_by = models.CharField(max_length=50, default=strings.empty_string)
+
+
+    class Meta:
+        verbose_name = 'Archived Cycle'
+        verbose_name_plural = 'Archived Cycles'
+
+    def copy_from_cycle(self, cycle:Cycle) -> None:
+        self.machine = cycle.machine
+        self.job = cycle.job
+        self.duration = cycle.duration
+        self.tool_sequence = cycle.tool_sequence
+        self.changing_time = cycle.changing_time
+        self.started = cycle.started
+        self.ended = cycle.ended
+        self.finished_by = cycle.finished_by
 
 # Create your models here.

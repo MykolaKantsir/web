@@ -42,18 +42,6 @@
             "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
         },
         {
-            "name": "delete_jobs_and_cycles",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}\\manage.py",
-            "args": [
-                "delete_jobs_and_c",
-            ],
-            "django": true,
-            "justMyCode": true,
-            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
-        },
-        {
             "name": "delete_cycles_after_datetime",
             "type": "python",
             "request": "launch",
