@@ -11,10 +11,10 @@ Orders
     <link rel="stylesheet" href="{% static 'css/order_snippet.css' %}">
     <style>
         /* Custom CSS to mimic container-fluid on smaller screens */
-        @media (max-width: 767.98px) { /* Adjust this breakpoint as needed */
+        @media (max-width: 1200px) { /* Adjust this breakpoint as needed */
           .container.custom-fluid {
             width: 100%;
-            max-width: none; /* Removes the max-width on small screens */
+            max-width: none; /* Ensures container is full width */
           }
         }
     </style>
@@ -23,7 +23,7 @@ Orders
 {% block content %}
 <div class="container custom-fluid">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-10">
+        <div class="col-12 col-xxl-10">
             <h1>Orders</h1>
             <!-- Display the status change and sorting panel -->
             <div class="bulk-status-change d-flex justify-content-between align-items-center">
