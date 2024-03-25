@@ -1,17 +1,18 @@
-<div class="card" >  
-  <div class="container">
-    <div id="{{machine.name}}_active_job" class="job-body" style="background-color:white">
-      <a name="active_job">Active job: {{machine.active_job.project}}</a></br>
-      <a name="nc_program">NC Program: {{machine.active_job.nc_program}}</a></br>
-      <a name="quantity">Parts: {{machine.active_job.currently_made_quantity}} of {{machine.active_job.required_quantity}}</a></br>
-      <a name="cycle_time">Cycle time: {{machine.active_job.cycle_time}}</a></br>
-      <a name="changing_time">Changing time: {{machine.active_job.part_changing_time}}</a></br>
-      {% if machine.active_job.operation %}
-      <a name="operation">Operation: {{machine.active_job.operation}} of 
-        {{machine.active_job.operations_total}}</a></br>
-      {% endif %}
-      <a name="started">Started: {{machine.active_job.started}}</a></br>
-      <a name="finished">Will end: {{machine.active_job.will_end_at}}</a></br>
+<a href="{% url 'job_detail' machine.active_job.id %}" style="text-decoration: none; color: inherit;">
+  <div class="card">  
+    <div class="container">
+      <div id="{{machine.name}}_active_job" class="job-body" style="background-color:white">
+        <div name="active_job">Active job: {{machine.active_job.project}}</div>
+        <div name="nc_program">NC Program: {{machine.active_job.nc_program}}</div>
+        <div name="quantity">Parts: {{machine.active_job.currently_made_quantity}} of {{machine.active_job.required_quantity}}</div>
+        <div name="cycle_time">Cycle time: {{machine.active_job.cycle_time}}</div>
+        <div name="changing_time">Changing time: {{machine.active_job.part_changing_time}}</div>
+        {% if machine.active_job.operation %}
+        <div name="operation">Operation: {{machine.active_job.operation}} of {{machine.active_job.operations_total}}</div>
+        {% endif %}
+        <div name="started">Started: {{machine.active_job.started}}</div>
+        <div name="finished">Will end: {{machine.active_job.will_end_at}}</div>
+      </div>
     </div>
   </div>
-</div>
+</a>

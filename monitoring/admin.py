@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Machine, Job, Cycle, Machine_state, Day_activity_log
+from .models import Machine, Job, Cycle, Machine_state, Day_activity_log, Archived_cycle
 
 # ModelAdmin for Cycle with search_fields defined
 @admin.register(Cycle)
@@ -19,3 +19,4 @@ class JobAdmin(admin.ModelAdmin):
 # Register other models
 admin.site.register(Machine_state)
 admin.site.register(Day_activity_log)
+admin.site.register(Archived_cycle)

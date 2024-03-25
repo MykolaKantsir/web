@@ -1,11 +1,17 @@
-from django.shortcuts import render
-from django.shortcuts import render
-from django.http import HttpRequest, JsonResponse, HttpResponse
-from monitoring.models import Machine, Machine_state, Job
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpRequest, JsonResponse, HttpResponse, HttpResponseRedirect
+from django.views.decorators.http import require_POST
+from django.urls import reverse
+from django.utils.timezone import localtime
+from django.db.models import Min, Max
+from monitoring.models import Machine, Machine_state, Job, Cycle
 from monitoring.utils import is_ajax, machine_current_database_state
 from monitoring.utils import convert_time_django_javascript, convert_to_local_time
+from monitoring.utils import timedelta_to_HHMMSS
 from monitoring.utils import update_machine, update_machine_state
 from monitoring import strings
+from datetime import timedelta
+from collections import defaultdict
 
 # Create your views here.
 def home(request):
@@ -74,6 +80,76 @@ def day_activity(reqeust):
 
 def about(request):
     return HttpResponse('<h1>About</h1>')
+
+def job_detail(request, job_id):
+    # Retrieve the job object by its ID or return a 404 error if not found
+    job = get_object_or_404(Job, id=job_id)
+    
+    # Pass the job object to the context for rendering in the template
+    context = {
+        'job': job,
+    }
+    
+    return render(request, 'monitoring/job_detail.html', context)
+
+def get_job_productivity(request, pk):
+    # Check if it is an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        job = get_object_or_404(Job.objects.prefetch_related('cycle_set'), pk=pk)
+        
+        setup_time = job.setup_total_time
+        changing_parts_time = job.part_changing_time
+        machining_time = job.machining_time
+        setup_time_correction = timedelta()
+
+        cycles_by_day = defaultdict(list)
+
+        # Calculate times based on whether the job is finished
+        if not job.was_job_finished:
+            # Aggregate times from all cycles
+            for cycle in job.cycle_set.all():
+                day = localtime(cycle.started).date()
+                cycles_by_day[day].append(cycle)
+                if cycle.is_full_cycle:
+                    setup_time -= cycle.duration
+                    setup_time -= cycle.changing_time
+                    machining_time += cycle.duration
+                    changing_parts_time += cycle.changing_time
+            for day, cycles in cycles_by_day.items():
+                start_of_day = cycles[0].started
+                end_of_day = cycles[-1].ended
+                
+                setup_time_correction += (end_of_day - start_of_day)
+            setup_time += setup_time_correction
+            
+
+        # Prepare the data dictionary to return as JSON
+        data = {
+            'setup_time': timedelta_to_HHMMSS(setup_time),
+            'changing_parts_time': timedelta_to_HHMMSS(changing_parts_time),
+            'machining_time': timedelta_to_HHMMSS(machining_time),
+        }
+
+        return JsonResponse(data)
+    
+    # If the request is not AJAX, handle it as needed
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@require_POST
+def finish_job(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    if job.is_ready_to_finish:
+        job.finished()  # Call the finished method to mark the job as finished
+        job.save()
+    return HttpResponseRedirect(reverse('job_detail', args=[job_id]))  # Redirect back to the job detail page
+
+@require_POST
+def unarchive_job(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    if job.was_job_finished:
+        job.unarchive()  # Call the unarchive method
+        job.save()
+    return HttpResponseRedirect(reverse('job_detail', args=[job_id]))  # Redirect back to the job detail page
 
 # function to ge the job data for a machine
 def get_machine_job_data(machine):

@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Title{% endblock %}</title>
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Additional CSS files can be included here -->
+  {% block additional_css %}{% endblock %}
+</head>
+<body>
+  <header>
+    <!-- Navbar or Header content goes here -->
+    {% block header %}{% endblock %}
+  </header>
+
+  <main>
+    <!-- Main content that could be overridden in extended templates -->
+    {% block content %}
+    <!-- Default content goes here -->
+    {% endblock %}
+  </main>
+
+  <footer>
+    <!-- Footer content goes here -->
+    {% block footer %}{% endblock %}
+  </footer>
+
+  <!-- jQuery library -->
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+
+  <!-- Latest compiled Bootstrap JavaScript -->
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+  <!-- Additional Scripts can be included here -->
+  {% block additional_scripts %}{% endblock %}
+</body>
+</html>

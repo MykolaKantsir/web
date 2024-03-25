@@ -1,0 +1,100 @@
+{% extends "monitoring/index.html" %}
+{% load static%}
+
+{% block title %}Job Details{% endblock %}
+
+{% block additional_css %}
+<!-- If there are any additional CSS files specific to job_detail, link them here -->
+<link href="{% static 'css/jobProductivity.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">  
+  <div class="row mb-4">
+    <!-- Productivity Block -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">Productivity</h5>
+          {% include 'monitoring/job_productivity.html' with job=job %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Details Block -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ job.project }}</h5>
+          <p class="card-text"><strong>Machine:</strong> {{ job.machine }} | <strong>NC program:</strong> {{ job.nc_program }}</p>
+          <p class="card-text"><strong>Operation:</strong> {{ job.operation }} | <strong>Operations total:</strong> {{ job.operations_total }}</p>
+          <p class="card-text">
+            <strong>Currently made:</strong> {{ job.currently_made_quantity }}
+            <strong>of</strong> {{ job.required_quantity }}
+            {% if job.parts_per_cycle > 1 %}
+            | <strong>Parts per cycle:</strong> {{ job.parts_per_cycle }}
+            {% endif %}
+          </p>
+          <p class="card-text"><strong>Started:</strong> {{ job.started|date:"Y-m-d H:i" }} | <strong>Ended:</strong> {{ job.ended|date:"Y-m-d H:i" }}</p>
+          <p class="card-text"><strong>Full cycle:</strong> {{ job.full_cycle|default:"None" }}</p>
+          
+          <h6 class="mt-3">Cycle details:</h6>
+          <p class="card-text"><strong>Cycle time:</strong> {{ job.cycle_time }}</p>
+          <p class="card-text"><strong>Part Changing time:</strong> {{ job.part_changing_time }}</p>
+
+          <h6>Setup details:</h6>
+          <p class="card-text"><strong>Setup total time:</strong> {{ job.setup_total_time }}</p>
+          <p class="card-text">
+            <strong>Setup active time:</strong> {{ job.setup_active_time }} | 
+            <strong>Setup idle time:</strong> {{ job.setup_idle_time }}
+          </p>
+          <p class="card-text"><strong>Machining time:</strong> {{ job.machining_time }}</p>
+
+          <p class="card-text">
+            {% if job.was_job_finished %}
+            <strong>Job status:</strong> Finished
+            {% else %}
+            <strong>Will end at:</strong> {{ job.will_end_at|date:"Y-m-d H:i" }}
+            {% endif %}
+          </p>
+
+          <!-- Conditionally display the Finish Job button -->
+          {% if job.is_ready_to_finish %}
+          <form action="{% url 'finish_job' job.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Finish Job</button>
+          </form>
+          {% endif %}
+          <!-- Conditionally display the Unarchive button -->
+          {% if job.was_job_finished %}
+          <form action="{% url 'unarchive_job' job.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-info">Unarchive</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cycle Timeline Block -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Cycle Timeline</h5>
+          <!-- Cycle timeline content will be loaded here by JavaScript -->
+          <div id="cycle-timeline-block" style="height: 200px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<!-- If there are any additional JavaScript files specific to job_detail, include them here -->
+<script src="{% static 'js/chart.js' %}"></script>
+<script src="{% static 'js/jobProductivity.js' %}"></script>
+{% endblock %}

@@ -13,6 +13,7 @@ january_the_first = date(2022,1,1)
 # active program default
 nc_program_default = 'default.NC'
 
+
 # state default
 state_default = {
         'status': 'STOPPED',

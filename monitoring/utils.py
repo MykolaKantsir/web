@@ -263,7 +263,6 @@ def list_to_text(this_list : list) -> str:
 def text_to_list(this_text : str) -> list:
     return this_text.split(',')
 
-
 # function to serialize timedelta
 def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
@@ -278,6 +277,30 @@ def json_serial(obj):
 def is_ajax(request):
   return request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
+# function to clean the nc program name
+def clean_nc_program_name(name: str) -> str:
+    """Removes specified symbols only from the beginning 
+    and the end of the nc program name, while ignoring the '.NC' extension."""
+    # Symbols to remove
+    symbols_to_remove = '*-'
+    extention = '.NC'
+    name_capital = name.upper()
+    
+    # Check if '.nc' is present at the end
+    is_nc_present = name_capital.endswith(extention)
+    
+    # If '.nc' is present, remove it before cleaning
+    if is_nc_present:
+        name = name_capital[:-3]  # Remove the last 3 characters, which are '.nc'
+    
+    # Strip symbols from both ends
+    new_name = name.strip(symbols_to_remove)
+    
+    # Add '.nc' back if it was originally there
+    if is_nc_present:
+        new_name += extention
+    
+    return new_name
 # function to get machine state from database
 # machine - Machine object, not specified because of circular import
 def machine_current_database_state(machine) -> dict:
@@ -309,7 +332,6 @@ def machine_current_database_state(machine) -> dict:
     }
     return cur_state
 
-
 # function to format time from ISO 8601 (P0DT00H00M00.000S) to hh:mm:ss.sss
 def convert_time_django_javascript(state : dict) -> dict:
     for key in state:
@@ -337,7 +359,6 @@ def convert_to_local_time(utc_dt):
     else:
         return utc_dt
 
-
 # function to convert time recieved in machine response format to (MM:SS)
 def convert_time(time: str) -> str:
     # convert time and remove timezone
@@ -361,7 +382,6 @@ def timedelta_from_string(string_duration : str) -> timedelta:
 
     return duration
 
-
 # function to normalize tool sequence
 def normalize_tool_sequence(sequence_str, double_tool=False):
     if sequence_str == '':
@@ -375,6 +395,16 @@ def normalize_tool_sequence(sequence_str, double_tool=False):
         # Each tool is a regular one or two-digit code, remove leading zeros
         normalized_tools = [str(int(tool)) for tool in tools]
     return ','.join(normalized_tools)
+
+# functon to present timedelta in HH:MM:SS format
+def timedelta_to_HHMMSS(timedelta: timedelta) -> str:
+    # Extract the hours, minutes, and seconds from the timedelta object
+    hours = timedelta.seconds // 3600
+    minutes = (timedelta.seconds % 3600) // 60
+    seconds = timedelta.seconds % 60
+    # Format the time as a string in HH:MM:SS format
+    formatted_time = f'{hours:02}:{minutes:02}:{seconds:02}'
+    return formatted_time
 
 # function to update one machine
 # machine - Machine object, not specified because of circular import

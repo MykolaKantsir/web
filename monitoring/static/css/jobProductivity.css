@@ -1,0 +1,38 @@
+#productivityPieChart {
+    width: 100%;
+    max-width: 400px; /* Adjust the size as needed */
+    height: 400px; /* Adjust the size as needed */
+    margin: auto;
+}
+
+/* This container will hold the color-info and center it */
+.centering-container {
+    display: flex;
+    justify-content: center; /* Centers content horizontally */
+    align-items: center; /* Centers content vertically */
+    height: 100px; /* Adjust the height as needed */
+    width: 100%; /* Take the full width */
+}
+
+.color-info {
+    display: flex;
+    justify-content: center; /* Centers content horizontally */
+    align-items: center; /* Centers content vertically */
+    flex-direction: row; /* Lays out children horizontally */
+    flex-wrap: wrap; /* Allows items to wrap if needed */
+    /* No need for a margin-top here as centering-container handles the spacing */
+}
+
+.color-info .color-legend {
+    display: flex;
+    align-items: center; /* Align items vertically in the center */
+    margin: 5px 10px; /* Adjust as necessary */
+    font-size: 0.9em; /* Adjust as necessary */
+}
+
+.color-info .color-box {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    border: 1px solid #000; /* or 'none' if you don't want borders */
+}

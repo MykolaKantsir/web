@@ -1,0 +1,9 @@
+<!-- This div will be filled with productivity data by the JavaScript file -->
+<div id="job-productivity" data-job-id="{{ job.pk }}" data-productivity-url="{% url 'get_job_productivity' pk=job.pk %}">
+    <!-- Productivity data will be displayed here after being fetched by JavaScript -->
+    <!-- Pie Chart Canvas -->
+    <canvas id="productivityPieChart"></canvas>
+    <div class="centering-container">
+        <div id="color-info" class="color-info"></div>
+    </div>
+</div>

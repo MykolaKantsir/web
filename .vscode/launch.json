@@ -49,7 +49,7 @@
             "args": [
                 "delete_cycles_after_datetime",
                 "202-VF2SS",
-                "2023-01-09 19:50:50",
+                "2023-01-17 21:50:50",
             ],
             "django": true,
             "justMyCode": true,

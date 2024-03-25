@@ -10,7 +10,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from datetime import datetime, timedelta, date
-from monitoring.utils import when_work_will_end, normalize_tool_sequence, timedelta_from_string, round_to_seconds
+from monitoring.utils import when_work_will_end, timedelta_from_string, round_to_seconds
+from monitoring.utils import clean_nc_program_name, normalize_tool_sequence
 from monitoring import strings, defaults, testing_variables_defaut
 
 # Model of a job
@@ -19,9 +20,23 @@ class Job(models.Model):
     # and how many parts should be produced
     # job might contain one or several operations
     project = models.CharField(max_length=25, default=defaults.job_project_default)
-    nc_program = models.CharField(max_length=25, default=defaults.job_nc_program_defautl)
+    machine = models.ForeignKey(
+        'monitoring.Machine',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='machine_jobs'
+        )
+    nc_program = models.CharField(
+        max_length=25,
+        default=defaults.job_nc_program_defautl)
     currently_made_quantity = models.IntegerField(default=0)
-    full_cycle = models.ForeignKey('monitoring.Cycle', on_delete=models.SET_DEFAULT, related_name='full_cycle', default=None, blank=True, null=True)
+    full_cycle = models.ForeignKey(
+        'monitoring.Cycle', on_delete=models.SET_NULL,
+        related_name='full_cycle',
+        blank=True,
+        null=True
+        )
     required_quantity = models.IntegerField(default=0)
     operation =  models.IntegerField(null=True, blank=True)
     operations_total =  models.IntegerField(null=True, blank=True)
@@ -35,7 +50,8 @@ class Job(models.Model):
     cycle_time = models.DurationField(default=defaults.duration_one_minute)
     parts_per_cycle = models.IntegerField(default=1)
     will_end_at = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
-    is_finished = models.BooleanField(default=False)
+    is_ready_to_finish = models.BooleanField(default=False, blank=False)
+    was_job_finished = models.BooleanField(default=False, blank=False)
 
     
     class Meta:
@@ -63,8 +79,9 @@ class Job(models.Model):
             return_string = f'{shown_name}: {self.required_quantity} pc | started: {time}'
         return return_string
 
-    def get_ended(self):
-        all_cycles = Cycle.objects.all().filter(job=self)
+    def get_ended(self, all_cycles=None):
+        if all_cycles is None:
+            all_cycles = Cycle.objects.all().filter(job=self)
         median_cycle_time = round_to_seconds(self.cycle_time)
         median_changing_time = round_to_seconds(self.part_changing_time)
         self.cycle_time = median_cycle_time
@@ -84,8 +101,9 @@ class Job(models.Model):
     def get_cycle_time(self, all_cycles=None) -> timedelta:
         if all_cycles is None:
             all_cycles = Cycle.objects.all().filter(job=self)
-        if len(all_cycles) > 0:
-            cycle_time = median(map(lambda o: o.duration, all_cycles))
+        all_full_cycles = [cycle for cycle in all_cycles if cycle.is_full_cycle]
+        if len(all_full_cycles) > 0:
+            cycle_time = median(map(lambda o: o.duration, all_full_cycles))
         else:
             cycle_time = timedelta(0)
         return round_to_seconds(cycle_time)
@@ -93,8 +111,9 @@ class Job(models.Model):
     def get_changing_time(self, all_cycles=None) -> timedelta:
         if all_cycles is None:
             all_cycles = Cycle.objects.all().filter(job=self)
-        if len(all_cycles) > 0:
-            changing_time = median(map(lambda o: o.changing_time, all_cycles))
+        all_full_cycles = [cycle for cycle in all_cycles if cycle.is_full_cycle]
+        if len(all_full_cycles) > 0:
+            changing_time = median(map(lambda o: o.changing_time, all_full_cycles))
         else:
             changing_time = defaults.duration_zero
         # check if changing time is not too large
@@ -107,11 +126,15 @@ class Job(models.Model):
         self.currently_made_quantity += self.parts_per_cycle
 
     # Method to find and set full cycle
-    def find_full_cycle(self, double_tool=False):
-        # Get all cycles associated with the job
-        all_job_cycles = Cycle.objects.filter(job=self).order_by('started')
+    def find_full_cycle(self, all_cycles=None, double_tool=False, machine_current_cycle=None):
+        if all_cycles is None:
+            all_job_cycles = Cycle.objects.filter(job=self).order_by('started')
+        else:
+            # Get all cycles associated with the job
+            all_job_cycles = all_cycles.order_by('started')
 
         previous_full_cycle = self.full_cycle
+        previous_full_cycle_sequence = tuple(map(int, previous_full_cycle.tool_sequence.split(','))) if previous_full_cycle else None
 
         # Check if there are three or fewer cycles, if so return None
         if len(all_job_cycles) <= 3:
@@ -133,29 +156,65 @@ class Job(models.Model):
         for cycle in all_job_cycles:
             if cycle.tool_sequence == '' or cycle.tool_sequence is None:
                 continue
-            if tuple(map(int, cycle.tool_sequence.split(','))) == most_common_sequence:
+            current_sequence = tuple(map(int, cycle.tool_sequence.split(',')))
+            if current_sequence == most_common_sequence:
+                if previous_full_cycle_sequence and current_sequence == previous_full_cycle_sequence:
+                    return previous_full_cycle
                 # set cycle as full cycle
                 self.full_cycle = cycle
-                # check job's made quantity for first full cycle, compensate for first three cycles
-                if self.currently_made_quantity == 0:
-                    compensation = sequence_counts[most_common_sequence]
-                    self.currently_made_quantity = self.parts_per_cycle * compensation
-                    # write full_cycle = True and is_setting_cycle = False to all previous full cycles
-                    most_common_sequence_str = ','.join(map(str, most_common_sequence))
-                    # Normalize the most common sequence for comparison
-                    normalized_most_common = normalize_tool_sequence(most_common_sequence_str, double_tool)
-                    all_previous_full_cycles = [cycle for cycle in all_job_cycles if normalize_tool_sequence(cycle.tool_sequence, double_tool) == normalized_most_common]
-                    for cycle in all_previous_full_cycles:
-                        cycle.is_full_cycle = True
-                        cycle.is_setting_cycle = False
-                        cycle.save()
+                # write full_cycle = True and is_setting_cycle = False to all previous full cycles
+                most_common_sequence_str = ','.join(map(str, most_common_sequence))
+                # Normalize the most common sequence for comparison
+                normalized_most_common = normalize_tool_sequence(most_common_sequence_str, double_tool)
+                all_current_full_cycles = [cycle for cycle in all_job_cycles if normalize_tool_sequence(cycle.tool_sequence, double_tool) == normalized_most_common]
+                all_previous_full_cycles = [cycle for cycle in all_job_cycles if cycle.is_full_cycle]
                 # check if the full cycle has changed and adjust quantities accordingly
+                is_full_cycle_changed = False
                 if previous_full_cycle and cycle:
                     if previous_full_cycle != cycle:
-                        self.compare_full_cycle(previous_full_cycle)
+                        is_full_cycle_changed = self.compare_full_cycle(previous_full_cycle)
+                cycles_to_save = list()
+                # Case where the full cycle was found first time (parts = 0)
+                if self.currently_made_quantity == 0:
+                    # check job's made quantity for first full cycle, compensate for first three cycles
+                    cycles_to_add = sequence_counts[most_common_sequence]
+                    self.currently_made_quantity += self.parts_per_cycle * cycles_to_add
+                    # apply full cycle to all new full cycles
+                    for cycle in all_current_full_cycles:
+                        cycle.is_full_cycle = True
+                        cycle.is_setting_cycle = False
+                        cycles_to_save.append(cycle)
+                # Case where the full cycle was changed
+                if is_full_cycle_changed:
+                    cycles_to_add = int()
+                    cycles_to_remove = int()
+                    # apply full cycle to all new full cycles
+                    for cycle in all_current_full_cycles:
+                        cycle.is_full_cycle = True
+                        cycle.is_setting_cycle = False
+                        cycles_to_add += 1
+                        cycles_to_save.append(cycle)
+                    # remove full cycle from all previous full cycles
+                    for cycle in all_previous_full_cycles:
+                        cycle.is_full_cycle = False
+                        cycle.is_setting_cycle = True
+                        cycles_to_remove += 1
+                        cycles_to_save.append(cycle)
+                    # compensate for difference in quantity
+                    quantity_difference = self.parts_per_cycle * (cycles_to_add - cycles_to_remove)
+                    self.currently_made_quantity += quantity_difference
+                    if self.currently_made_quantity < 0:
+                        self.currently_made_quantity = 0
+                if cycles_to_save:
+                    if machine_current_cycle:
+                        for cycle in cycles_to_save:
+                            if cycle == machine_current_cycle:
+                                machine_current_cycle.is_full_cycle = cycle.is_full_cycle
+                                machine_current_cycle.is_setting_cycle = cycle.is_setting_cycle
+                                break
+                    with transaction.atomic():
+                        Cycle.objects.bulk_update(cycles_to_save, ['is_full_cycle', 'is_setting_cycle'])
                 return cycle
-            
-
         return None  # Return None if no cycle meets the criteria
     
     # Method to compare and adjust quantities if full cycle has changed
@@ -163,17 +222,7 @@ class Job(models.Model):
         is_tool_sequence_changed = False
         if previous_full_cycle.tool_sequence != self.full_cycle.tool_sequence:
             is_tool_sequence_changed = True
-        if is_tool_sequence_changed:
-            all_previous_full_cycles = Cycle.objects.filter(job=self, tool_sequence=previous_full_cycle.tool_sequence)
-            # remove full_cycle = True from all previous full cycles
-            for cycle in all_previous_full_cycles:
-                cycle.is_full_cycle = False
-                cycle.is_setting_cycle = True
-                cycle.save()
-            quantity_difference = self.parts_per_cycle * len(all_previous_full_cycles)
-            self.currently_made_quantity -= quantity_difference
-            if self.currently_made_quantity < 0:
-                self.currently_made_quantity = 0
+        return is_tool_sequence_changed
     
     # Method to compare cycle to full cycle
     # set is_full_cycle to True and is_setting_cycle to False if cycle is full cycle
@@ -191,6 +240,8 @@ class Job(models.Model):
     def check_for_broken_cycle(self, cycle):
         if self.full_cycle is None:
             return False
+        if cycle.mode == strings.mode_mdi:
+            return False
         if cycle.is_warm_up:
             return False
         full_cycle_sequence = normalize_tool_sequence(self.full_cycle.tool_sequence)
@@ -204,42 +255,171 @@ class Job(models.Model):
         if previous_sequence == full_cycle_sequence:
             return False
         resulte_sequence = previous_sequence + ',' + current_sequence 
+
+        def remove_duplicates(resulte_sequence):
+            resulte_sequence = resulte_sequence.split(',')
+            result = resulte_sequence[0] if resulte_sequence else ''
+
+            # Iterate over the sequence starting from the second element
+            for tool in resulte_sequence[1:]:
+                # If the current element is not the same as the last character in result, append it
+                if tool != result[-1]:
+                    result += ','
+                    result += tool
+            return result
+
+        resulte_sequence = remove_duplicates(resulte_sequence)
+
+        # Previous sequence has to start with the same tool as full cycle sequence
+        if previous_sequence[0] != full_cycle_sequence[0]:
+            return False
+
+        # If the combined sequence is equal to the full cycle sequence
+        # set the cycle as full cycle
         if resulte_sequence == full_cycle_sequence:
             cycle.is_setting_cycle = False
-            last_cycle.is_setting_cycle = False
-            cycle.save()
-            last_cycle.save()
+            cycle.is_full_cycle = True
+            cycle.merge_with(last_cycle)
+            with transaction.atomic():
+                cycle.save()
+                last_cycle.delete()
             return True
+        
+        # If teh combined sequence is a part of the full cycle sequence
+        # merge the cycles but do not set the cycle as full cycle
+        def check_start_and_order(full_sequence, check_sequence):
+            # Initialize a pointer for the position in check_sequence
+            check_sequence_pos = 0
+            full_sequence = full_sequence.split(',')
+            check_sequence = check_sequence.split(',')
+            
+            # Iterate through each tool in the full_sequence
+            for tool in full_sequence:
+                # Check if the current tool matches the character at check_sequence_pos
+                if tool == check_sequence[check_sequence_pos]:
+                    # Move to the next tool in check_sequence
+                    check_sequence_pos += 1
+                    
+                    # If we have matched all tool in check_sequence, return True
+                    if check_sequence_pos == len(check_sequence):
+                        return True
+                else:
+                    # If the first tool of check_sequence doesn't match, return False
+                    if check_sequence_pos == 0:
+                        return False
+                    else:
+                        # If any subsequent tool doesn't match, stop the process
+                        break
+                        
+            # Return False if not all tool in check_sequence were matched
+            return False
+        
+        if check_start_and_order(full_cycle_sequence, resulte_sequence):
+            cycle.merge_with(last_cycle)
+            with transaction.atomic():
+                cycle.save()
+                last_cycle.delete()
+            return False
 
-    # Method to check if job is finished
+    # Method to find broken cycles and merge them
+    def merge_broken_cycles(self, broken_cycles) -> None:
+        full_cycle_sequence_str = normalize_tool_sequence(self.full_cycle.tool_sequence)
+        full_cycle_sequence = full_cycle_sequence_str.split(',')
+
+        # Normalize each cycle's sequence for comparison
+        normalized_cycles = [(cycle, normalize_tool_sequence(cycle.tool_sequence).split(',')) for cycle in broken_cycles]
+
+        # Function to find merge partners based on sequence
+        def find_merge_partners(sequence, remaining_sequences):
+            for other_sequence in remaining_sequences:
+                combined_sequence = sorted(set(sequence + other_sequence), key=lambda x: full_cycle_sequence.index(x))
+                if set(combined_sequence) == set(full_cycle_sequence):
+                    return other_sequence
+            return None
+
+        # Initial filtering for already full cycles
+        for cycle, sequence in list(normalized_cycles):
+            if set(sequence) == set(full_cycle_sequence):
+                cycle.is_full_cycle = True
+                cycle.is_setting_cycle = False
+                #cycle.save()
+                normalized_cycles.remove((cycle, sequence))
+
+        # Attempt to merge cycles
+        while normalized_cycles:
+            base_cycle, base_sequence = normalized_cycles.pop(0)
+            merge_candidates = [base_cycle]
+
+            remaining_sequences = [seq for _, seq in normalized_cycles]
+            merge_partner_sequence = find_merge_partners(base_sequence, remaining_sequences)
+
+            while merge_partner_sequence:
+                # Find and prepare the partner cycle for merging
+                partner_index = remaining_sequences.index(merge_partner_sequence)
+                partner_cycle = normalized_cycles.pop(partner_index)[0]
+
+                # Merge base_cycle with partner_cycle
+                #base_cycle.merge_with(partner_cycle)
+                print(f'Merging {base_cycle} with {partner_cycle}')
+                res = base_sequence + merge_partner_sequence
+                print(f'Sequence: {res}')
+                print(f'Sequence: {full_cycle_sequence}')
+                merge_candidates.append(partner_cycle)
+
+                # Update sequences for next iteration, if any
+                base_sequence = sorted(set(base_sequence + merge_partner_sequence), key=lambda x: full_cycle_sequence.index(x))
+                remaining_sequences.pop(partner_index)  # Remove the merged sequence
+                merge_partner_sequence = find_merge_partners(base_sequence, remaining_sequences)
+
+            # After merging, mark the resulting cycle accordingly
+            if set(base_sequence) == set(full_cycle_sequence):
+                base_cycle.is_full_cycle = True
+                base_cycle.is_setting_cycle = False
+                #base_cycle.save()
+
+            # If base_sequence isn't a full cycle, consider additional logic here
+
+        # If there are cycles left in normalized_cycles, they did not form a full cycle
+        # Additional handling for these cycles can be implemented here
+
+    # Method to check if job was finished
     def is_finished(self):
         if self.currently_made_quantity >= self.required_quantity and self.required_quantity !=0:
             return True
         return False
+    
+    # Method to prepare for manual finish
+    def prepare_for_finish(self):
+        self.is_ready_to_finish = True
 
     # Method to do when job is finished
     def finished(self):
         cycles = Cycle.objects.filter(job=self)
-        mdi_cycles = Cycle.objects.filter(started__gte=self.started, started__lte=self.ended, job=None)
+        machine = self.machine
+        if machine:
+            machine = Machine.objects.get(pk=machine.pk)
+            mdi_cycles = Cycle.objects.filter(job=None, machine=machine)
+        else:
+            mdi_cycles = Cycle.objects.filter(job=None)
         setup_cycles = []
         warm_up_cycles = []
+        last_auto_cycle = cycles.order_by('ended').last()
         setup_time = defaults.duration_zero
         idle_time = defaults.duration_zero
         machining_time = defaults.duration_zero
-        unrelated_machining_time = defaults.duration_zero  # includes warm up cycles
 
         for cycle in cycles:
             if cycle.is_setting_cycle and cycle.mode == strings.mode_auto:
                 setup_time += cycle.duration
-                setup_time += cycle.changing_time
+                idle_time += cycle.changing_time
                 setup_cycles.append(cycle)
             elif cycle.is_warm_up:
-                unrelated_machining_time += cycle.duration
+                setup_time += cycle.duration
                 idle_time += cycle.changing_time
                 warm_up_cycles.append(cycle)
             elif cycle.is_full_cycle:
                 machining_time += cycle.duration
-                machining_time += cycle.changing_time
+                idle_time += cycle.changing_time
             else:
                 print(f'Not described case: {cycle}')
                 setup_time += cycle.duration
@@ -255,10 +435,18 @@ class Job(models.Model):
 
 
         # Calculate additional times for MDI cycles and delete them efficiently
-        mdi_cycle_ids = [cycle.id for cycle in mdi_cycles if cycle.job is None]
+        # All mde cycles started after the last auto cycle ended 
+        # are considered unrelated and will be included in the next job
+        if mdi_cycles and not last_auto_cycle:
+            last_auto_cycle = mdi_cycles.order_by('ended').last()
+        mdi_cycle_ids = [cycle.id for cycle in mdi_cycles if cycle.started < last_auto_cycle.ended]
         for cycle in mdi_cycles.filter(id__in=mdi_cycle_ids):
-            setup_time += cycle.duration
-            setup_time += cycle.changing_time
+            if cycle.is_warm_up:
+                setup_time += cycle.duration
+                idle_time += cycle.changing_time
+            else:
+                setup_time += cycle.duration
+                idle_time += cycle.changing_time
         mdi_cycles.filter(id__in=mdi_cycle_ids).delete()
 
         # Archiving and deleting full cycles
@@ -279,7 +467,39 @@ class Job(models.Model):
         self.setup_idle_time += idle_time
         self.setup_total_time = self.setup_active_time + self.setup_idle_time
         self.machining_time = machining_time
-        self.is_finished = True
+        print(f'Finished job: {self}')
+        self.was_job_finished = True
+        self.is_ready_to_finish = False
+
+    # Method to unarchive the job
+    def unarchive(self):
+        archived_cycles = Archived_cycle.objects.filter(job=self, started__gte=self.started, ended__lte=self.ended)
+        cycles = []
+        machine = archived_cycles[0].machine if archived_cycles else None
+        for archived_cycle in archived_cycles:
+            cycle = Cycle()  # Create a new instance
+            cycle.copy_from_archived(self, machine, archived_cycle)  # Populate and get the instance back
+            cycles.append(cycle)  # Append the populated instance to the list
+        
+        with transaction.atomic():
+            Cycle.objects.bulk_create(cycles)
+            archived_cycles.delete()
+        
+        # Assigt the first cycle as full cycle
+        if cycles:
+            self.full_cycle = cycles[0]
+
+        # Compensate for the cycle that was unarchived
+        if self.setup_idle_time > self.part_changing_time:
+            self.setup_idle_time -= self.part_changing_time
+        if self.setup_active_time > self.part_changing_time:
+            self.setup_active_time -= self.part_changing_time
+        if self.machining_time > self.cycle_time:
+            self.machining_time -= self.cycle_time
+        self.setup_total_time = self.setup_active_time + self.setup_idle_time
+        
+        self.was_job_finished = False
+        print(f'Unarchived job: {self}')
 
 
 # Machine state, all dynamic data of the machine's state
@@ -317,7 +537,7 @@ class Machine_state(models.Model):
             'current_tool': None,
             'current_M_code': None,
             'mode': None,
-            'active_nc_program': None,
+            'active_nc_program': clean_nc_program_name,
             'current_machine_time': parse_datetime,
             # in csv's the keys are written "this_cycle" and "last_cycle"
             # but in the state model they are written "this_cycle_duration" and "last_cycle_duration"
@@ -355,7 +575,14 @@ class Machine_state(models.Model):
 class Machine(models.Model):
     name = models.CharField(max_length=50)
     ip_address = models.GenericIPAddressField(default=defaults.default_IP)    
-    active_job = models.ForeignKey(Job, on_delete=models.SET_DEFAULT, default=None, blank=True, null=True)
+    active_job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_DEFAULT,
+        default=None,
+        blank=True,
+        null=True,
+        related_name='active_machine'
+        )
     active_cycle = models.ForeignKey('monitoring.Cycle', on_delete=models.SET_DEFAULT, related_name='active_cycle', default=None, blank=True, null=True)
     previous_cycle = models.ForeignKey('monitoring.Cycle', on_delete=models.SET_DEFAULT, related_name='previous_cycle', default=None, blank=True, null=True)
     status = models.CharField(max_length=20, default=strings.machine_stopped)
@@ -475,7 +702,6 @@ class Machine(models.Model):
             day_activity_log.ends = self.current_machine_time
             day_activity_log.save()
 
-
     # Method to check if status has changed from 'STOPPED' to 'ACTIVE'
     def is_changed_stop_active(self) -> bool:
         last = self.last_state
@@ -510,19 +736,16 @@ class Machine(models.Model):
 
     # Method to check if nc program has changed
     def is_changed_nc_program(self) -> bool:
+        current_capital = self.current_state.active_nc_program.upper()
         if self.last_state.active_nc_program != self.current_state.active_nc_program:
+            do_ignore = current_capital in strings.subprograms_to_ignore or self.last_state.active_nc_program in strings.subprograms_to_ignore
+            if do_ignore:
+                print(self.last_state.active_nc_program, ' and ',self.current_state.active_nc_program)
+                return False
             print(self.last_state.active_nc_program, ' and ',self.current_state.active_nc_program)
             return True
         return False
-        
-    # Method to check if machine started new Job
-    def is_started_new_job(self):
-        last = self.last_state
-        current = self.current_state
-        # Check if the name of .NC program has changed
-        if current.active_nc_program != last.active_nc_program:
-            return True
-        
+
     # Method to check if the previous job was reselcted
     def is_previous_job(self):
         recent_jobs = Job.objects.all().order_by('-started')[:2] 
@@ -543,29 +766,34 @@ class Machine(models.Model):
             if job.nc_program != self.active_nc_program:
                 middle_job = self.active_job
                 break
-        if middle_job and not middle_job.is_finished:
-            middle_job.ended = self.current_machine_time
-            middle_job.finished()
-            middle_job.save()
-
-
+        if middle_job and not middle_job.was_job_finished:
+            if middle_job is not self.active_job:
+                middle_job.ended = self.current_machine_time
+                middle_job.prepare_for_finish()
+                middle_job.save()
+                print(f"Finished middle job: {middle_job.nc_program}")
     
     # Method to start new Job
     def start_new_job(self):
         # finish active if exists
         if self.active_job is not None:
-            self.job_finished()
+            self.set_ready_to_finish()
 
         # Check if the machine should continue a previous job
         has_previous_job, previous_job = self.is_previous_job()
         if has_previous_job:
-            # If there's a previous job, resume it
+            # Unarchive the previous job if it was finished
+            if previous_job.was_job_finished:
+                previous_job.unarchive()
+                previous_job.save()
+            # Resume the previous job
             self.active_job = previous_job
             self.handle_middle_job()
             print(f"Resuming previous job: {previous_job.nc_program}")
         else:
             # start new job 
             job = Job()
+            job.machine = self
             job.started = self.current_machine_time
             job.nc_program = self.active_nc_program
             self.active_job = job
@@ -578,10 +806,10 @@ class Machine(models.Model):
         return self.active_job.is_finished()
 
     # Method to do if the job is finished
-    def job_finished(self):
+    def set_ready_to_finish(self):
         if self.active_job:
             self.active_job.ended = self.current_machine_time
-            self.active_job.finished()
+            self.active_job.prepare_for_finish()
             self.active_job.save()
             self.active_job = None
 
@@ -595,7 +823,7 @@ class Machine(models.Model):
             if self.active_cycle is not None:
                 self.active_cycle.hard_finish()
                 self.active_cycle = None
-            self.job_finished()
+            self.set_ready_to_finish()
 
  
         # check if machine has an active cycle
@@ -668,16 +896,22 @@ class Machine(models.Model):
                 elif self.active_job.check_for_broken_cycle(cycle):
                     self.active_job.add_one_cycle()
             # Update current job
-            self.active_job.cycle_time = self.active_job.get_cycle_time()
-            self.active_job.part_changing_time = self.active_job.get_changing_time()
-            self.active_job.get_ended()
-            self.active_job.find_full_cycle()
+            all_job_cycles = Cycle.objects.filter(job=self.active_job)
+            self.active_job.cycle_time = self.active_job.get_cycle_time(all_cycles=all_job_cycles)
+            self.active_job.part_changing_time = self.active_job.get_changing_time(all_cycles=all_job_cycles)
+            self.active_job.get_ended(all_cycles=all_job_cycles)
+            if not self.active_job.full_cycle:
+                self.active_job.find_full_cycle(all_cycles=all_job_cycles, machine_current_cycle=cycle)
+            elif self.active_job.compare_full_cycle(cycle):
+                self.active_job.find_full_cycle(all_cycles=all_job_cycles, machine_current_cycle=cycle)
             self.active_job.save()
 
             # check if job is finished
             if self.is_job_finished():
-                self.job_finished()
+                self.set_ready_to_finish()
         # case if cycle was finished without active job
+        elif self.mode == strings.mode_mdi:
+            print(f"{self.name} has finished an MDI cycle")
         else:
             print(f"{self.name} has finished a cycle without active job")
 
@@ -759,10 +993,9 @@ class Machine(models.Model):
         self.current_machine_time = current.current_machine_time
         self.m30_counter2 = current.m30_counter2
         self.m30_counter1 = current.m30_counter1
-        self.active_nc_program = current.active_nc_program
+        self.active_nc_program = clean_nc_program_name(current.active_nc_program)
         self.mode = current.mode
         self.current_tool = current.current_tool
-
 
     # Methon to check if the tool was changed
     def has_chanted_tool(self) -> bool:
@@ -868,6 +1101,12 @@ class Cycle(models.Model):
         start_end_string = f'{started_format} - {ended_format}'
         if self.is_warm_up:
             return_string = f'Warm up: {duration_format} | {self.started.strftime("%d %b")}'
+        elif self.mode == strings.mode_mdi:
+            return_string = f'MDI: {duration_format} | {start_end_string} | {self.machine.name} | {str(self.job)}'
+        elif self.is_setting_cycle and not self.is_full_cycle:
+            return_string = f'Setting: {duration_format} | {start_end_string} | {self.machine.name} | {str(self.job)}'
+        elif self.is_full_cycle and not self.is_setting_cycle:
+            return_string = f'Full: {duration_format} | {start_end_string} | {self.machine.name} | {str(self.job)}'
         else:
             return_string = f'{formatted_mode}:  {duration_format} | {start_end_string} | {self.machine.name} | {str(self.job)}'
         return return_string
@@ -960,7 +1199,32 @@ class Cycle(models.Model):
                     self.is_setting_cycle = False
                     self.save()
                     return True
-                    
+
+    # Method to copy data from archived cycle
+    def copy_from_archived(self, job, machine, archived_cycle:'Archived_cycle') -> None:
+        self.machine = machine
+        self.job = job
+        self.duration = archived_cycle.duration
+        self.tool_sequence = archived_cycle.tool_sequence
+        self.changing_time = archived_cycle.changing_time
+        self.started = archived_cycle.started
+        self.ended = archived_cycle.ended
+        self.finished_by = archived_cycle.finished_by
+        self.is_still_running = False
+        self.is_setting_cycle = False
+        self.is_warm_up = False
+        self.is_full_cycle = True
+        self.mode = strings.mode_auto
+
+    # Methond to merge two cycle
+    def merge_with(self, cycle:'Cycle') -> None:
+        self.duration += cycle.duration
+        self.tool_sequence = cycle.tool_sequence + ',' + self.tool_sequence
+        self.changing_time += cycle.changing_time
+        self.started = min(self.started, cycle.started)
+        self.ended = max(self.ended, cycle.ended)
+
+
 class Archived_cycle(models.Model):
     id = models.AutoField(primary_key=True)
     machine = models.ForeignKey(Machine, on_delete=models.SET_DEFAULT, default=Machine.get_default_pk)
@@ -983,6 +1247,24 @@ class Archived_cycle(models.Model):
     class Meta:
         verbose_name = 'Archived Cycle'
         verbose_name_plural = 'Archived Cycles'
+
+    def __str__(self):
+        total_seconds = int(self.duration.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        if hours > 0:
+            duration_format = f"{hours}:{minutes:02}:{seconds:02}"
+        elif minutes > 0:
+            duration_format = f"{minutes}:{seconds:02}"
+        else:
+            duration_format = f"{seconds} seconds"
+
+        started_format = self.started.strftime('%d %b | %H:%M:%S')
+        ended_format = self.ended.strftime('%H:%M:%S') if self.ended else 'Not finished'
+        start_end_string = f'{started_format} - {ended_format}'
+
+        return f'{duration_format} | {start_end_string} | {self.machine.name} | {str(self.job)}'
 
     def copy_from_cycle(self, cycle:Cycle) -> None:
         self.machine = cycle.machine

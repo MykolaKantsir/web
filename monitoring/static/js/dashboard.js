@@ -76,16 +76,16 @@ function update_status(machines){
             let jobData = machine['active_job'];
             if(jobData){
                 // Update each field in the job card
-                jobCard.querySelector('a[name="active_job"]').textContent = `Active job: ${jobData.project}`;
-                jobCard.querySelector('a[name="nc_program"]').textContent = `NC Program: ${jobData.nc_program}`;
-                jobCard.querySelector('a[name="quantity"]').textContent = `Parts: ${jobData.currently_made_quantity} of ${jobData.required_quantity}`;
-                jobCard.querySelector('a[name="cycle_time"]').textContent = `Cycle time: ${jobData.cycle_time}`;
-                jobCard.querySelector('a[name="changing_time"]').textContent = `Changing time: ${jobData.part_changing_time}`;
+                jobCard.querySelector('div[name="active_job"]').textContent = `Active job: ${jobData.project}`;
+                jobCard.querySelector('div[name="nc_program"]').textContent = `NC Program: ${jobData.nc_program}`;
+                jobCard.querySelector('div[name="quantity"]').textContent = `Parts: ${jobData.currently_made_quantity} of ${jobData.required_quantity}`;
+                jobCard.querySelector('div[name="cycle_time"]').textContent = `Cycle time: ${jobData.cycle_time}`;
+                jobCard.querySelector('div[name="changing_time"]').textContent = `Changing time: ${jobData.part_changing_time}`;
                 if (jobData.operation) {
-                    jobCard.querySelector('a[name="operation"]').textContent = `Operation: ${jobData.operation} of ${jobData.operations_total}`;
+                    jobCard.querySelector('div[name="operation"]').textContent = `Operation: ${jobData.operation} of ${jobData.operations_total}`;
                 }
-                jobCard.querySelector('a[name="started"]').textContent = `Started: ${jobData.started}`;
-                jobCard.querySelector('a[name="finished"]').textContent = `Will end: ${jobData.will_end_at}`;
+                jobCard.querySelector('div[name="started"]').textContent = `Started: ${jobData.started}`;
+                jobCard.querySelector('div[name="finished"]').textContent = `Will end: ${jobData.will_end_at}`;
             }
         }
         update_visual()
