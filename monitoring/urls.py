@@ -9,4 +9,5 @@ urlpatterns = [
     path('job/finish/<int:job_id>/', views.finish_job, name='finish_job'),
     path('job/unarchive/<int:job_id>/', views.unarchive_job, name='unarchive_job'),
     path('get-job-productivity/<int:pk>/', views.get_job_productivity, name='get_job_productivity'),
+    path('cycle_timeline/<int:job_id>/', views.cycle_timeline, name='cycle_timeline'),
     ]

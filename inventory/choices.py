@@ -28,6 +28,7 @@ class Strings():
     # mtbm
     BLACK = 'black'
     LETTER_U = 'U'
+    test = 'test'
 
 # Choices for order status
 class OrderStatus(models.TextChoices):

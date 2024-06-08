@@ -135,6 +135,47 @@ def get_job_productivity(request, pk):
     # If the request is not AJAX, handle it as needed
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+def cycle_timeline(request, job_id):
+    # First, fetch the job to check if it was finished.
+    job = get_object_or_404(Job, id=job_id)
+
+    job_data = {
+        'started': localtime(job.started).isoformat() if job.started else None,
+        'ended': localtime(job.ended).isoformat() if job.ended else None,
+        'setup_total_time': job.setup_total_time.total_seconds(),
+        'setup_active_time': job.setup_active_time.total_seconds(),
+        'setup_idle_time': job.setup_idle_time.total_seconds(),
+    }
+
+    # Depending on whether the job was finished, prefetch the appropriate set of cycles.
+    if job.was_job_finished:
+        job = Job.objects.prefetch_related('archived_cycle_set').get(id=job_id)
+        cycle_set = job.archived_cycle_set.all()
+        cycle_type = 'archived' 
+        job_data['is_finished'] = True
+    else:
+        job = Job.objects.prefetch_related('cycle_set').get(id=job_id)
+        cycle_set = job.cycle_set.all()
+        last_cycle = cycle_set.last()
+        if last_cycle and last_cycle.ended:
+            job_data.ended = localtime(last_cycle.ended).isoformat()
+        cycle_type = 'active'
+        job_data['is_finished'] = False
+    
+    job_data['cycle_type'] = cycle_type
+
+    # Format cycle data
+    cycles_data = [{
+        'started': localtime(cycle.started).isoformat(),
+        'ended': localtime(cycle.ended).isoformat() if cycle.ended else None,
+        'duration': cycle.duration.total_seconds(),
+        'changing_time': cycle.changing_time.total_seconds(),
+        'is_setup': getattr(cycle, 'is_setting_cycle', False),  # Archived_cycle may not have this attribute
+        'is_warmup': getattr(cycle, 'is_warm_up', False)  # Same here
+    } for cycle in cycle_set]
+
+    return JsonResponse({'job': job_data, 'cycles': cycles_data})
+
 @require_POST
 def finish_job(request, job_id):
     job = get_object_or_404(Job, pk=job_id)

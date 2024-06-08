@@ -1,0 +1,92 @@
+body {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    min-height: 100vh; /* Full viewport height */
+    margin: 0; /* Remove default margin */
+  }
+  
+
+#cycle-timeline-block {
+  position: relative;
+  height: 200px; /* Adjusted as necessary */
+  background-color: #f8f9fa; /* Light grey background, adjust as necessary */
+  display: flex;
+  align-items: center; /* Center content vertically */
+  justify-content: center; /* Center content horizontally (optional) */
+}
+
+.base-timeline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px; /* Thickness of the timeline */
+  background-color: black; /* Color of the timeline */
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.slider {
+  width: 100%;
+}
+
+.slider-container {
+  text-align: center; /* Center the slider if not using full width */
+}
+
+.on-top, .on-bottom{
+  position: absolute;
+  bottom: 100%; /* Position on-top elements above the timeline */
+}
+
+.cycle, .changing-time, .setup, .initial-setup {
+  position: absolute; /* Positioned absolutely within their container */
+}
+
+.cycle {
+  height: 60px; /* Height of cycles */
+  background-color: green; /* Color for cycles */
+  bottom: 50%; /* Aligns the bottom of the element at the center of the parent */
+  transform: translateY(50%); /* Adjust vertical alignment here */
+}
+
+/* Style for cycle tooltip */
+cycle-tooltip.card {
+  background-color: #f8f9fa; /* Light grey background */
+  border: 1px solid #e0e0e0; /* Light grey border */
+  padding: 10px;
+}
+
+.setup {
+  height: 20px; /* Height of setup times */
+  background-color: orange; /* Color for setup times */
+}
+
+.changing-time {
+  height: 40px; /* Height of changing times */
+  background-color: red; /* Color for changing times, differentiate from cycles */
+  top: 50%; /* Aligns the top of the element at the center of the parent */
+  transform: translateY(-50%); /* Adjust vertical alignment here */
+}
+
+.initial-setup {
+  height: 30px; /* Height of initial setup */
+  background-color: purple; /* Color for initial setup, differentiate from setup times */
+}
+
+.selected.cycle {
+  background-color: #90ee90; /* Lighter green */
+}
+
+.selected.setup {
+  background-color: #ffdab9; /* Lighter orange */
+}
+
+.selected.changing-time {
+  background-color: #ff7f7f; /* Lighter red */
+}
+
+.selected.initial-setup {
+  background-color: #d8bfd8; /* Lighter purple */
+}
+  

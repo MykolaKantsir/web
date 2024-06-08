@@ -6,6 +6,7 @@
 {% block additional_css %}
 <!-- If there are any additional CSS files specific to job_detail, link them here -->
 <link href="{% static 'css/jobProductivity.css' %}" rel="stylesheet">
+<link href="{% static 'css/cycleTimeline.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -82,9 +83,32 @@
     <div class="col-12">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Cycle Timeline</h5>
           <!-- Cycle timeline content will be loaded here by JavaScript -->
-          <div id="cycle-timeline-block" style="height: 200px;"></div>
+          <div id="time-display" class="row">
+            <div class="col text-left" id="start-time"></div>
+            <div class="col text-center" id="median-time"></div>
+            <div class="col text-right" id="end-time" style="text-align: right;"></div>
+          </div>
+          <div id="cycle-timeline-block" data-timeline-url="{% url 'cycle_timeline' job.id %}">
+          </div>
+          <!-- Tooltip for displaying cycle details -->
+          <div id="cycle-tooltip" class="card my-3" style="height: 70px;">
+            <div class="card-body d-flex justify-content-between">
+              <div id="tooltip-start">Start: N/A</div>
+              <div id="tooltip-end">End: N/A</div>
+              <div id="tooltip-id">ID: N/A</div>
+            </div>
+          </div>
+          <!-- Slider for Adjusting Median Time -->
+          <div class="slider-container" style="margin-top: 10px;">
+            <input type="range" id="median-time-slider" class="slider" aria-label="Adjust Median Time">
+            <span id="median-time-value">Median Time</span>
+          </div>
+          <!-- Slider for Scaling the Timeline -->
+          <div class="slider-container" style="margin-top: 20px;">
+            <input type="range" id="scale-slider" min="30" max="1440" value="480" class="slider" aria-label="Adjust Scale">
+            <span id="slider-value">480 minutes</span>
+          </div>
         </div>
       </div>
     </div>
@@ -97,4 +121,5 @@
 <!-- If there are any additional JavaScript files specific to job_detail, include them here -->
 <script src="{% static 'js/chart.js' %}"></script>
 <script src="{% static 'js/jobProductivity.js' %}"></script>
+<script src="{% static 'js/cycleTimeline.js' %}"></script>
 {% endblock %}

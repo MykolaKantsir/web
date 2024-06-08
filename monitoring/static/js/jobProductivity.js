@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .then(data => {
         // Process your data and update the DOM accordingly
-        console.log('Productivity data:', data);
         // For example, you might have a function to update the productivity details:
         updateProductivityDetails(data);
       })
