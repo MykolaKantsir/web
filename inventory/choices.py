@@ -83,6 +83,10 @@ class Manufacturer(models.TextChoices):
     PHORN = 'phorn'
     SKENEJARN = 'skene järn'
     NICOTOOLS = 'nicotools'
+    VOELKEL = 'voelkel'
+    DIESELLA = 'diesella'
+    JBO = 'jbo'
+    PRECITOOL = 'precitool'
     PRECISION_DETALJER = 'precision detaljer'
 
 class ToolType(models.TextChoices):
