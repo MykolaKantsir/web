@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Function to send AJAX request
     function sendCreateLabelsRequest(productId, productToolType) {
-        fetch('/create_labels/', {
+        fetch('/inventory/create_labels/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -43,32 +43,26 @@ document.addEventListener('DOMContentLoaded', function () {
         return cookieValue;
     }
 
-    // Event listener for "Print label" button
-    document.querySelectorAll('.print-label-button').forEach(button => {
-        button.addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            const productToolType = this.getAttribute('data-product-tool-type');
+    // Event delegation for dynamically added buttons
+    document.body.addEventListener('click', function(event) {
+        if (event.target.matches('.print-label-button')) {
+            const productId = event.target.getAttribute('data-product-id');
+            const productToolType = event.target.getAttribute('data-product-tool-type');
             sendCreateLabelsRequest(productId, productToolType);
-        });
-    });
+        }
 
-    // Event listener for "Add to print" button
-    document.querySelectorAll('.add-to-print-button').forEach(button => {
-        button.addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            const productToolType = this.getAttribute('data-product-tool-type');
+        if (event.target.matches('.add-to-print-button')) {
+            const productId = event.target.getAttribute('data-product-id');
+            const productToolType = event.target.getAttribute('data-product-tool-type');
             // Implement the logic for adding to print here
             // For now, just sending the create labels request
             sendCreateLabelsRequest(productId, productToolType);
-        });
-    });
+        }
 
-    // Event listener for "Print all labels" button
-    document.querySelectorAll('.print-all-labels-button').forEach(button => {
-        button.addEventListener('click', function () {
+        if (event.target.matches('.print-all-labels-button')) {
             // Implement the logic for printing all labels here
             // For now, this is just a placeholder
             alert('Print all labels functionality is not yet implemented.');
-        });
+        }
     });
 });

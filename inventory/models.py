@@ -51,12 +51,12 @@ class Product(models.Model):
         )
         # Check for empty ean and barcode
         barcode_result = ""
-        if barcodeLabel.ean != choices.Strings.EMPTY_STRING:
-            barcode_result = barcodeLabel.ean
-        elif barcodeLabel.barcode != choices.Strings.EMPTY_STRING:
-            barcode_result = barcodeLabel.barcode
+        if self.ean != choices.Strings.EMPTY_STRING:
+            barcode_result = self.ean
+        elif self.barcode != choices.Strings.EMPTY_STRING:
+            barcode_result = self.barcode
         else:
-            barcode_result = barcodeLabel.code
+            barcode_result = self.code
         barcodeLabel.attributes[choices.LabelKeys.BARCODE] = barcode_result
         return [descriptionLabel, barcodeLabel]
 
@@ -1552,7 +1552,7 @@ class Label(models.Model):
     def __str__(self):
         res = f'{self.template}: '
         for attribute in self.attributes:
-            res.append(f'{attribute}={self.attributes[attribute]}')
+            res = res + f'{attribute}={self.attributes[attribute]}'
         return res
 
     class Meta:

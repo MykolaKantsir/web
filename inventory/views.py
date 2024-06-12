@@ -498,7 +498,7 @@ def create_labels(request):
 
         return JsonResponse({
             'status': 'success',
-            'message': f'Labels for {product_instance} successfully created and saved.'
+            'message': f'Labels for {product_instance} created.'
         })
 
     except ObjectDoesNotExist:
