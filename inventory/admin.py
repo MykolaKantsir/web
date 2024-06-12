@@ -10,6 +10,7 @@ from .models import EquipmentMilling, EquipmentTurning, MeasuringEquipment, Mill
 from .models import Collet, Workholding, Shim, Screw, PostMachining
 from .models import Screwdriver, Key, Wrench
 from .models import Order, WeekOrders, Comment, ProductToBeAdded
+from .models import Label
 
 # Register your models here.
 
@@ -62,6 +63,7 @@ admin.site.register(Key)
 admin.site.register(Wrench)
 admin.site.register(Comment)
 admin.site.register(ProductToBeAdded)
+admin.site.register(Label)
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):

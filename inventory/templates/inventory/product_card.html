@@ -38,6 +38,17 @@
                 </div>
                 <button type="submit" class="btn btn-primary order-button" data-product-id="{{ product.id }}" data-product-tool-type="{{ product.tool_type }}">Order</button>
             </form>
+            <!-- Print button block -->
+            <div class="btn-group mt-2" role="group">
+                <button type="button" class="btn btn-secondary print-label-button" data-product-id="{{ product.id }}" data-product-tool-type="{{ product.tool_type }}">Print label</button>
+                <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" id="dropdownMenuButton{{ product.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ product.id }}">
+                    <li><button class="dropdown-item add-to-print-button" data-product-id="{{ product.id }}" data-product-tool-type="{{ product.tool_type }}">Add to print</button></li>
+                    <li><button class="dropdown-item print-all-labels-button">Print all labels</button></li>
+                </ul>
+            </div>
         </div>
     </div>
     <!-- Compact Order Snippet -->

@@ -6,6 +6,7 @@ from typing import Dict
 # Strings used in the project
 class Strings():
     NOT_IMPLEMENTED_CONSTRUCTOR = 'Not implemented constructor'
+    EMPTY_STRING = ''
     UNKNOWN = 'Unknown'
     UNDEFINED = 'Undefined'
     ZERO_INT = 0
@@ -388,4 +389,19 @@ class Mtbm(Enum):
     def all_mtbm(self) -> list:
         res = [mtbm for mtbm in Mtbm if mtbm != Mtbm.UNDEFINED]
         return res
+
+#============Labels================
+
+# This class if used for templates
+class LabelTemplates:
+    DESCRIPTION_TEMPLATE = 'DescrioptionTemplate'
+    BARCODE_TEMPLATE = 'BarcodeTemplate'
+
+# This class is used for template keys
+class LabelKeys:
+    BARCODE = "objBarcode"
+    DESCRIPTION = "objDescription"
+    SIZE = "objSize"
+    CHIPBRAKER = "objChipbraker"
+
 

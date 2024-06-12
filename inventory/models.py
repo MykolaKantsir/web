@@ -40,6 +40,26 @@ class Product(models.Model):
         # Use Django's model_to_dict to convert the model instance to a dictionary
         return model_to_dict(self)
     
+    def get_label(self) -> list:
+        descriptionLabel = Label(
+            template=choices.LabelTemplates.DESCRIPTION_TEMPLATE,
+            attributes={choices.LabelKeys.DESCRIPTION: str(self)}
+        )
+        barcodeLabel = Label(
+            template=choices.LabelTemplates.BARCODE_TEMPLATE,
+            attributes={choices.LabelKeys.BARCODE: self.ean}
+        )
+        # Check for empty ean and barcode
+        barcode_result = ""
+        if barcodeLabel.ean != choices.Strings.EMPTY_STRING:
+            barcode_result = barcodeLabel.ean
+        elif barcodeLabel.barcode != choices.Strings.EMPTY_STRING:
+            barcode_result = barcodeLabel.barcode
+        else:
+            barcode_result = barcodeLabel.code
+        barcodeLabel.attributes[choices.LabelKeys.BARCODE] = barcode_result
+        return [descriptionLabel, barcodeLabel]
+
     class Meta:
         abstract = True
 
@@ -1523,3 +1543,17 @@ class ProductConstructor():
     @abstractmethod
     def construct_product(self, product: Product, df: DataFrame):
         return product
+    
+
+class Label(models.Model):
+    template = models.CharField(max_length=50)
+    attributes = models.JSONField()
+
+    def __str__(self):
+        res = f'{self.template}: '
+        for attribute in self.attributes:
+            res.append(f'{attribute}={self.attributes[attribute]}')
+        return res
+
+    class Meta:
+        verbose_name_plural = 'Labels'

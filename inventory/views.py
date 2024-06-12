@@ -306,6 +306,10 @@ def create_order(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
+#=======================================
+#===========Orders views================
+#=======================================
+
 # view for the orders page
 def orders_page(request):
     # Step 1: Fetch week_orders and apply pagination.
@@ -461,4 +465,44 @@ def add_product(request, product_type):
         form = ProductForm()
 
     return render(request, 'inventory/product_form.html', {'form': form})
+
+
+#==========================================
+#===========Labels views===================
+#==========================================
+
+def create_labels(request):
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        product_tool_type = data.get('product_tool_type')
+        
+        if not product_id or not product_tool_type:
+            return JsonResponse({'status': 'error', 'message': 'Product ID or tool type not provided'}, status=400)
+
+        # Find corresponding product_tool_type object
+        corresponding_product = ProductFactory().get_product(tool_type_str=product_tool_type)
+        product_type = type(corresponding_product)
+        product_model_name = product_type.__name__
+        product_model = ContentType.objects.get(model=product_model_name.lower())
+        product_instance = product_type.objects.get(id=product_id)
+        
+        # Generate labels using the get_label method
+        labels = product_instance.get_label()
+
+        # Save generated labels
+        Label.objects.bulk_create(labels)
+
+        print(f'Labels for {product_instance} successfully created and saved.')
+        print(f'Labels: {labels}')
+
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Labels for {product_instance} successfully created and saved.'
+        })
+
+    except ObjectDoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Product not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
