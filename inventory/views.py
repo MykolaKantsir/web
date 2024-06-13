@@ -510,6 +510,7 @@ def create_labels(request):
 
 # view to print labels
 def print_labels(request):
+    # this line is just for redeploying
     try:
         if request.method == 'GET':
             # Log the incoming GET request
@@ -540,6 +541,7 @@ def print_labels(request):
         elif request.method == 'POST':
             # Log the incoming POST request
             print("Received POST request to delete labels")
+            print("Deleting all labels")
 
             # Delete all labels from the database
             deleted_count, _ = Label.objects.all().delete()
