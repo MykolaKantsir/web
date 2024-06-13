@@ -185,9 +185,9 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
-        'myapp': {
+        'inventory': {  # Added 'inventory' logger configuration
             'handlers': ['logfile'],
-            'level': 'DEBUG',
+            'level': 'INFO',  # Ensure the level is set to INFO
             'propagate': True,
         },
     }

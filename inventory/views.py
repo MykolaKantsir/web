@@ -22,6 +22,10 @@ from inventory.defaults import default_custom_order_barcode
 import json
 import logging
 
+
+# Get an instance of a logger
+logger = logging.getLogger('inventory')
+
 # singleton class to get all non-abstract subclasses of Product
 # can be used later to get all subclasses of a class
 # might be moved to a separate file later
@@ -509,7 +513,7 @@ def create_labels(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-# view to print labels
+# View to print labels
 def print_labels(request):
     # this line is for redeploying the app
     try:
