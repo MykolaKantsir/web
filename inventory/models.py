@@ -45,6 +45,10 @@ class Product(models.Model):
             template=choices.LabelTemplates.DESCRIPTION_TEMPLATE,
             attributes={choices.LabelKeys.DESCRIPTION: str(self)}
         )
+        # Check for too long description
+        if len(str(self)) > 20:
+            descriptionLabel.attributes[choices.LabelKeys.DESCRIPTION] = str(self)[:20]
+
         barcodeLabel = Label(
             template=choices.LabelTemplates.BARCODE_TEMPLATE,
             attributes={choices.LabelKeys.BARCODE: self.ean}
@@ -1127,7 +1131,8 @@ class TurningInsert(Insert):
     ]
 
     def __str__(self):
-        return f'{self.tool_type} {self.isocode}'
+        #return f'{self.tool_type} {self.isocode}'
+        return f'{self.isocode}'
     
     class Meta:
         verbose_name_plural = "Turning inserts"

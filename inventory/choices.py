@@ -394,7 +394,7 @@ class Mtbm(Enum):
 
 # This class if used for templates
 class LabelTemplates:
-    DESCRIPTION_TEMPLATE = 'DescrioptionTemplate'
+    DESCRIPTION_TEMPLATE = 'DescriptionTemplate'
     BARCODE_TEMPLATE = 'BarcodeTemplate'
 
 # This class is used for template keys

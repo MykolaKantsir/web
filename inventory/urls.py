@@ -14,6 +14,7 @@ urlpatterns = [
     path('add_comment/<int:order_id>/', views.add_comment, name='add_comment'),
     path('scanner/', views.scanner, name='scanner'),
     path('create_custom_order/', views.create_custom_order, name='create_custom_order'),
-    path('create_labels/', views.create_labels, name='create_labels')
+    path('create_labels/', views.create_labels, name='create_labels'),
+    path('print_labels/', views.print_labels, name='print_labels')
     # Add more app-specific URLs here
 ]

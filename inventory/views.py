@@ -9,6 +9,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
 from django.db.models.functions import ExtractWeek, ExtractYear
 from django.db.models import Q, Min, Max, ManyToManyField, Prefetch
 from django.db.models import Case, When, Value, IntegerField
@@ -471,6 +472,7 @@ def add_product(request, product_type):
 #===========Labels views===================
 #==========================================
 
+# view to create labels for a product
 def create_labels(request):
     try:
         data = json.loads(request.body)
@@ -506,3 +508,34 @@ def create_labels(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+# view to print labels
+def print_labels(request):
+    try:
+        if request.method == 'GET':
+            # Query all labels from the database
+            labels = Label.objects.all()
+            
+            # Check if no labels are found
+            if not labels.exists():
+                return JsonResponse({'status': 'skip', 'message': 'No labels found'}, status=200)
+            
+            # Format the labels into the required JSON structure
+            response_data = [
+                {
+                    "labelTemplate": label.template,
+                    "attributes": [{"key": key, "value": value} for key, value in label.attributes.items()]
+                }
+                for label in labels
+            ]
+
+            # Include the CSRF token in the response
+            csrf_token = get_token(request)
+            return JsonResponse({'csrfToken': csrf_token, 'labels': response_data}, safe=False)
+
+        elif request.method == 'POST':
+            # Delete all labels from the database
+            Label.objects.all().delete()
+            return JsonResponse({'status': 'success', 'message': 'All labels deleted successfully.'})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
