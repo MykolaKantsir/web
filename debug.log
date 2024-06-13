@@ -1,0 +1,17 @@
+INFO 2024-06-13 17:58:24,935 autoreload Watching for file changes with StatReloader
+INFO 2024-06-13 17:58:31,634 autoreload Watching for file changes with StatReloader
+INFO 2024-06-13 17:59:59,512 autoreload Watching for file changes with StatReloader
+INFO 2024-06-13 18:00:08,147 basehttp "GET /inventory/print_labels/ HTTP/1.1" 200 305
+INFO 2024-06-13 18:00:15,800 basehttp "GET /inventory/ HTTP/1.1" 200 9225
+INFO 2024-06-13 18:00:15,818 basehttp "GET /static/bootstrap/css/bootstrap.min.css HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,818 basehttp "GET /static/css/index.css HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,819 basehttp "GET /static/css/facet.css HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,830 basehttp "GET /static/css/product_card.css HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,834 basehttp "GET /static/js/jquery-3.6.0.min.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,834 basehttp "GET /static/bootstrap/js/bootstrap.bundle.min.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,835 basehttp "GET /static/js/filters_handler.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,846 basehttp "GET /static/js/search_script.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,846 basehttp "GET /static/js/facet.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,850 basehttp "GET /static/js/order_logic.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,852 basehttp "GET /static/js/label_logic.js HTTP/1.1" 304 0
+INFO 2024-06-13 18:00:15,852 basehttp "GET /static/js/next_status_logic.js HTTP/1.1" 304 0

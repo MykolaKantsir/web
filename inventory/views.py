@@ -20,6 +20,7 @@ from inventory.choices import OrderStatus
 from inventory.utils import get_next_order_status
 from inventory.defaults import default_custom_order_barcode
 import json
+import logging
 
 # singleton class to get all non-abstract subclasses of Product
 # can be used later to get all subclasses of a class
@@ -510,18 +511,17 @@ def create_labels(request):
 
 # view to print labels
 def print_labels(request):
-    # this line is just for redeploying
     try:
         if request.method == 'GET':
             # Log the incoming GET request
-            print("Received GET request to fetch labels")
+            logger.info("Received GET request to fetch labels")
 
             # Query all labels from the database
             labels = Label.objects.all()
 
             # Check if no labels are found
             if not labels.exists():
-                print("No labels found")
+                logger.info("No labels found")
                 return JsonResponse({'status': 'skip', 'message': 'No labels found'}, status=200)
 
             # Format the labels into the required JSON structure
@@ -535,22 +535,22 @@ def print_labels(request):
 
             # Include the CSRF token in the response
             csrf_token = get_token(request)
-            print(f"Sending labels with CSRF token: {csrf_token}")
+            logger.info(f"Sending labels with CSRF token: {csrf_token}")
             return JsonResponse({'csrfToken': csrf_token, 'labels': response_data}, safe=False)
 
         elif request.method == 'POST':
             # Log the incoming POST request
-            print("Received POST request to delete labels")
-            print("Deleting all labels")
+            logger.info("Received POST request to delete labels")
+            logger.info("Deleting all labels")
 
             # Delete all labels from the database
             deleted_count, _ = Label.objects.all().delete()
 
             # Log the number of deleted labels
-            print(f"Deleted {deleted_count} labels")
+            logger.info(f"Deleted {deleted_count} labels")
 
             return JsonResponse({'status': 'success', 'message': 'All labels deleted successfully.'})
 
     except Exception as e:
-        print(f"Error in print_labels view: {str(e)}")
+        logger.error(f"Error in print_labels view: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
