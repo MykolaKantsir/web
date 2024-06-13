@@ -511,6 +511,7 @@ def create_labels(request):
 
 # view to print labels
 def print_labels(request):
+    # this line is for redeploying the app
     try:
         if request.method == 'GET':
             # Log the incoming GET request
