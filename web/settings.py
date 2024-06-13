@@ -154,10 +154,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Ensure the logs directory exists
-log_dir = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
 
 # Logging configuration
 LOGGING = {
@@ -173,23 +169,28 @@ LOGGING = {
             'style': '{',
         },
     },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
+    },
     'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'debug.log'),
+        'logfile': {
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': os.path.join('D:', 'home', 'site', 'wwwroot', 'myapp.log'),
             'formatter': 'verbose',
-        },
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',  # Change this to 'DEBUG' for more detailed logs
+            'handlers': ['logfile'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'myapp': {
+            'handlers': ['logfile'],
+            'level': 'DEBUG',
             'propagate': True,
         },
-    },
+    }
 }
