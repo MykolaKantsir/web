@@ -512,13 +512,17 @@ def create_labels(request):
 def print_labels(request):
     try:
         if request.method == 'GET':
+            # Log the incoming GET request
+            print("Received GET request to fetch labels")
+
             # Query all labels from the database
             labels = Label.objects.all()
-            
+
             # Check if no labels are found
             if not labels.exists():
+                print("No labels found")
                 return JsonResponse({'status': 'skip', 'message': 'No labels found'}, status=200)
-            
+
             # Format the labels into the required JSON structure
             response_data = [
                 {
@@ -530,12 +534,21 @@ def print_labels(request):
 
             # Include the CSRF token in the response
             csrf_token = get_token(request)
+            print(f"Sending labels with CSRF token: {csrf_token}")
             return JsonResponse({'csrfToken': csrf_token, 'labels': response_data}, safe=False)
 
         elif request.method == 'POST':
+            # Log the incoming POST request
+            print("Received POST request to delete labels")
+
             # Delete all labels from the database
-            Label.objects.all().delete()
+            deleted_count, _ = Label.objects.all().delete()
+
+            # Log the number of deleted labels
+            print(f"Deleted {deleted_count} labels")
+
             return JsonResponse({'status': 'success', 'message': 'All labels deleted successfully.'})
 
     except Exception as e:
+        print(f"Error in print_labels view: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
