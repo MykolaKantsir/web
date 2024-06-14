@@ -515,6 +515,7 @@ def create_labels(request):
 
 # View to print labels
 def print_labels(request):
+    # This line is just for redeployment
     try:
         if request.method == 'GET':
             # Check if label IDs are provided for deletion
