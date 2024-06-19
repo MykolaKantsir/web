@@ -1282,11 +1282,11 @@ class EquipmentTurning(Equipment):
         verbose_name_plural = 'Equipments Turning'
     
 # Describes a measuring equipment
-class MeasuringEquipment(Equipment):
+class MeasurementTool(Equipment):
     tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.MEASURING)
-    min = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.MIN)
-    max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.MAX)
-    precision = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringEquipment.PRECISION)
+    min = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasurementTool.MIN)
+    max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasurementTool.MAX)
+    precision = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasurementTool.PRECISION)
     facet_fields = [
         ('min', 'Min', choices.Facet.numerical),
         ('max', 'Max', choices.Facet.numerical),
@@ -1294,7 +1294,48 @@ class MeasuringEquipment(Equipment):
     ]
 
     class Meta:
-        verbose_name_plural = 'Measuring equipments'
+        verbose_name_plural = 'Measurment tools'
+
+# Describes a thread gauge
+class ThreadGauge(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.THREAD_GAUGE)
+    gouge_type = models.CharField(max_length=20, choices=choices.ThreadGaugeType.choices, default=choices.ThreadGaugeType.UNDEFINED)
+    thread_profile = models.CharField(max_length=20, default=defaults.DefaultThreadGauge.THREAD_PROFILE)
+    thread_pitch = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultThreadGauge.THREAD_PITCH)
+    thread_tpi = models.IntegerField(default=defaults.DefaultThreadGauge.THREAD_TPI)
+    facet_fields = [
+        ('gouge_type', 'Thread type', choices.Facet.categorical),
+        ('thread_profile', 'Thread profile', choices.Facet.categorical),
+        ('thread_pitch', 'Thread pitch', choices.Facet.numerical),
+        ('thread_tpi', 'Thread TPI', choices.Facet.numerical),
+    ]
+
+    class Meta:
+        verbose_name_plural = 'Thread gauges'
+
+# Describes a gauge
+class Gauge(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.GAUGE)
+    min = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGauge.MIN)
+    max = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultGauge.MAX)
+    facet_fields = [
+        ('min', 'Min', choices.Facet.numerical),
+        ('max', 'Max', choices.Facet.numerical),
+    ]
+
+    class Meta:
+        verbose_name_plural = 'Gauges'
+
+# Describes a measuring pin
+class MeasuringPin(Equipment):
+    tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.MEASURING_PIN)
+    diameter = models.DecimalField(max_digits=10, decimal_places=2, default=defaults.DefaultMeasuringPin.DIAMETER)
+    facet_fields = [
+        ('diameter', 'Diameter', choices.Facet.numerical),
+    ]
+
+    class Meta:
+        verbose_name_plural = 'Measuring pins'
 
 # Describes a milling holder
 class MillingHolder(Equipment):
@@ -1421,6 +1462,133 @@ class PostMachining(Item):
         ordering = ['code']
         verbose_name_plural = 'Post machining items'
 
+class NonAbstractProduct:
+    non_abstract_list = [
+        ChamferMill,
+        BallMill,
+        FaceMill,
+        ThreadMill,
+        RadiusMill,
+        LollipopMill,
+        TSlotMill,
+        MillingBody,
+        CircularSaw,
+        Drill,
+        SpotDrill,
+        Reamer,
+        Tap,
+        CenterDrill,
+        U_Drill,
+        GeneralCutter,
+        GroovingExternalCutter,
+        ThreadExternalCutter,
+        BoringCutter,
+        SolidBoringCutter,
+        GroovingInternalCutter,
+        SolidGroovingCutter,
+        ThreadInternalCutter,
+        SolidThreadCutter,
+        MillingInsert,
+        DrillingInsert,
+        TurningInsert,
+        ThreadInsert,
+        GroovingInsert,
+        EquipmentMilling,
+        EquipmentTurning,
+        MeasurementTool,
+        ThreadGauge,
+        Gauge,
+        MeasuringPin,
+        MillingHolder,
+        Collet,
+        Workholding,
+        Shim,
+        Screw,
+        PostMachining,
+        Screwdriver,
+        Key,
+        Wrench,
+        EndMill,
+        ChamferMill,
+        BallMill,
+        FaceMill,
+        ThreadMill,
+        RadiusMill,
+        LollipopMill,
+        TSlotMill,
+        MillingBody,
+        CircularSaw,
+        Drill,
+        SpotDrill,
+        Reamer,
+        Tap,
+        CenterDrill,
+        U_Drill,
+        GeneralCutter,
+        GroovingExternalCutter,
+        ThreadExternalCutter,
+        BoringCutter,
+        SolidBoringCutter,
+        GroovingInternalCutter,
+        SolidGroovingCutter,
+        ThreadInternalCutter,
+        SolidThreadCutter,
+        MillingInsert,
+        DrillingInsert,
+        TurningInsert,
+        ThreadInsert,
+        GroovingInsert,
+        Screwdriver,
+        Key,
+        Wrench
+        ]
+    matching_dict = {
+        'Insert turning': TurningInsert,
+        'Insert thread': ThreadInsert,
+        'Insert cutoff': GroovingInsert,
+        'Insert drilling': DrillingInsert,
+        'Insert milling': MillingInsert,
+        'General cutter': GeneralCutter,
+        'Boring cutter': BoringCutter,
+        'Solid boring cutter': SolidBoringCutter,
+        'Solid grooving cutter': SolidGroovingCutter,
+        'Grooving external cutter': GroovingExternalCutter,
+        'Grooving internal cutter': GroovingInternalCutter,
+        'Solid thread cutter': SolidThreadCutter,
+        'Thread external cutter': ThreadExternalCutter,
+        'Thread internal cutter': ThreadInternalCutter,
+        'Drill': Drill,
+        'Tap': Tap,
+        'Spot drill': SpotDrill,
+        'Reamer': Reamer,
+        'Center drill': CenterDrill,
+        'U-Drill': U_Drill,
+        'Mill': EndMill,
+        'Face mill': FaceMill,
+        'Chamfer mill': ChamferMill,
+        'Ball mill': BallMill,
+        'Radius mill': RadiusMill,
+        'T-Slot mill': TSlotMill,
+        'Circular saw': CircularSaw,
+        'Lollipop mill': LollipopMill,
+        'Milling body': MillingBody,
+        'Screw': Screw,
+        'Screwdriver': Screwdriver,
+        'Key': Key,
+        'Wrench': Wrench,
+        'Shim': Shim,
+        'Post machining': PostMachining,
+        'Collet': Collet,
+        'Gauge': Gauge,
+        'Thread gauge': ThreadGauge,
+        'Measuring pin': MeasuringPin,
+        'Equipment turning': EquipmentTurning,
+        'Equipment milling': EquipmentMilling,
+        'Measurement tool': MeasurementTool,
+        'Milling holder': MillingHolder
+        }
+
+
 # Product factory class
 class ProductFactory():
     def get_product(self, product: Product=None, tool_type_str: str=None):
@@ -1479,7 +1647,7 @@ class ProductFactory():
         elif tool_type == choices.ToolType.POST_MACHINING:
             return PostMachining()
         elif tool_type == choices.ToolType.MEASURING:
-            return MeasuringEquipment()
+            return MeasurementTool()
         elif tool_type == choices.ToolType.EQUIPMENT_TURNING:
             return EquipmentTurning()
         elif tool_type == choices.ToolType.EQUIPMENT_MILLING:

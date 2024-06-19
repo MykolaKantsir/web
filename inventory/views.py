@@ -180,21 +180,23 @@ def search_category(request):
     results = {}
 
     # Get all non-abstract subclasses of Product
-    all_subclasses = get_all_subclasses(Product)
-    non_abstract_subclasses = [cls for cls in all_subclasses if not cls._meta.abstract]
-
+    # all_subclasses = get_all_subclasses(Product)
+    # non_abstract_subclasses = [cls for cls in all_subclasses if not cls._meta.abstract]
+    # non_abstract_subclasses = models.NonAbstractProduct.non_abstract_list
     # Find the first product that matches the category among subclasses
-    matching_product = None
-    for subclass in non_abstract_subclasses:
-        matching_product = subclass.objects.filter(tool_type=category).first()
-        if matching_product:
-            break
+
+    matching_product = models.NonAbstractProduct.matching_dict.get(category)
+
+    # for subclass in non_abstract_subclasses:
+    #     matching_product = subclass.objects.filter(tool_type=category).first()
+    #     if matching_product:
+    #         break
 
 
     # If there's a match, get all objects of the same class and its facet_fields
     if matching_product:
-        product_class = matching_product.__class__
-        queryset = product_class.objects.all()  # Modify as per your needs
+        #product_class = matching_product.__class__
+        queryset = matching_product.objects.all()  # Modify as per your needs
         
         # Filter the queryset based on facet selections
         for facet, selections in facet_selections.items():
@@ -219,7 +221,7 @@ def search_category(request):
             else:  # Boolean facet
                 queryset = queryset.filter(**{facet: selections})
 
-        facet_fields = product_class.facet_fields
+        facet_fields = matching_product.facet_fields
 
         facets_data = []
 
@@ -283,6 +285,8 @@ def search_category(request):
 
     # Return the results
     return JsonResponse(results)
+
+
 
 def create_order(request):
     try:

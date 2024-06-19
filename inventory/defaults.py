@@ -362,11 +362,23 @@ class DefaultMillingHolder:
     LENGTH = choices.Strings.ZERO_FLOAT
     HOLDER_TYPE = choices.Strings.UNKNOWN
 
-class DefaultMeasuringEquipment:
+class DefaultMeasurementTool:
     MIN = choices.Strings.ZERO_FLOAT
     MAX = choices.Strings.ZERO_FLOAT
     PRECISION = choices.Strings.ZERO_FLOAT
 
+class DefaultThreadGauge:
+    GOUGE_TYPE = choices.Strings.UNKNOWN # GO, NOGO
+    THREAD_PROFILE = choices.Strings.UNKNOWN # ISO, UN, Whitworth, Trapezoidal, Acme, Stub Acme, Buttress, R
+    THREAD_PITCH = choices.Strings.ZERO_FLOAT
+    THREAD_TPI = choices.Strings.ZERO_INT
+
+class DefaultGauge:
+    MIN = choices.Strings.ZERO_FLOAT
+    MAX = choices.Strings.ZERO_FLOAT
+
+class DefaultMeasuringPin:
+    DIAMETER = choices.Strings.ZERO_FLOAT
 
 # Items
 class DefaultScrewdriver:

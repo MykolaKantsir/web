@@ -130,6 +130,9 @@ class ToolType(models.TextChoices):
     CENTER_DRILL = 'Center drill'
     MILLING_BODY = 'Milling body'
     MEASURING = 'Measuring'
+    MEASURING_PIN = 'Measuring pin'
+    THREAD_GAUGE = 'Thread gauge'
+    GAUGE = 'Gauge'
     RADIUS_MILL = 'Radius mill'
     POST_MACHINING = 'Post machining'
 
@@ -313,6 +316,12 @@ class ColletType(models.TextChoices):
     ER25 = 'ER25'
     ER32 = 'ER32'
     ER40 = 'ER40'
+
+class ThreadGaugeType(models.TextChoices):
+    UNDEFINED = Strings.UNKNOWN
+    GO = 'Go'
+    NO_GO = 'No-go'
+    GO_NO_GO = 'Go/No-go'
 
 class Facet():
     categorical = 'categorical'
