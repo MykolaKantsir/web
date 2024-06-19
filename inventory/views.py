@@ -519,46 +519,50 @@ def create_labels(request):
 
 # View to print labels
 def print_labels(request):
-    # this line is for redeploying the app
+    # This line is just for redeployment
     try:
         if request.method == 'GET':
-            # Log the incoming GET request
-            logger.info("Received GET request to fetch labels")
+            # Check if label IDs are provided for deletion
+            label_ids = request.GET.get('label_ids')
+            
+            if label_ids:
+                # Split the label_ids string into a list of IDs
+                label_ids = label_ids.split(',')
+                logger.info(f"Received request to delete labels with IDs: {label_ids}")
 
-            # Query all labels from the database
-            labels = Label.objects.all()
+                # Delete the labels with the given IDs
+                deleted_labels = Label.objects.filter(id__in=label_ids).delete()
+                deleted_count = deleted_labels[0]
+                logger.info(f"Deleted {deleted_count} labels")
 
-            # Check if no labels are found
-            if not labels.exists():
-                logger.info("No labels found")
-                return JsonResponse({'status': 'skip', 'message': 'No labels found'}, status=200)
+                return JsonResponse({'status': 'success', 'message': f'{deleted_count} labels deleted successfully.'})
 
-            # Format the labels into the required JSON structure
-            response_data = [
-                {
-                    "labelTemplate": label.template,
-                    "attributes": [{"key": key, "value": value} for key, value in label.attributes.items()]
-                }
-                for label in labels
-            ]
+            else:
+                # Log the incoming GET request to fetch labels
+                logger.info("Received GET request to fetch labels")
 
-            # Include the CSRF token in the response
-            csrf_token = get_token(request)
-            logger.info(f"Sending labels with CSRF token: {csrf_token}")
-            return JsonResponse({'csrfToken': csrf_token, 'labels': response_data}, safe=False)
+                # Query all labels from the database
+                labels = Label.objects.all()
 
-        elif request.method == 'POST':
-            # Log the incoming POST request
-            logger.info("Received POST request to delete labels")
-            logger.info("Deleting all labels")
+                # Check if no labels are found
+                if not labels.exists():
+                    logger.info("No labels found")
+                    return JsonResponse({'status': 'skip', 'message': 'No labels found'}, status=200)
 
-            # Delete all labels from the database
-            deleted_count, _ = Label.objects.all().delete()
+                # Format the labels into the required JSON structure
+                response_data = [
+                    {
+                        "id": label.id,
+                        "labelTemplate": label.template,
+                        "attributes": [{"key": key, "value": value} for key, value in label.attributes.items()]
+                    }
+                    for label in labels
+                ]
 
-            # Log the number of deleted labels
-            logger.info(f"Deleted {deleted_count} labels")
-
-            return JsonResponse({'status': 'success', 'message': 'All labels deleted successfully.'})
+                # Include the CSRF token in the response
+                csrf_token = get_token(request)
+                logger.info(f"Sending labels with CSRF token: {csrf_token}")
+                return JsonResponse({'csrfToken': csrf_token, 'labels': response_data}, safe=False)
 
     except Exception as e:
         logger.error(f"Error in print_labels view: {str(e)}")
