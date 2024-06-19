@@ -7,6 +7,7 @@ from .models import GroovingInternalCutter, SolidGroovingCutter, SolidBoringCutt
 from .models import ThreadExternalCutter, ThreadInternalCutter, SolidThreadCutter
 from .models import MillingInsert, DrillingInsert, TurningInsert, ThreadInsert, GroovingInsert
 from .models import EquipmentMilling, EquipmentTurning, MeasurementTool, MillingHolder
+from .models import ThreadGauge, Gauge, MeasuringPin
 from .models import Collet, Workholding, Shim, Screw, PostMachining
 from .models import Screwdriver, Key, Wrench
 from .models import Order, WeekOrders, Comment, ProductToBeAdded
@@ -52,6 +53,9 @@ admin.site.register(GroovingInsert)
 admin.site.register(EquipmentMilling)
 admin.site.register(EquipmentTurning)
 admin.site.register(MeasurementTool)
+admin.site.register(ThreadGauge)
+admin.site.register(MeasuringPin)
+admin.site.register(Gauge)
 admin.site.register(MillingHolder)
 admin.site.register(Collet)
 admin.site.register(Workholding)

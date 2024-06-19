@@ -1299,7 +1299,7 @@ class MeasurementTool(Equipment):
 # Describes a thread gauge
 class ThreadGauge(Equipment):
     tool_type = models.CharField(max_length=50, choices=choices.ToolType.choices, default=choices.ToolType.THREAD_GAUGE)
-    gouge_type = models.CharField(max_length=20, choices=choices.ThreadGaugeType.choices, default=choices.ThreadGaugeType.UNDEFINED)
+    gouge_type = models.CharField(max_length=20, choices=choices.ThreadGaugeType.choices, default=choices.ThreadGaugeType.GO_NO_GO)
     thread_profile = models.CharField(max_length=20, default=defaults.DefaultThreadGauge.THREAD_PROFILE)
     thread_pitch = models.DecimalField(max_digits=10, decimal_places=3, default=defaults.DefaultThreadGauge.THREAD_PITCH)
     thread_tpi = models.IntegerField(default=defaults.DefaultThreadGauge.THREAD_TPI)
