@@ -1,6 +1,7 @@
 *.pyc 
 __pycache__/ 
 venv/ 
+database_backups/
 db.sqlite3 
 media/ 
 inventory/helper.py

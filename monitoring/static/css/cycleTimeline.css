@@ -58,13 +58,13 @@ cycle-tooltip.card {
 }
 
 .setup {
-  height: 20px; /* Height of setup times */
+  height: 60px; /* Height of setup times */
   background-color: orange; /* Color for setup times */
 }
 
 .changing-time {
   height: 40px; /* Height of changing times */
-  background-color: red; /* Color for changing times, differentiate from cycles */
+  background-color: rgba(241, 245, 44, 0.87); /* Color for changing times, differentiate from cycles */
   top: 50%; /* Aligns the top of the element at the center of the parent */
   transform: translateY(-50%); /* Adjust vertical alignment here */
 }

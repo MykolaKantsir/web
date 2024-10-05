@@ -406,6 +406,12 @@ def timedelta_to_HHMMSS(timedelta: timedelta) -> str:
     formatted_time = f'{hours:02}:{minutes:02}:{seconds:02}'
     return formatted_time
 
+# function to convert isotime to datetime
+def parse_isoformat(date_string):
+    """Parse ISO format date string to datetime object."""
+    return datetime.fromisoformat(date_string)
+
+
 # function to update one machine
 # machine - Machine object, not specified because of circular import
 def update_machine() -> None:

@@ -91,6 +91,29 @@
           </div>
           <div id="cycle-timeline-block" data-timeline-url="{% url 'cycle_timeline' job.id %}">
           </div>
+
+          <!-- Interaction block for selecting cycles -->
+          <div id="cycle-interaction-block" class="container" style="display: none;">
+            <div class="row">
+              <div class="col-md-6">
+                <p id="cycle-id-1">ID: N/A</p>
+                <p id="cycle-tool-sequence-1">Tool Sequence: N/A</p>
+                <p id="cycle-is-full-cycle-1">Is Full Cycle: N/A</p>
+                <p id="cycle-is-setup-1">Is Setup: N/A</p>
+              </div>
+              <div class="col-md-6">
+                <p id="cycle-id-2">ID: N/A</p>
+                <p id="cycle-tool-sequence-2">Tool Sequence: N/A</p>
+                <p id="cycle-is-full-cycle-2">Is Full Cycle: N/A</p>
+                <p id="cycle-is-setup-2">Is Setup: N/A</p>
+              </div>
+            </div>
+            <div class="row justify-content-center mt-3">
+              <button id="combine-cycles" class="btn btn-primary mx-2" disabled>Combine Cycles</button>
+              <button id="deselect-cycles" class="btn btn-secondary mx-2">Deselect Cycles</button>
+            </div>
+          </div>
+
           <!-- Tooltip for displaying cycle details -->
           <div id="cycle-tooltip" class="card my-3" style="height: 70px;">
             <div class="card-body d-flex justify-content-between">
@@ -122,4 +145,5 @@
 <script src="{% static 'js/chart.js' %}"></script>
 <script src="{% static 'js/jobProductivity.js' %}"></script>
 <script src="{% static 'js/cycleTimeline.js' %}"></script>
+<script src="{% static 'js/cycleTimelineInteraction.js' %}"></script>
 {% endblock %}

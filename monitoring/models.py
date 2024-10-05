@@ -522,10 +522,12 @@ class Machine_state(models.Model):
         return f"Current {self.active_nc_program}" if self.is_current_state else f"Previous {self.active_nc_program}"
     
     # get default state
+    # Get the first Machine_state or create a new one if none exists
     @classmethod
     def get_default_pk(cls):
-        machine_state, created = cls.objects.get_or_create(
-            )
+        machine_state = cls.objects.first()  # Selects the first Machine_state in the database
+        if not machine_state:
+            machine_state = cls.objects.create()  # Creates a new one if no state exists
         return machine_state.pk
 
     # Method to set state from POST request, from a query dict
@@ -575,6 +577,8 @@ class Machine_state(models.Model):
 class Machine(models.Model):
     name = models.CharField(max_length=50)
     ip_address = models.GenericIPAddressField(default=defaults.default_IP)    
+    is_test_machine = models.BooleanField(default=True) # For testing purposes
+    monitor_arp_id = models.IntegerField(default=0) # Id of the machine in the Monitor G5
     active_job = models.ForeignKey(
         Job,
         on_delete=models.SET_DEFAULT,
@@ -961,7 +965,13 @@ class Machine(models.Model):
     def continue_current_cycle(self):
         last = self.last_state
         current = self.current_state
-        pass
+        cycle = self.active_cycle
+        if cycle:
+            try:
+                rough_duration = current.current_machine_time - cycle.started
+                cycle.duration = round_to_seconds(rough_duration)
+            except:
+                pass
 
     # Method to continue the Job
     def continue_job(self):
@@ -1009,6 +1019,27 @@ class Machine(models.Model):
         day = date(year=current_time.year, month=current_time.month, day=current_time.day)
         return day
 
+
+# Model of a Monitor G5 operation
+class Monitor_operation(models.Model):
+    monitor_operation_id = models.IntegerField(default=0)
+    name = models.CharField(max_length=50)
+    quantity = models.IntegerField(default=0)
+    material = models.CharField(max_length=50)
+    report_number = models.CharField(max_length=50)
+    planned_start_date = models.DateField(default=defaults.january_the_first)
+    planned_finish_date = models.DateField(default=defaults.january_the_first)
+    location = models.CharField(max_length=50, blank=True, default=strings.empty_string)
+    machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='monitor_operations', default=Machine.get_default_pk)  # Use default machine pk
+    priority = models.IntegerField(default=0)  # Integer for priority lowest number is highest priority
+    drawing_image_base64 = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = ("Monitor operation")
+        verbose_name_plural = ("Monitor operations")
+
+    def __str__(self):
+        return f"{self.name} - {self.quantity} pcs"
        
 # Machine offline xml state
 class Machine_Ofline_XML(models.Model):

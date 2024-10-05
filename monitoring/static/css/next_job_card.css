@@ -1,0 +1,99 @@
+/* Set the page background to light grey */
+body {
+    background-color: #f3f7f9; /* Updated body background */
+}
+
+/* Remove the card border */
+.card.no-border {
+    border: none; /* No outer frame */
+    box-shadow: none; /* Ensure no shadows */
+    border-radius: 8px; /* Keep the rounded corners */
+}
+
+/* Card body background with updated color */
+.card-body {
+    background-color: #bbbfbe; /* Updated card body background */
+    padding: 0;
+    margin: 0;
+    border-radius: 8px; /* Rounded corners */
+    height: 100%; /* Full height of the card */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Machine row: dark background with light text */
+.machine-row {
+    background-color: #1b2b68; /* Entire row background color */
+    color: #f3f7f9; /* Light font for contrast */
+    padding: 10px 0;
+    border-radius: 8px 8px 0 0; /* Rounded corners for top row */
+}
+
+/* Force right alignment for job.name */
+.machine-row .col-6.text-right h5 {
+    text-align: right; /* Ensure job.name is aligned to the right */
+    margin: 0;
+    padding: 0;
+}
+
+/* Job details row with titles */
+.job-details-row {
+    background-color: #8690b2; /* Background color for the entire row */
+    padding: 5px 0;
+    border-radius: 0 0 8px 8px; /* Rounded bottom corners */
+}
+
+/* Material column - Align text to the left */
+.job-details-row .col-4.text-left .title,
+.job-details-row .col-4.text-left .value {
+    text-align: left;
+    color: #f3f7f9; /* Ensure consistent text color */
+}
+
+/* Quantity column - Align text to the center */
+.job-details-row .col-4.text-center .title,
+.job-details-row .col-4.text-center .value {
+    text-align: center;
+    color: #f3f7f9; /* Ensure consistent text color */
+}
+
+/* Location column - Align text to the right */
+.job-details-row .col-4.text-right .title,
+.job-details-row .col-4.text-right .value {
+    text-align: right;
+    color: #f3f7f9; /* Ensure consistent text color */
+}
+
+/* Title styling */
+.title {
+    font-weight: normal; /* Remove bold for titles */
+    margin: 0;
+}
+
+/* Value styling */
+.value {
+    font-weight: bold; /* Keep values bold */
+    margin: 0;
+}
+
+/* Center only the PDF placeholder vertically in the remaining space */
+.pdf-placeholder-container {
+    flex-grow: 1; /* Take up remaining space */
+    display: flex;
+    justify-content: center; /* Horizontally center */
+    align-items: center; /* Vertically center the placeholder */
+    width: 100%; /* Make sure the container takes full width */
+}
+
+.pdf-placeholder {
+    border: 1px solid #1b2b68;
+    width: 100%; /* Match the placeholder width to the card's width */
+    max-width: 100%; /* Prevent exceeding the container width */
+    aspect-ratio: 1.414; /* Maintain A4 landscape aspect ratio */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #1b2b68;
+    text-align: center;
+    box-sizing: border-box; /* Ensure padding and border are included in the width */
+}

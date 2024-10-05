@@ -1,0 +1,11 @@
+<ul class="list-group">
+    {% for job in page_obj %}
+    <li class="list-group-item">
+        <a href="{% url 'job_detail' job.id %}">
+            Job {{ job.id }}: {{ job.project }} (Started: {{ job.started }})
+        </a>
+    </li>
+    {% empty %}
+    <li class="list-group-item">No jobs found for this machine.</li>
+    {% endfor %}
+</ul>

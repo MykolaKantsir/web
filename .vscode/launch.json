@@ -49,11 +49,12 @@
             "args": [
                 "delete_cycles_after_datetime",
                 "202-VF2SS",
-                "2023-01-17 21:50:50",
+                "2023-01-19 21:50:50",
             ],
             "django": true,
             "justMyCode": true,
-            "python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
+            //"python": "D:\\Projects\\Gaston_V1_03\\prediction_models\\venv\\Scripts\\python.exe"
+            "python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe"
         },
         {
             "name": "current_management_command",

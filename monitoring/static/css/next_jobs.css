@@ -1,0 +1,45 @@
+/* Ensure the page uses the full height and width of the screen */
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+}
+
+/* Container and row layout adjustments */
+.container-fluid {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+}
+
+/* Manually define the grid with exact gaps and control over the column sizes */
+.custom-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 equal-width columns */
+    grid-template-rows: repeat(2, 1fr); /* 2 equal-height rows */
+    gap: 2px; /* Set the gap between cards to 2px */
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+/* Card styling to match the grid size */
+.card {
+    box-sizing: border-box;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 1px solid black;
+}
+
+.card-body {
+    padding: 0;
+    margin: 0;
+    width: 100%; /* Ensure card body takes up the full width */
+}

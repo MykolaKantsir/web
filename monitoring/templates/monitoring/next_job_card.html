@@ -1,0 +1,42 @@
+<div class="col job-card" data-machine-pk="{{ machine.pk }}" data-job-pk="{{ machine.next_job.pk }}">
+    <div class="card h-100 no-border" id="card-{{ machine.pk }}">
+        <div class="card-body p-0">
+            <!-- Machine and Job Names -->
+            <div class="row machine-row m-0 align-items-center">
+                <div class="col-6 text-left">
+                    <h5>{{ machine.name }}</h5>
+                </div>
+                <div class="col-6 text-right">
+                    <h5>{{ machine.next_job.name }}</h5>
+                </div>
+            </div>
+
+            <!-- Job details: Material, Quantity, Location -->
+            <div class="row job-details-row m-0">
+                <div class="col-4 text-left">
+                    <p class="title">Material</p>
+                    <p class="value">{{ machine.next_job.material }}</p>
+                </div>
+                <div class="col-4 text-center">
+                    <p class="title">Quantity</p>
+                    <p class="value">{{ machine.next_job.quantity }}</p>
+                </div>
+                <div class="col-4 text-right">
+                    <p class="title">Location</p>
+                    <p class="value">{{ machine.next_job.location }}</p>
+                </div>
+            </div>
+
+            <!-- PDF placeholder container (to center vertically) -->
+            <div class="pdf-placeholder-container">
+                <div class="pdf-placeholder">
+                    {% if machine.next_job.drawing_image_base64 %}
+                        <img src="{{ machine.next_job.drawing_image_base64 }}" alt="Manufacturing Drawing" style="width: 100%; height: 100%; object-fit: cover;" />
+                    {% else %}
+                        <p>No drawing available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

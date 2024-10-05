@@ -1,16 +1,17 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.core.paginator import Paginator
 from django.http import HttpRequest, JsonResponse, HttpResponse, HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.db.models import Min, Max
-from monitoring.models import Machine, Machine_state, Job, Cycle
+from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.utils import is_ajax, machine_current_database_state
 from monitoring.utils import convert_time_django_javascript, convert_to_local_time
-from monitoring.utils import timedelta_to_HHMMSS
+from monitoring.utils import timedelta_to_HHMMSS, parse_isoformat
 from monitoring.utils import update_machine, update_machine_state
 from monitoring import strings
-from datetime import timedelta
+from datetime import timedelta, datetime
 from collections import defaultdict
 
 # Create your views here.
@@ -81,6 +82,23 @@ def day_activity(reqeust):
 def about(request):
     return HttpResponse('<h1>About</h1>')
 
+# View for machine detail
+def machine_detail(request, machine_id):
+    machine = get_object_or_404(Machine, id=machine_id)
+    job_list = Job.objects.filter(machine=machine).order_by('-started')
+    
+    # Pagination setup (10 jobs per page)
+    paginator = Paginator(job_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'machine': machine,
+        'page_obj': page_obj, # For paginated job list
+    }
+
+    return render(request, 'monitoring/machine_detail.html', context)
+
 def job_detail(request, job_id):
     # Retrieve the job object by its ID or return a 404 error if not found
     job = get_object_or_404(Job, id=job_id)
@@ -118,6 +136,8 @@ def get_job_productivity(request, pk):
             for day, cycles in cycles_by_day.items():
                 start_of_day = cycles[0].started
                 end_of_day = cycles[-1].ended
+                if not end_of_day:
+                    end_of_day = start_of_day
                 
                 setup_time_correction += (end_of_day - start_of_day)
             setup_time += setup_time_correction
@@ -136,7 +156,6 @@ def get_job_productivity(request, pk):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def cycle_timeline(request, job_id):
-    # First, fetch the job to check if it was finished.
     job = get_object_or_404(Job, id=job_id)
 
     job_data = {
@@ -147,34 +166,87 @@ def cycle_timeline(request, job_id):
         'setup_idle_time': job.setup_idle_time.total_seconds(),
     }
 
-    # Depending on whether the job was finished, prefetch the appropriate set of cycles.
+    mdi_cycles_data = []
+
     if job.was_job_finished:
         job = Job.objects.prefetch_related('archived_cycle_set').get(id=job_id)
         cycle_set = job.archived_cycle_set.all()
-        cycle_type = 'archived' 
+        cycle_type = 'archived'
         job_data['is_finished'] = True
     else:
         job = Job.objects.prefetch_related('cycle_set').get(id=job_id)
-        cycle_set = job.cycle_set.all()
-        last_cycle = cycle_set.last()
+        cycle_set = job.cycle_set.all().order_by('-started')
+        last_cycle = cycle_set.first()
         if last_cycle and last_cycle.ended:
-            job_data.ended = localtime(last_cycle.ended).isoformat()
+            job_data['ended'] = localtime(last_cycle.ended).isoformat()
+        elif last_cycle and not last_cycle.ended:
+            last_cycle.ended = localtime(last_cycle.started + last_cycle.duration).isoformat()
+            job_data['ended'] = last_cycle.ended
         cycle_type = 'active'
         job_data['is_finished'] = False
-    
+
+        mdi_cycles = Cycle.objects.filter(
+            job=None,
+            started__gte=job_data['started'],
+            started__lte=job_data['ended']
+        ).order_by('started')
+
+        mdi_cycles_data = [{
+            'started': localtime(cycle.started).isoformat(),
+            'ended': localtime(cycle.ended).isoformat() if cycle.ended else localtime(cycle.started + cycle.duration).isoformat(),
+            'duration': cycle.duration.total_seconds(),
+            'changing_time': cycle.changing_time.total_seconds(),
+            'is_setup': getattr(cycle, 'is_setting_cycle', False),
+            'is_warmup': getattr(cycle, 'is_warm_up', False),
+            'is_full_cycle': getattr(cycle, 'is_full_cycle', True),
+            'id': cycle.id,
+            'tool_sequence': cycle.tool_sequence,
+            'is_mdi': True
+        } for cycle in mdi_cycles]
+
     job_data['cycle_type'] = cycle_type
 
-    # Format cycle data
-    cycles_data = [{
-        'started': localtime(cycle.started).isoformat(),
-        'ended': localtime(cycle.ended).isoformat() if cycle.ended else None,
-        'duration': cycle.duration.total_seconds(),
-        'changing_time': cycle.changing_time.total_seconds(),
-        'is_setup': getattr(cycle, 'is_setting_cycle', False),  # Archived_cycle may not have this attribute
-        'is_warmup': getattr(cycle, 'is_warm_up', False)  # Same here
-    } for cycle in cycle_set]
+    earliest_full_cycle = None
+    cycles_data = []
 
-    return JsonResponse({'job': job_data, 'cycles': cycles_data})
+    for cycle in cycle_set:
+        cycle_data = {
+            'started': localtime(cycle.started).isoformat(),
+            'ended': localtime(cycle.ended).isoformat() if cycle.ended else localtime(cycle.started + cycle.duration).isoformat(),
+            'duration': cycle.duration.total_seconds(),
+            'changing_time': cycle.changing_time.total_seconds(),
+            'is_setup': getattr(cycle, 'is_setting_cycle', False),
+            'is_warmup': getattr(cycle, 'is_warm_up', False),
+            'is_full_cycle': getattr(cycle, 'is_full_cycle', True) if cycle_type == 'active' else True,
+            'id': cycle.id,
+            'tool_sequence': cycle.tool_sequence,
+        }
+        cycles_data.append(cycle_data)
+
+        if cycle_data['is_full_cycle']:
+            cycle_started = parse_isoformat(cycle_data['started'])
+            if earliest_full_cycle is None or cycle_started < parse_isoformat(earliest_full_cycle['started']):
+                earliest_full_cycle = cycle_data
+
+    if earliest_full_cycle:
+        initial_setup_time = {
+            'started': job_data['started'],
+            'ended': earliest_full_cycle['started'],
+            'duration': (parse_isoformat(earliest_full_cycle['started']) - parse_isoformat(job_data['started'])).total_seconds()
+        }
+    else:
+        initial_setup_time = {
+            'started': job_data['started'],
+            'ended': job_data['ended'],
+            'duration': (parse_isoformat(job_data['ended']) - parse_isoformat(job_data['started'])).total_seconds()
+        }
+
+    return JsonResponse({
+        'job': job_data,
+        'cycles': cycles_data,
+        'mdi_cycles': mdi_cycles_data,
+        'initial_setup_time': initial_setup_time
+    })
 
 @require_POST
 def finish_job(request, job_id):
@@ -217,3 +289,54 @@ def get_machine_job_data(machine):
         'will_end_at': convert_to_local_time(job.will_end_at).strftime("%Y-%m-%d %H:%M:%S") if job.will_end_at else None,
     }
     return job_data
+
+# View to display the next job for each machine
+def next_jobs_view(request):
+    # Step 1: Filter machines that are not test machines
+    machines = Machine.objects.filter(is_test_machine=False)
+
+    # Step 2: Fetch all monitor operations
+    operations = Monitor_operation.objects.all()
+
+    # Step 3: Assign the highest-priority operation to each machine
+    for machine in machines:
+        # Find the highest-priority operation for this machine
+        highest_priority_operation = operations.filter(machine=machine).order_by('priority').first()
+        
+        # Step 4: Dynamically add 'next_job' to the machine instance
+        machine.next_job = highest_priority_operation
+
+    # Step 5: Return the context with machines and their assigned jobs
+    context = {
+        'machines': machines,
+    }
+
+    return render(request, 'monitoring/next_jobs.html', context)
+
+# View to check if the next jobs have changed
+def check_next_jobs(request):
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Get the raw data from POST request
+        data = request.POST['data']  # This retrieves the JSON string
+
+        # Parse the string into Python list of dictionaries
+        data = eval(data)  # Safely parse the data (use eval here since it's sent as string)
+
+        changed = False
+        
+        for pair in data:
+            machine_pk = pair.get('machine_pk')
+            job_pk = pair.get('job_pk')
+            
+            # Fetch the next job for the machine
+            next_job = Monitor_operation.objects.filter(machine_id=machine_pk).order_by('priority').first()
+            
+            # Check if the job PK has changed
+            if next_job and next_job.pk != int(job_pk):
+                changed = True
+                break
+        
+        return JsonResponse({'changed': changed})
+    
+    # If the request is not an AJAX request, redirect to the next jobs list
+    return redirect('next_jobs')
