@@ -21,6 +21,16 @@
         </div>
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     </div>
+    
+    <!-- Loading Spinner Container -->
+    <div id="loading" class="overlay hidden">
+        <p>Loading...</p>
+    </div>
+    
+    <!-- Error Message Container -->
+    <div id="error" class="overlay hidden">
+        <p>Error: Unable to connect to server. Please try again later.</p>
+    </div>
 
     <!-- Bootstrap 5 JavaScript -->
     <script src="{% static 'js/jquery.min.js' %}"></script>

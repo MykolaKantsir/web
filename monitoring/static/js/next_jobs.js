@@ -1,28 +1,30 @@
 let isRequestInProgress = false;
 
 function showLoading() {
-    // Add logic to display loading spinner
-    let loadingDiv = document.createElement("div");
-    loadingDiv.id = "loading";
-    loadingDiv.style.position = "fixed";
-    loadingDiv.style.top = "0";
-    loadingDiv.style.left = "0";
-    loadingDiv.style.width = "100%";
-    loadingDiv.style.height = "100%";
-    loadingDiv.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    loadingDiv.style.color = "white";
-    loadingDiv.style.display = "flex";
-    loadingDiv.style.justifyContent = "center";
-    loadingDiv.style.alignItems = "center";
-    loadingDiv.innerText = "Loading...";
-    document.body.appendChild(loadingDiv);
+    let loadingDiv = document.getElementById("loading");
+    if (loadingDiv) {
+        loadingDiv.classList.remove("hidden");  // Show loading overlay
+    }
 }
 
 function hideLoading() {
-    // Remove loading spinner
     let loadingDiv = document.getElementById("loading");
     if (loadingDiv) {
-        document.body.removeChild(loadingDiv);
+        loadingDiv.classList.add("hidden");  // Hide loading overlay
+    }
+}
+
+function showError() {
+    let errorDiv = document.getElementById("error");
+    if (errorDiv) {
+        errorDiv.classList.remove("hidden");  // Show error overlay
+    }
+}
+
+function hideError() {
+    let errorDiv = document.getElementById("error");
+    if (errorDiv) {
+        errorDiv.classList.add("hidden");  // Hide error overlay
     }
 }
 
@@ -40,11 +42,12 @@ function checkForUpdates() {
     let data = [];
     $(".job-card").each(function () {
         let machinePk = $(this).data('machine-pk');
-        let jobPk = $(this).data('job-pk');
-        data.push({ machine_pk: machinePk, job_pk: jobPk });
+        let jobMonitorOperationId = $(this).data('job-monitor-operation-id');
+        data.push({ machine_pk: machinePk, job_monitor_operation_id: jobMonitorOperationId });
     });
 
-    showLoading(); // Show the loading spinner
+    hideError();  // Hide error message if any previous error occurred
+    showLoading();  // Show the loading spinner before making the request
 
     $.ajax({
         url: "/monitoring/check-next-jobs/",
@@ -57,14 +60,17 @@ function checkForUpdates() {
         success: function (response) {
             if (response.changed) {
                 location.reload();
+            } else {
+                hideLoading();  // Hide loading overlay if no changes
             }
         },
         error: function (xhr, status, error) {
             console.error("Error checking for updates: ", error);
+            hideLoading();  // Hide loading spinner in case of error
+            showError();  // Show error overlay when request fails
         },
         complete: function () {
-            hideLoading(); // Hide the loading spinner
-            isRequestInProgress = false; // Reset the flag after completion
+            isRequestInProgress = false;  // Reset the flag after completion
         }
     });
 }

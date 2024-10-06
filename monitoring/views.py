@@ -2,8 +2,11 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.http import HttpRequest, JsonResponse, HttpResponse, HttpResponseRedirect
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.utils.timezone import localtime
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.utils import is_ajax, machine_current_database_state
@@ -13,6 +16,7 @@ from monitoring.utils import update_machine, update_machine_state
 from monitoring import strings
 from datetime import timedelta, datetime
 from collections import defaultdict
+import json
 
 # Create your views here.
 def home(request):
@@ -320,19 +324,19 @@ def check_next_jobs(request):
         data = request.POST['data']  # This retrieves the JSON string
 
         # Parse the string into Python list of dictionaries
-        data = eval(data)  # Safely parse the data (use eval here since it's sent as string)
+        data = json.loads(data)  
 
         changed = False
         
         for pair in data:
             machine_pk = pair.get('machine_pk')
-            job_pk = pair.get('job_pk')
+            job_monitor_operation_id = pair.get('job_monitor_operation_id')
             
-            # Fetch the next job for the machine
-            next_job = Monitor_operation.objects.filter(machine_id=machine_pk).order_by('priority').first()
+            # Use values_list to only fetch 'id' (the primary key of Monitor_operation) and 'machine_id'
+            next_job = Monitor_operation.objects.filter(machine_id=machine_pk).order_by('priority').values_list('machine_id', 'monitor_operation_id').first()
             
             # Check if the job PK has changed
-            if next_job and next_job.pk != int(job_pk):
+            if next_job and next_job[1] != int(job_monitor_operation_id):
                 changed = True
                 break
         
@@ -340,3 +344,49 @@ def check_next_jobs(request):
     
     # If the request is not an AJAX request, redirect to the next jobs list
     return redirect('next_jobs')
+
+# View to update Monitor_operation
+@method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF protection for external apps, if needed
+@login_required  # Require user authentication
+def update_monitor_operation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))  # Parse JSON data from request body
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+        machine_pk = data.get('machine_pk')
+        if not machine_pk:
+            return JsonResponse({'error': 'Machine PK is required'}, status=400)
+
+        # Get the first monitor operation by priority for the given machine
+        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk).order_by('priority').first()
+
+        if not monitor_operation:
+            return JsonResponse({'error': 'Monitor operation not found'}, status=404)
+
+        # List of allowed fields to update
+        allowed_fields = [
+            'monitor_operation_id',
+            'name',
+            'quantity',
+            'material',
+            'report_number',
+            'planned_start_date',
+            'planned_finish_date',
+            'location',
+            'priority',
+            'drawing_image_base64',
+            ]
+
+        # Loop over allowed fields and update only if present in the data
+        for field in allowed_fields:
+            if field in data:
+                setattr(monitor_operation, field, data[field])
+
+        # Save changes
+        monitor_operation.save()
+
+        return JsonResponse({'message': 'Monitor operation updated successfully'})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)

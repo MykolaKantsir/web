@@ -73,7 +73,7 @@ ROOT_URLCONF = 'web.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,6 +85,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
@@ -194,3 +195,7 @@ LOGGING = {
         },
     }
 }
+
+LOGIN_URL = '/accounts/login/'  # URL for login
+LOGOUT_URL = '/accounts/logout/'  # URL for logout
+LOGIN_REDIRECT_URL = '/'  # Where to redirect users after successful login

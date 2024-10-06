@@ -43,3 +43,30 @@ html, body {
     margin: 0;
     width: 100%; /* Ensure card body takes up the full width */
 }
+
+/* Overlay class for both loading and error */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw; /* Make sure it covers the viewport width */
+    height: 100vh; /* Make sure it covers the viewport height */
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;  /* Ensure it stays on top of all elements */
+    font-size: 1.5em;
+    pointer-events: none; /* Prevent interaction with elements below */
+}
+
+/* Error-specific styling */
+#error {
+    background-color: rgba(255, 0, 0, 0.5);  /* Different color for error */
+}
+
+/* Initially hidden */
+.hidden {
+    display: none;
+}
