@@ -378,11 +378,15 @@ def update_monitor_operation(request):
             'priority',
             'drawing_image_base64',
             ]
+        
 
         # Loop over allowed fields and update only if present in the data
         for field in allowed_fields:
             if field in data:
-                setattr(monitor_operation, field, data[field])
+                if field == 'monitor_operation_id':
+                    setattr(monitor_operation, field, int(data[field]))
+                else:
+                    setattr(monitor_operation, field, data[field])
 
         # Save changes
         monitor_operation.save()
