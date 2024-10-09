@@ -1022,7 +1022,7 @@ class Machine(models.Model):
 
 # Model of a Monitor G5 operation
 class Monitor_operation(models.Model):
-    monitor_operation_id = models.IntegerField(default=0)
+    monitor_operation_id = models.CharField(max_length=50, default=strings.empty_string)
     name = models.CharField(max_length=50)
     quantity = models.IntegerField(default=0)
     material = models.CharField(max_length=50)
