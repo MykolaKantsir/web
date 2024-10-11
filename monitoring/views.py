@@ -379,12 +379,18 @@ def update_monitor_operation(request):
             'drawing_image_base64',
             ]
         
+        integer_fields = ['quantity', 'priority']
+        date_filelds = ['planned_start_date', 'planned_finish_date']
+        
 
         # Loop over allowed fields and update only if present in the data
         for field in allowed_fields:
             if field in data:
-                if field == 'monitor_operation_id':
+                if field in integer_fields:
                     setattr(monitor_operation, field, int(data[field]))
+                elif field in date_filelds:
+                    posted_date = datetime.fromisoformat(data[field]).date()
+                    setattr(monitor_operation, field, posted_date)
                 else:
                     setattr(monitor_operation, field, data[field])
 
