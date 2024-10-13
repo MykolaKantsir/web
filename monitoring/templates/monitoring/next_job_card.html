@@ -37,6 +37,14 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Barcode for monitor operation -->
+            <div class="row job-details-row m-0" hidden>
+                <div id ="barcode-{{ machine.pk }}" class="col-12 text-center">
+                    <p class="title">Barcode</p>
+                    <p class="value">{{ machine.next_job.report_number }}</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -10,10 +10,11 @@
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/next_jobs.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
     <link href="{% static 'css/next_job_card.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
+    <link href="{% static 'css/large_next_job_card.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
 </head>
 <body>
     <!-- Full-Screen Grid Layout for Machines -->
-    <div class="container-fluid">
+    <div id="main-content-1" class="container-fluid">
         <div class="custom-grid">
             {% for machine in machines %}
                 {% include 'monitoring/next_job_card.html' with machine=machine %}
@@ -26,6 +27,11 @@
     <div id="loading" class="overlay hidden">
         <p>Loading...</p>
     </div>
+
+
+    <!-- Large card overlay -->
+    {% include 'monitoring/large_next_job_card.html' %}
+
     
     <!-- Error Message Container -->
     <div id="error" class="overlay hidden">
@@ -35,6 +41,8 @@
     <!-- Bootstrap 5 JavaScript -->
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/JsBarcode.all.min.js' %}"></script>
     <script src="{% static 'js/next_jobs.js' %}"></script>
+    <script src="{% static 'js/large_next_job_card.js' %}"></script>
 </body>
 </html>

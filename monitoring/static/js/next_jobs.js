@@ -75,5 +75,5 @@ function checkForUpdates() {
     });
 }
 
-// Run check every 30 seconds
-setInterval(checkForUpdates, 30000);
+// Run check every 120 seconds
+setInterval(checkForUpdates, 120000);

@@ -1,0 +1,47 @@
+<div id="large-next-job-card-overlay" class="large-next-job-card-overlay hidden">
+    <div class="large-card-container">
+        <div class="card h-100 no-border">
+            <div class="card-body p-0">
+                <!-- Machine and Job Names -->
+                <div class="row machine-row m-0 align-items-center">
+                    <div class="col-6 text-left">
+                        <h2>{{ machine.name }}</h2>
+                    </div>
+                    <div class="col-6 text-right">
+                        <h2>{{ machine.next_job.name }}</h2>
+                    </div>
+                </div>
+
+                <!-- Job details: Material, Quantity, Location -->
+                <div class="row job-details-row m-0">
+                    <div class="col-4 text-left">
+                        <p class="title">Material</p>
+                        <p class="value">{{ machine.next_job.material }}</p>
+                    </div>
+                    <div class="col-4 text-center">
+                        <p class="title">Quantity</p>
+                        <p class="value">{{ machine.next_job.quantity }}</p>
+                    </div>
+                    <div class="col-4 text-right">
+                        <p class="title">Location</p>
+                        <p class="value">{{ machine.next_job.location }}</p>
+                    </div>
+                </div>
+
+                <!-- PDF placeholder container (specific to large card) -->
+                <div class="large-pdf-placeholder-container">
+                    <div class="large-pdf-placeholder">
+                        <img src="{{ machine.next_job.drawing_image_base64 }}" alt="Manufacturing Drawing" style="width: 100%; height: auto; max-height: 100%; object-fit: contain;" />
+                    </div>
+                </div>
+
+                <!-- Barcode for monitor operation -->
+                <div class="row job-details-row m-0">
+                    <div id="barcode-large" class="col-12 text-center">
+                        <svg id="barcode-svg"></svg> <!-- SVG for rendering barcode -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
