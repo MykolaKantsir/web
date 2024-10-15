@@ -32,11 +32,13 @@ ALLOWED_HOSTS = [
     '127.0.0.1', 
     'gastoninternal.azurewebsites.net', 
     'https://gastoninternal.azurewebsites.net',
+    'http://gastoninternal.azurewebsites.net',
     '169.254.129.5',
     '169.254.129.6',
     ]
 
 CSRF_TRUSTED_ORIGINS = [
+    'http://gastoninternal.azurewebsites.net',
     'https://gastoninternal.azurewebsites.net',
     ]
 
