@@ -2,8 +2,9 @@ from django.shortcuts import render
 from django.contrib.auth import login, authenticate, logout
 from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
+from django.views.decorators.csrf import csrf_exempt
 
-
+@csrf_exempt
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
