@@ -9,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
+from monitoring.defaults import machines_to_show
 from monitoring.utils import is_ajax, machine_current_database_state
 from monitoring.utils import convert_time_django_javascript, convert_to_local_time
 from monitoring.utils import timedelta_to_HHMMSS, parse_isoformat
@@ -17,6 +18,16 @@ from monitoring import strings
 from datetime import timedelta, datetime
 from collections import defaultdict
 import json
+import threading
+import time
+
+
+
+# Cache for machine states
+machine_states_cache = {}
+
+# Initialize machine data with `current_state.id` for each machine
+machines_data = {name: (machine, machine.current_state.id) for name, machine in {name: Machine.objects.get(id=id) for name, id in machines_to_show.items()}.items() if machine.current_state}
 
 # Create your views here.
 def home(request):
@@ -45,6 +56,65 @@ def home(request):
         'virtual_machines': virtual_machines,
     }        
     return render(request, "monitoring/dashboard_main.html", context)
+
+
+def update_machine_states_cache():
+    """
+    Background task to update the machine_states_cache every 30 seconds.
+    Batch fetches current Machine_state records by their IDs and updates the cache.
+    """
+    global machine_states_cache
+    while True:
+        # Extract current state IDs from machines_data
+        current_state_ids = [state_id for _, state_id in machines_data.values()]
+
+        # Batch retrieve all current Machine_state records and index by their ID
+        current_states = Machine_state.objects.filter(id__in=current_state_ids)
+        current_states_dict = {state.id: state for state in current_states}
+
+        # Populate the cache using the current state data for each machine
+        machine_states_cache = {
+            machine_name: {
+                "status": current_states_dict[state_id].status,
+                "this_cycle_duration": current_states_dict[state_id].this_cycle_duration,
+                "remain_time": current_states_dict[state_id].remain_time,
+                "last_cycle_duration": current_states_dict[state_id].last_cycle_duration,
+                "current_tool": current_states_dict[state_id].current_tool,
+                "active_nc_program": current_states_dict[state_id].active_nc_program,
+                "current_machine_time": current_states_dict[state_id].current_machine_time,
+            }
+            for machine_name, (_, state_id) in machines_data.items() if state_id in current_states_dict
+        }
+
+        # Check if any machines are missing from the cache and print a warning
+        missing_machines = [name for name, (_, state_id) in machines_data.items() if state_id not in current_states_dict]
+        if missing_machines:
+            print(f"Warning: Missing updated states for machines: {missing_machines}")
+        
+        time.sleep(10)  # Update every 30 seconds to reduce database load
+
+# Start the background thread to keep the machine states cache updated
+# `daemon=True` ensures the thread will exit when the main program does
+thread = threading.Thread(target=update_machine_states_cache, daemon=True)
+thread.start()
+
+@login_required
+def dashboard(request):
+    """
+    View to handle the new dashboard page.
+    - On non-AJAX requests, renders the 'dashboard_net.html' template with initial machine data.
+    - On AJAX requests, returns the latest machine states from `machine_states_cache` in JSON format.
+    """
+    if is_ajax(request):  # Use the custom is_ajax function
+        # Return machine states from the cache as JSON
+        return JsonResponse({"machines": machine_states_cache}, status=200)
+    
+    # For non-AJAX requests, render the dashboard with initial machine data
+    context = {
+        'machines': machines_data.keys(),  # Pass machine names for display
+    }
+    return render(request, 'monitoring/dashboard.html', context)
+
 
 def proxy(request):
     if request.method == 'POST':

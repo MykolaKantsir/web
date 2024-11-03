@@ -1,0 +1,114 @@
+/* Set page background to light grey for consistency */
+body {
+    background-color: #f3f7f9;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+/* Container for all machine cards with responsive grid layout */
+#machines_container {
+    display: grid;
+    gap: 2px; /* 2px gap between cards */
+    width: 100%;
+    height: 100vh; /* Full viewport height */
+    max-width: 1870px;
+    max-height: 910px;
+    margin: 0 auto;
+
+    /* Auto-adjust columns based on available space */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-rows: 1fr 1fr; /* Exactly 2 rows of equal height */
+}
+
+/* Machine card styling */
+.card {
+    background-color: #bbbfbe;
+    border: none;
+    box-shadow: none;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%; /* Full width within grid cell */
+    height: 100%; /* Full height within grid cell */
+}
+
+/* Card body */
+.card-body {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #bbbfbe;
+    height: 100%;
+}
+
+/* Styling for machine title */
+.card-title {
+    font-size: 1em;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    padding: 10px 0;
+    background-color: #1b2b68;
+    color: #f3f7f9;
+    margin: 0;
+}
+
+/* Table styling inside the card */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 6px;
+    font-size: 0.9em;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.table th {
+    font-weight: normal;
+    color: #555;
+}
+
+.table .status {
+    font-weight: bold;
+}
+
+/* Status-specific colors */
+.status.ACTIVE {
+    color: #28a745;
+}
+
+.status.STOPPED {
+    color: #dc3545;
+}
+
+.status.FEED-HOLD {
+    color: #007bff;
+}
+
+/* Background gradient for remaining time row */
+.remain-time-row {
+    transition: background 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    #machines_container {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    #machines_container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto; /* Allow rows to adjust naturally on small screens */
+    }
+}

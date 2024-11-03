@@ -301,6 +301,7 @@ def clean_nc_program_name(name: str) -> str:
         new_name += extention
     
     return new_name
+
 # function to get machine state from database
 # machine - Machine object, not specified because of circular import
 def machine_current_database_state(machine) -> dict:

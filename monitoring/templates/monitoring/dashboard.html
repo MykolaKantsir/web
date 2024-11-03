@@ -1,0 +1,28 @@
+<!-- dashboard.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Machine Dashboard</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <!-- Custom CSS for styling -->
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div id="machines_container">
+            {% for machine in machines %}
+            <div class="card">
+                {% include "monitoring/machine_card_net.html" with machine_name=machine %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Bootstrap and JavaScript -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <!-- Link to the dashboard JavaScript that will handle updates -->
+    <script src="{% static 'js/dashboard_net.js' %}"></script>
+</body>
+</html>

@@ -13,6 +13,19 @@ january_the_first = date(2022,1,1)
 # active program default
 nc_program_default = 'default.NC'
 
+# Machines to be shown on the dashboard
+machines_to_show = {
+    "ST20Y" : 10,
+    "NLX1500 1" : 12,
+    "NLX1500 2" : 13,
+    "NLX2500" : 11,
+    "VF2SSYT" : 5,
+    "VF2SS 5th_axis" : 7,
+    "UMC500SS" : 8,
+    "UMC750SS" : 6,
+    "DMX600" : 9,
+    "DMX800" : 14,
+}
 
 # state default
 state_default = {
