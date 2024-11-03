@@ -78,9 +78,9 @@ document.addEventListener("keydown", function(event) {
     }
 
     if (isCarouselActive) {
-        if (event.key === "ArrowRight") {
+        if (event.key === "PageDown") {
             showNextCard();
-        } else if (event.key === "ArrowLeft") {
+        } else if (event.key === "PageUp") {
             showPreviousCard();
         }
     }
@@ -102,7 +102,7 @@ document.addEventListener("keydown", function(event) {
         return;
     }
 
-    if (event.key === "ArrowRight" && !isCarouselActive) {
+    if (event.key === "PageDown" && !isCarouselActive) {
         startCarousel();
     }
 });

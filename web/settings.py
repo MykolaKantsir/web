@@ -32,11 +32,13 @@ ALLOWED_HOSTS = [
     '127.0.0.1', 
     'gastoninternal.azurewebsites.net', 
     'https://gastoninternal.azurewebsites.net',
+    'http://gastoninternal.azurewebsites.net',
     '169.254.129.5',
     '169.254.129.6',
     ]
 
 CSRF_TRUSTED_ORIGINS = [
+    'http://gastoninternal.azurewebsites.net',
     'https://gastoninternal.azurewebsites.net',
     ]
 
@@ -67,6 +69,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use PostgreSQL to store session data
+SESSION_COOKIE_HTTPONLY = False  # Security: Allow JavaScript access to session cookie
+SESSION_COOKIE_SECURE = False  # Enable if you're using HTTPS in production
+SESSION_COOKIE_AGE = 1209600  # Set session expiration (2 weeks in seconds)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Do not expire sessions when browser closes
+SESSION_SAVE_EVERY_REQUEST = False  # Save session only when modified
 
 ROOT_URLCONF = 'web.urls'
 
