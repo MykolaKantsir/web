@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.defaults import machines_to_show
@@ -29,7 +30,31 @@ machine_states_cache = {}
 # Initialize machine data with `current_state.id` for each machine
 machines_data = {name: (machine, machine.current_state.id) for name, machine in {name: Machine.objects.get(id=id) for name, id in machines_to_show.items()}.items() if machine.current_state}
 
-# Create your views here.
+cache_lock = threading.Lock()
+
+def initialize_machine_states_cache():
+    """
+    Populate the machine_states_cache from machines_data with all information about the machine state.
+    """
+    global machine_states_cache
+
+    with cache_lock:  # Ensure thread-safe initialization
+        # Iterate over machines_data and populate the cache
+        for machine_name, (machine, state_id) in machines_data.items():
+            if machine.current_state:  # Ensure the machine has a current state
+                machine_states_cache[machine_name] = {
+                    "status": machine.current_state.status,
+                    "this_cycle_duration": machine.current_state.this_cycle_duration,
+                    "remain_time": machine.current_state.remain_time,
+                    "last_cycle_duration": machine.current_state.last_cycle_duration,
+                    "current_tool": machine.current_state.current_tool,
+                    "active_nc_program": machine.current_state.active_nc_program,
+                    "current_machine_time": machine.current_state.current_machine_time,
+                }
+
+# Initialize the cache at startup
+initialize_machine_states_cache()
+
 def home(request):
     machines = Machine.objects.all().exclude(name=strings.machine_uknown)
     virtual_machines = []
@@ -58,63 +83,65 @@ def home(request):
     return render(request, "monitoring/dashboard_main.html", context)
 
 
-def update_machine_states_cache():
+def save_states_to_database():
     """
-    Background task to update the machine_states_cache every 30 seconds.
-    Batch fetches current Machine_state records by their IDs and updates the cache.
+    Periodically save cached machine states to the database.
     """
-    global machine_states_cache
     while True:
-        # Extract current state IDs from machines_data
-        current_state_ids = [state_id for _, state_id in machines_data.values()]
+        with cache_lock:
+            # Collect machines with updated states
+            machines_to_update = []
+            for machine_name, state in machine_states_cache.items():
+                machine, _ = machines_data.get(machine_name, (None, None))
+                if machine:
+                    machine.current_state.status = state["status"]
+                    machines_to_update.append(machine.current_state)
 
-        # Batch retrieve all current Machine_state records and index by their ID
-        current_states = Machine_state.objects.filter(id__in=current_state_ids)
-        current_states_dict = {state.id: state for state in current_states}
+        # Bulk update the database outside the lock
+        if machines_to_update:
+            Machine_state.objects.bulk_update(machines_to_update, ["status"])
 
-        # Populate the cache using the current state data for each machine
-        machine_states_cache = {
-            machine_name: {
-                "status": current_states_dict[state_id].status,
-                "this_cycle_duration": current_states_dict[state_id].this_cycle_duration,
-                "remain_time": current_states_dict[state_id].remain_time,
-                "last_cycle_duration": current_states_dict[state_id].last_cycle_duration,
-                "current_tool": current_states_dict[state_id].current_tool,
-                "active_nc_program": current_states_dict[state_id].active_nc_program,
-                "current_machine_time": current_states_dict[state_id].current_machine_time,
-            }
-            for machine_name, (_, state_id) in machines_data.items() if state_id in current_states_dict
-        }
+        time.sleep(3)  # Save every 3 seconds
 
-        # Check if any machines are missing from the cache and print a warning
-        missing_machines = [name for name, (_, state_id) in machines_data.items() if state_id not in current_states_dict]
-        if missing_machines:
-            print(f"Warning: Missing updated states for machines: {missing_machines}")
-        
-        time.sleep(10)  # Update every 30 seconds to reduce database load
-
-# Start the background thread to keep the machine states cache updated
-# `daemon=True` ensures the thread will exit when the main program does
-thread = threading.Thread(target=update_machine_states_cache, daemon=True)
-thread.start()
 
 @login_required
 def dashboard(request):
     """
-    View to handle the new dashboard page.
-    - On non-AJAX requests, renders the 'dashboard_net.html' template with initial machine data.
-    - On AJAX requests, returns the latest machine states from `machine_states_cache` in JSON format.
+    Serve cached machine states to clients.
     """
-    if is_ajax(request):  # Use the custom is_ajax function
-        # Return machine states from the cache as JSON
-        return JsonResponse({"machines": machine_states_cache}, status=200)
-    
-    # For non-AJAX requests, render the dashboard with initial machine data
-    context = {
-        'machines': machines_data.keys(),  # Pass machine names for display
-    }
-    return render(request, 'monitoring/dashboard.html', context)
+    if is_ajax(request):
+        with cache_lock:
+            return JsonResponse({"machines": machine_states_cache}, status=200)
 
+    context = {"machines": machines_data.keys()}
+    return render(request, "monitoring/dashboard.html", context)
+
+@csrf_exempt
+@require_POST
+def update_machine_status(request):
+    """
+    Update only the status of a machine's current state in the cache.
+    """
+    try:
+        data = json.loads(request.body)
+        machine_name = data.get("machine_name")
+        new_status = data.get("status")
+
+        with cache_lock:
+            if machine_name in machine_states_cache:
+                machine_states_cache[machine_name]["status"] = new_status
+
+        return JsonResponse({"message": "Machine status updated successfully."}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format."}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# Start background thread for saving states to the database
+thread = threading.Thread(target=save_states_to_database, daemon=True)
+thread.start()
 
 def proxy(request):
     if request.method == 'POST':

@@ -110,7 +110,7 @@ function update_visual() {
 // Function to start the periodic fetching of machine states every 30 seconds
 function startFetching() {
     fetchMachineStates();  // Initial fetch
-    setInterval(fetchMachineStates, 30000);  // Fetch every 30 seconds
+    setInterval(fetchMachineStates, 2000);  // Fetch every 2 seconds
 }
 
 // Start fetching machine states once the page has fully loaded
