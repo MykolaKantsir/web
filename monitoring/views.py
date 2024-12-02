@@ -120,18 +120,27 @@ def dashboard(request):
 @require_POST
 def update_machine_status(request):
     """
-    Update only the status of a machine's current state in the cache.
+    Update the states of multiple machines in the machine_states_cache based on the incoming JSON request.
     """
     try:
+        # Parse JSON data from the request
         data = json.loads(request.body)
-        machine_name = data.get("machine_name")
-        new_status = data.get("status")
+        machines_data = data.get("machines", [])
 
+        if not machines_data:
+            return JsonResponse({"error": "No machines data provided."}, status=400)
+
+        # Update the cache for each machine
         with cache_lock:
-            if machine_name in machine_states_cache:
-                machine_states_cache[machine_name]["status"] = new_status
+            for machine_data in machines_data:
+                machine_name = machine_data.get("machine_name")
+                new_status = machine_data.get("status")
 
-        return JsonResponse({"message": "Machine status updated successfully."}, status=200)
+                # Ensure the machine exists in the cache
+                if machine_name in machine_states_cache:
+                    machine_states_cache[machine_name]["status"] = new_status
+
+        return JsonResponse({"message": "Machine states updated in cache successfully."}, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON format."}, status=400)
