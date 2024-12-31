@@ -1,0 +1,55 @@
+/* Pallette colors */
+/* 021c75 Midnight blue */
+/* ffffff White */
+/* B8bfc1 Silver */
+
+/* Container styles for alignment */
+.container {
+    text-align: center;
+  }
+  
+  /* Custom button styles */
+  .custom-button {
+    display: inline-block;
+    width: 100%;
+    max-width: 600px;
+    font-size: 2rem;
+    font-weight: bold;
+    padding: 40px;
+    text-align: center;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #ffffff; /* White text */
+    border: 2px solid #021c75; /* Border to match the theme */
+  }
+  
+  /* Button for Add New Template */
+  .btn-add-template {
+    background-color: #021c75; /* Midnight blue */
+  }
+  
+  .btn-add-template:hover {
+    background-color: #031a5c; /* Slightly darker midnight blue for hover */
+    color: #ffffff;
+  }
+  
+  /* Button for Measure */
+  .btn-measure {
+    background-color: #b8bfc1; /* Silver */
+    color: #021c75; /* Midnight blue text */
+  }
+  
+  .btn-measure:hover {
+    background-color: #a4adb0; /* Slightly darker silver for hover */
+    color: #021c75; /* Ensure text remains midnight blue */
+  }
+  
+  /* Global styling for a clean look */
+  body {
+    background-color: #f7f9fc; /* Light shade as a background */
+  }
+  
+  .custom-button:hover {
+    opacity: 0.95; /* Subtle hover effect */
+  }
+  

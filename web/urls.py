@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('inventory/', include('inventory.urls')),
     path('monitoring/', include('monitoring.urls')),
+    path('measuring/', include('measuring.urls')),
     path('accounts/login/', views.login_view, name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]

@@ -1,0 +1,15 @@
+{% extends "measuring/index.html" %}
+
+{% block content %}
+<div class="container mt-5 d-flex flex-column align-items-center justify-content-center">
+  <!-- First Block -->
+  <a href="{% url 'new_template' %}" class="custom-button btn-add-template mb-4">
+    Add New Template
+  </a>
+
+  <!-- Second Block -->
+  <a href="{% url 'measure' %}" class="custom-button btn-measure">
+    Measure
+  </a>
+</div>
+{% endblock %}
