@@ -1,10 +1,41 @@
 {% extends "measuring/index.html" %}
+{% load static %}
 
 {% block title %} New template {% endblock %}
 
+{% block additional_css %}
+  <link href="{% static 'css/cropper.css' %}" rel="stylesheet">
+{% endblock %}
+
+
 {% block content %}
-  <h1> New template </h1
+<div class="container-fluid" style="width: 100%; padding: 0; margin: 0;">
+  <div class="row" style="margin: 0; height: 100vh;">
+  <!-- Left Column: Picture and Buttons Area -->
+  <div class="col-md-6 d-flex flex-column justify-content-between align-items-stretch" style="border-right: 1px solid #ccc; padding: 0;">
+    <div class="d-flex align-items-center" style="flex-grow: 1;">
+      <img id="image" src="{% static 'images/sample.jpg' %}" alt="Sample Image" style="width: 100%; height: auto; display: block;">
+    </div>
+    <div class="text-center p-3" style="border-top: 1px solid #ccc; width: 100%;">
+      <button id="crop-button" class="btn btn-primary">Crop</button>
+      <button id="preview-button" class="btn btn-secondary ml-2">Preview</button>
+    </div>
+  </div>
+
+    <!-- Right Column: Crop Preview and Table -->
+    <div class="col-md-6 d-flex flex-column" style="padding: 0;">
+      <div class="crop-preview" id="cropped-result" style="border-bottom: 1px solid #ccc; flex: 1;">
+        <p class="text-center mt-5">Crop Preview Area</p>
+      </div>
+      <div class="table-area" style="flex: 1;">
+        <p class="text-center mt-5">Table Content Here</p>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block additional_scripts %}
+  <script src="{% static 'js/cropper.js' %}"></script>
+  <script src="{% static 'js/new_template.js' %}"></script>
 {% endblock %}
