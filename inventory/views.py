@@ -203,9 +203,9 @@ def search_category(request):
             if isinstance(selections, list):  
                 # Categorical facet
                 # # Check if the facet corresponds to a ManyToManyField field
-                if isinstance(getattr(product_class, facet).field, ManyToManyField):
+                if isinstance(getattr(matching_product, facet).field, ManyToManyField):
                     # Fetch the related model
-                    related_model = getattr(product_class, facet).field.related_model
+                    related_model = getattr(matching_product, facet).field.related_model
                     # Replace string selections with their corresponding IDs
                     ids = [related_model.objects.get(name=selection).id for selection in selections]
                     queryset = queryset.filter(**{facet + '__in': ids})
