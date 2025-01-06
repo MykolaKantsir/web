@@ -24,18 +24,25 @@
 
     <!-- Right Column: Crop Preview and Table -->
     <div class="col-md-6 d-flex flex-column" style="padding: 0;">
-      <div class="crop-preview" id="cropped-result" style="border-bottom: 1px solid #ccc; flex: 1;">
+      <!-- <div class="crop-preview" id="cropped-result" style="border-bottom: 1px solid #ccc; flex: 1;">
         <p class="text-center mt-5">Crop Preview Area</p>
-      </div>
+      </div> -->
       <div class="table-area" style="flex: 1;">
         <p class="text-center mt-5">Table Content Here</p>
       </div>
     </div>
   </div>
 </div>
+<!-- Spinner Overlay when OCR is processing -->
+<div id="spinner-container" class="d-flex justify-content-center align-items-center spinner-overlay">
+  <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
 {% endblock %}
 
 {% block additional_scripts %}
   <script src="{% static 'js/cropper.js' %}"></script>
+  <script src="{% static 'js/tesseract.min.js' %}"></script>
   <script src="{% static 'js/new_template.js' %}"></script>
 {% endblock %}
