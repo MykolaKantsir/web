@@ -37,30 +37,37 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Hidden row structure template -->
-            <tr id="row-template" class="d-none">
-              <td class="row-number"></td>
-              <td><input type="text" class="form-control value-input" placeholder="Enter value"></td>
-              <td><input type="text" class="form-control min-input" placeholder="Min" readonly></td>
-              <td><input type="text" class="form-control max-input" placeholder="Max" readonly></td>
-              <td>
+          <!-- Hidden row structure template -->
+          <tr id="row-template" class="d-none">
+            <td class="row-number"></td>
+            <td><input type="text" class="form-control value-input" placeholder="Enter value"></td>
+            <td><input type="text" class="form-control min-input" placeholder="Min" readonly></td>
+            <td><input type="text" class="form-control max-input" placeholder="Max" readonly></td>
+            <td>
                 <div class="btn-group" role="group">
-                  <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
-                  <label class="btn btn-outline-primary" for="type1">1</label>
+                    <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
+                    <label class="btn btn-outline-primary" for="type1">1</label>
 
-                  <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
-                  <label class="btn btn-outline-primary" for="type2">2</label>
+                    <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
+                    <label class="btn btn-outline-primary" for="type2">2</label>
 
-                  <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
-                  <label class="btn btn-outline-primary" for="type3">3</label>
+                    <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
+                    <label class="btn btn-outline-primary" for="type3">3</label>
                 </div>
-              </td>
-              <td class="text-center">
+            </td>
+            <td class="text-center">
                 <button class="btn btn-light more-options">
-                  <i class="bi bi-three-dots-vertical"></i>
+                    <i class="bi bi-three-dots-vertical"></i>
                 </button>
-              </td>
-            </tr>
+            </td>
+            <!-- Hidden fields for cropped image data -->
+            <td style="display: none;">
+                <input type="hidden" class="crop-x">
+                <input type="hidden" class="crop-y">
+                <input type="hidden" class="crop-width">
+                <input type="hidden" class="crop-height">
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>

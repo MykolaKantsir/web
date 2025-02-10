@@ -53,10 +53,10 @@ window.onload = function () {
         return height > width;
     }
 
-    // Function to draw a rectangle on the image and update cropper
-    function markCropped(cropBoxData) {
+    // Function to draw all rectangles and numbers on the image
+    function markCropped(cropBoxData, rowNumber, position = 1) {
         const img = new Image();
-        img.src = image.src; // Use the current image source
+        img.src = image.src; // Use the current image source (preserve previous drawings)
 
         img.onload = function () {
             const canvas = document.createElement('canvas');
@@ -64,8 +64,9 @@ window.onload = function () {
             canvas.height = img.naturalHeight;
 
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0); // Keep previously drawn rectangles
 
+            // Draw red rectangle
             ctx.strokeStyle = 'red';
             ctx.lineWidth = 2;
             ctx.strokeRect(
@@ -75,23 +76,61 @@ window.onload = function () {
                 cropBoxData.height  // Correct height
             );
 
+            // Determine position for the number
+            let numberX = cropBoxData.x; // Default: top-left corner (position 1)
+            let numberY = cropBoxData.y - 10; // Above the top-left corner
+
+            // Update position based on requested placement
+            switch (position) {
+                case 2: // Top-center
+                    numberX = cropBoxData.x + cropBoxData.width / 2;
+                    numberY = cropBoxData.y - 10;
+                    break;
+                case 3: // Top-right
+                    numberX = cropBoxData.x + cropBoxData.width;
+                    numberY = cropBoxData.y - 10;
+                    break;
+                case 4: // Middle-right
+                    numberX = cropBoxData.x + cropBoxData.width + 10;
+                    numberY = cropBoxData.y + cropBoxData.height / 2;
+                    break;
+                case 5: // Bottom-right
+                    numberX = cropBoxData.x + cropBoxData.width;
+                    numberY = cropBoxData.y + cropBoxData.height + 20;
+                    break;
+                case 6: // Bottom-center
+                    numberX = cropBoxData.x + cropBoxData.width / 2;
+                    numberY = cropBoxData.y + cropBoxData.height + 20;
+                    break;
+                case 7: // Bottom-left
+                    numberX = cropBoxData.x;
+                    numberY = cropBoxData.y + cropBoxData.height + 20;
+                    break;
+                case 8: // Middle-left
+                    numberX = cropBoxData.x - 20;
+                    numberY = cropBoxData.y + cropBoxData.height / 2;
+                    break;
+                default: // Position 1 (top-left)
+                    numberX = cropBoxData.x;
+                    numberY = cropBoxData.y - 10;
+                    break;
+            }
+
+            // Draw bold red number
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText(rowNumber, numberX, numberY);
+
             // Update the main image's source and cropper
             image.src = canvas.toDataURL();
             cropper.replace(image.src); // Update cropper with the new image
-        //     cropper.ready = function () {
-        //         restoreSelectionFrame({
-        //             x: cropBoxData.x,
-        //             y: cropBoxData.y,
-        //             width: cropBoxData.width,
-        //             height: cropBoxData.height
-        //         }); // Restore the selection frame            
-        // };
 
-        img.onerror = function () {
-            console.error('Failed to load the image for drawing.');
-        };
+            img.onerror = function () {
+                console.error('Failed to load the image for drawing.');
+            };
         };
     }
+
 
     // Function to restore the selection frame
     function restoreSelectionFrame(data) {
@@ -102,26 +141,29 @@ window.onload = function () {
     async function handleCrop() {
         const croppedCanvas = cropper.getCroppedCanvas();
         const cropBoxData = cropper.getData(); // Get crop area data
-
+    
         if (croppedCanvas) {
             showSpinner();
-
+    
             try {
                 let canvasToProcess = croppedCanvas;
                 if (isVertical(croppedCanvas)) {
                     canvasToProcess = rotate90(croppedCanvas);
                 }
-
+    
                 const recognizedText = await readText(canvasToProcess);
-
+    
+                // Get row number
+                const rowCount = document.querySelectorAll("#data-table tbody tr:not(#row-template)").length + 1;
+    
                 if (recognizedText) {
-                    addRow(recognizedText);
+                    addRow(recognizedText, cropBoxData);
+                    markCropped(cropBoxData, rowCount); // Pass row number to markCropped
                 } else {
-                    addRow('No text found');
+                    addRow('No text found', cropBoxData);
+                    markCropped(cropBoxData, rowCount); // Even if no text, mark the crop
                 }
-
-                // Mark cropped area
-                markCropped(cropBoxData);
+    
             } catch (error) {
                 alert('Error recognizing text.');
             } finally {
@@ -130,7 +172,7 @@ window.onload = function () {
         } else {
             alert('Failed to crop the image. Please try again.');
         }
-    }
+    } 
 
     // Function to rotate the canvas 90 degrees clockwise
     function rotate90(canvas) {
@@ -173,41 +215,58 @@ window.onload = function () {
 
 
     // Function to add a new row with calculated tolerances
-    function addRow(content, general_tolerance = 0.1) {
+    function addRow(content, cropBoxData, general_tolerance = 0.1) {
         const tableBody = document.querySelector("#data-table tbody");
         const rowTemplate = document.getElementById("row-template");
-
+    
         if (!rowTemplate) {
             console.error("Row template not found!");
             return;
         }
-
+    
         // Clone the hidden template row
         const newRow = rowTemplate.cloneNode(true);
         newRow.classList.remove("d-none"); // Make it visible
         newRow.removeAttribute("id"); // Remove the template ID
-
+    
         // Update row number
         const rowCount = tableBody.querySelectorAll("tr:not(#row-template)").length + 1;
         newRow.querySelector(".row-number").textContent = rowCount;
-
+    
+        // Convert value to use a decimal point if possible
+        let normalizedValue = content.replace(",", ".").trim();
+        let parsedValue = parseFloat(normalizedValue);
+        
+        if (!isNaN(parsedValue)) {
+            normalizedValue = parsedValue.toString(); // Convert back to string with a dot
+        }
+    
         // Set value input field
         const valueInput = newRow.querySelector(".value-input");
-        valueInput.value = content;
-
+        valueInput.value = normalizedValue;
+    
         // Calculate tolerances
         const [min, max] = calculateTolerances(content, general_tolerance);
-
+    
         // Set min and max input fields
         const minInput = newRow.querySelector(".min-input");
         const maxInput = newRow.querySelector(".max-input");
-
+    
         minInput.value = min !== null ? min : "";
         maxInput.value = max !== null ? max : "";
-
+    
+        // Store crop data in hidden fields
+        if (cropBoxData) {
+            newRow.querySelector(".crop-x").value = cropBoxData.x.toFixed(2);
+            newRow.querySelector(".crop-y").value = cropBoxData.y.toFixed(2);
+            newRow.querySelector(".crop-width").value = cropBoxData.width.toFixed(2);
+            newRow.querySelector(".crop-height").value = cropBoxData.height.toFixed(2);
+        }
+    
         // Append the new row
         tableBody.appendChild(newRow);
     }
+    
 
     // Function to recognize text from the cropped image
     function readText(croppedCanvas) {
