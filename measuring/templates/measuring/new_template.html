@@ -24,14 +24,47 @@
 
     <!-- Right Column: Crop Preview and Table -->
     <div class="col-md-6 d-flex flex-column" style="padding: 0;">
-      <!-- <div class="crop-preview" id="cropped-result" style="border-bottom: 1px solid #ccc; flex: 1;">
-        <p class="text-center mt-5">Crop Preview Area</p>
-      </div> -->
-      <div class="table-area" style="flex: 1;">
-        <p class="text-center mt-5">Table Content Here</p>
+      <div class="table-responsive p-3">
+        <table class="table table-bordered" id="data-table">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Value</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Type</th>
+              <th>More</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Hidden row structure template -->
+            <tr id="row-template" class="d-none">
+              <td class="row-number"></td>
+              <td><input type="text" class="form-control value-input" placeholder="Enter value"></td>
+              <td><input type="text" class="form-control min-input" placeholder="Min" readonly></td>
+              <td><input type="text" class="form-control max-input" placeholder="Max" readonly></td>
+              <td>
+                <div class="btn-group" role="group">
+                  <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
+                  <label class="btn btn-outline-primary" for="type1">1</label>
+
+                  <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
+                  <label class="btn btn-outline-primary" for="type2">2</label>
+
+                  <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
+                  <label class="btn btn-outline-primary" for="type3">3</label>
+                </div>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-light more-options">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
 </div>
 <!-- Spinner Overlay when OCR is processing -->
 <div id="spinner-container" class="d-flex justify-content-center align-items-center spinner-overlay">

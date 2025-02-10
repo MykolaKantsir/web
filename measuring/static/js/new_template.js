@@ -144,13 +144,69 @@ window.onload = function () {
         return offscreenCanvas;
     }
 
-    // Function to add a new HTML row
-    function addRow(content) {
-        const tableArea = document.querySelector('.table-area');
-        const newRow = document.createElement('div');
-        newRow.className = 'row';
-        newRow.innerHTML = `<div class="col">${content}</div>`;
-        tableArea.appendChild(newRow);
+    // Function to calculate tolerances correctly
+    function calculateTolerances(value, general_tolerance) {
+        // Replace commas with dots for decimal recognition
+        let cleanedValue = value.replace(",", ".").trim();
+
+        // Ensure it's a valid float number
+        if (!/^\d*\.?\d+$/.test(cleanedValue)) {
+            return [null, null]; // Invalid format, return empty values
+        }
+
+        const parsedValue = parseFloat(cleanedValue);
+
+        if (isNaN(parsedValue)) {
+            return [null, null]; // Return nulls if value is not a number
+        }
+
+        let min = parsedValue - general_tolerance;
+        let max = parsedValue + general_tolerance;
+
+        // Ensure min is never negative
+        if (min < 0) {
+            min = 0;
+        }
+
+        return [min.toFixed(3), max.toFixed(3)]; // Return formatted values
+    }
+
+
+    // Function to add a new row with calculated tolerances
+    function addRow(content, general_tolerance = 0.1) {
+        const tableBody = document.querySelector("#data-table tbody");
+        const rowTemplate = document.getElementById("row-template");
+
+        if (!rowTemplate) {
+            console.error("Row template not found!");
+            return;
+        }
+
+        // Clone the hidden template row
+        const newRow = rowTemplate.cloneNode(true);
+        newRow.classList.remove("d-none"); // Make it visible
+        newRow.removeAttribute("id"); // Remove the template ID
+
+        // Update row number
+        const rowCount = tableBody.querySelectorAll("tr:not(#row-template)").length + 1;
+        newRow.querySelector(".row-number").textContent = rowCount;
+
+        // Set value input field
+        const valueInput = newRow.querySelector(".value-input");
+        valueInput.value = content;
+
+        // Calculate tolerances
+        const [min, max] = calculateTolerances(content, general_tolerance);
+
+        // Set min and max input fields
+        const minInput = newRow.querySelector(".min-input");
+        const maxInput = newRow.querySelector(".max-input");
+
+        minInput.value = min !== null ? min : "";
+        maxInput.value = max !== null ? max : "";
+
+        // Append the new row
+        tableBody.appendChild(newRow);
     }
 
     // Function to recognize text from the cropped image
