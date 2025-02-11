@@ -139,40 +139,51 @@ window.onload = function () {
 
     // Function to handle cropping action
     async function handleCrop() {
-        const croppedCanvas = cropper.getCroppedCanvas();
-        const cropBoxData = cropper.getData(); // Get crop area data
-    
-        if (croppedCanvas) {
-            showSpinner();
-    
-            try {
-                let canvasToProcess = croppedCanvas;
-                if (isVertical(croppedCanvas)) {
-                    canvasToProcess = rotate90(croppedCanvas);
-                }
-    
-                const recognizedText = await readText(canvasToProcess);
-    
-                // Get row number
-                const rowCount = document.querySelectorAll("#data-table tbody tr:not(#row-template)").length + 1;
-    
-                if (recognizedText) {
-                    addRow(recognizedText, cropBoxData);
-                    markCropped(cropBoxData, rowCount); // Pass row number to markCropped
-                } else {
-                    addRow('No text found', cropBoxData);
-                    markCropped(cropBoxData, rowCount); // Even if no text, mark the crop
-                }
-    
-            } catch (error) {
-                alert('Error recognizing text.');
-            } finally {
-                hideSpinner();
-            }
-        } else {
-            alert('Failed to crop the image. Please try again.');
+        // Ensure there is an active selection
+        const cropBoxData = cropper.getData();
+        if (!cropBoxData.width || !cropBoxData.height) {
+            alert("Please select a crop area before cropping.");
+            return;
         }
-    } 
+    
+        const croppedCanvas = cropper.getCroppedCanvas();
+        if (!croppedCanvas) {
+            alert("Failed to generate cropped image. Please try again.");
+            return;
+        }
+    
+        showSpinner();
+    
+        try {
+            let canvasToProcess = croppedCanvas;
+            if (isVertical(croppedCanvas)) { // Function still works
+                canvasToProcess = rotate90(croppedCanvas);
+            }
+    
+            const recognizedText = await readText(canvasToProcess);
+    
+            // Get row number
+            const rowCount = document.querySelectorAll("#data-table tbody tr:not(#row-template)").length + 1;
+    
+            // ✅ Rename variable to avoid shadowing
+            const isDimensionVertical = cropBoxData.height > cropBoxData.width;
+    
+            if (recognizedText) {
+                addRow(recognizedText, cropBoxData, isDimensionVertical);
+                markCropped(cropBoxData, rowCount, isDimensionVertical);
+            } else {
+                addRow('No text found', cropBoxData, isDimensionVertical);
+                markCropped(cropBoxData, rowCount, isDimensionVertical);
+            }
+    
+        } catch (error) {
+            console.error("Error recognizing text:", error);
+            alert("Error recognizing text.");
+        } finally {
+            hideSpinner();
+        }
+    }    
+    
 
     // Function to rotate the canvas 90 degrees clockwise
     function rotate90(canvas) {
@@ -214,8 +225,8 @@ window.onload = function () {
     }
 
 
-    // Function to add a new row with calculated tolerances
-    function addRow(content, cropBoxData, general_tolerance = 0.1) {
+    // Function to add a new row with a structured dimension ID
+    function addRow(content, cropBoxData, isDimensionVertical, general_tolerance = 0.1) {
         const tableBody = document.querySelector("#data-table tbody");
         const rowTemplate = document.getElementById("row-template");
     
@@ -229,44 +240,24 @@ window.onload = function () {
         newRow.classList.remove("d-none"); // Make it visible
         newRow.removeAttribute("id"); // Remove the template ID
     
-        // Update row number
+        // Determine row number
         const rowCount = tableBody.querySelectorAll("tr:not(#row-template)").length + 1;
-        newRow.querySelector(".row-number").textContent = rowCount;
-    
-        // Convert value to use a decimal point if possible
-        let normalizedValue = content.replace(",", ".").trim();
-        let parsedValue = parseFloat(normalizedValue);
         
-        if (!isNaN(parsedValue)) {
-            normalizedValue = parsedValue.toString(); // Convert back to string with a dot
-        }
+        // Generate the dimension ID (e.g., "dimension-1")
+        const dimensionId = `dimension-${rowCount}`;
+        newRow.setAttribute("data-dimension-id", dimensionId); // Set as row attribute
     
-        // Set value input field
-        const valueInput = newRow.querySelector(".value-input");
-        valueInput.value = normalizedValue;
-    
-        // Calculate tolerances
-        const [min, max] = calculateTolerances(content, general_tolerance);
-    
-        // Set min and max input fields
-        const minInput = newRow.querySelector(".min-input");
-        const maxInput = newRow.querySelector(".max-input");
-    
-        minInput.value = min !== null ? min : "";
-        maxInput.value = max !== null ? max : "";
-    
-        // Store crop data in hidden fields
-        if (cropBoxData) {
-            newRow.querySelector(".crop-x").value = cropBoxData.x.toFixed(2);
-            newRow.querySelector(".crop-y").value = cropBoxData.y.toFixed(2);
-            newRow.querySelector(".crop-width").value = cropBoxData.width.toFixed(2);
-            newRow.querySelector(".crop-height").value = cropBoxData.height.toFixed(2);
-        }
+        // Fix radio button `name` attributes to be unique per row
+        newRow.querySelectorAll(".btn-check").forEach((radio, index) => {
+            const uniqueName = `type-selection-${rowCount}`;
+            radio.name = uniqueName;
+            radio.id = `type${index + 1}-row${rowCount}`;
+            newRow.querySelector(`label[for="type${index + 1}"]`).setAttribute("for", `type${index + 1}-row${rowCount}`);
+        });
     
         // Append the new row
         tableBody.appendChild(newRow);
     }
-    
 
     // Function to recognize text from the cropped image
     function readText(croppedCanvas) {

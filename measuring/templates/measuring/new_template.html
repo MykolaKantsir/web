@@ -40,9 +40,9 @@
           <!-- Hidden row structure template -->
           <tr id="row-template" class="d-none">
             <td class="row-number"></td>
-            <td><input type="text" class="form-control value-input" placeholder="Enter value"></td>
-            <td><input type="text" class="form-control min-input" placeholder="Min" readonly></td>
-            <td><input type="text" class="form-control max-input" placeholder="Max" readonly></td>
+            <td><input type="number" class="form-control value-input" placeholder="Enter value" step="any" inputmode="decimal"></td>
+            <td><input type="number" class="form-control min-input" placeholder="Min" step="any" inputmode="decimal"></td>
+            <td><input type="number" class="form-control max-input" placeholder="Max" step="any" inputmode="decimal"></td>
             <td>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
@@ -62,10 +62,12 @@
             </td>
             <!-- Hidden fields for cropped image data -->
             <td style="display: none;">
-                <input type="hidden" class="crop-x">
-                <input type="hidden" class="crop-y">
-                <input type="hidden" class="crop-width">
-                <input type="hidden" class="crop-height">
+              <input type="hidden" class="dimension-id">
+              <input type="hidden" class="crop-x">
+              <input type="hidden" class="crop-y">
+              <input type="hidden" class="crop-width">
+              <input type="hidden" class="crop-height">
+              <input type="hidden" class="is-vertical">
             </td>
           </tr>
           </tbody>
