@@ -5,85 +5,108 @@
 
 {% block additional_css %}
   <link href="{% static 'css/cropper.css' %}" rel="stylesheet">
+  <link href="{% static 'css/new_template.css' %}" rel="stylesheet"> <!-- NEW: External CSS -->
 {% endblock %}
-
 
 {% block content %}
 <div class="container-fluid" style="width: 100%; padding: 0; margin: 0;">
   <div class="row" style="margin: 0; height: 100vh;">
-  <!-- Left Column: Picture and Buttons Area -->
-  <div class="col-md-6 d-flex flex-column justify-content-between align-items-stretch" style="border-right: 1px solid #ccc; padding: 0;">
-    <div class="d-flex align-items-center" style="flex-grow: 1;">
-      <img id="image" src="{% static 'images/sample.jpg' %}" alt="Sample Image" style="width: 100%; height: auto; display: block;">
-    </div>
-    <div class="text-center p-3" style="border-top: 1px solid #ccc; width: 100%;">
-      <button id="crop-button" class="btn btn-primary">Crop</button>
-      <button id="preview-button" class="btn btn-secondary ml-2">Preview</button>
-    </div>
-  </div>
-
-    <!-- Right Column: Crop Preview and Table -->
-    <div class="col-md-6 d-flex flex-column" style="padding: 0;">
-      <div class="table-responsive p-3">
-        <table class="table table-bordered" id="data-table">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th>Value</th>
-              <th>Min</th>
-              <th>Max</th>
-              <th>Type</th>
-              <th>More</th>
-            </tr>
-          </thead>
-          <tbody>
-          <!-- Hidden row structure template -->
-          <tr id="row-template" class="d-none">
-            <td class="row-number"></td>
-            <td><input type="number" class="form-control value-input" placeholder="Enter value" step="any" inputmode="decimal"></td>
-            <td><input type="number" class="form-control min-input" placeholder="Min" step="any" inputmode="decimal"></td>
-            <td><input type="number" class="form-control max-input" placeholder="Max" step="any" inputmode="decimal"></td>
-            <td>
-                <div class="btn-group" role="group">
-                    <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
-                    <label class="btn btn-outline-primary" for="type1">1</label>
-
-                    <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
-                    <label class="btn btn-outline-primary" for="type2">2</label>
-
-                    <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
-                    <label class="btn btn-outline-primary" for="type3">3</label>
-                </div>
-            </td>
-            <td class="text-center">
-                <button class="btn btn-light more-options">
-                    <i class="bi bi-three-dots-vertical"></i>
-                </button>
-            </td>
-            <!-- Hidden fields for cropped image data -->
-            <td style="display: none;">
-              <input type="hidden" class="dimension-id">
-              <input type="hidden" class="crop-x">
-              <input type="hidden" class="crop-y">
-              <input type="hidden" class="crop-width">
-              <input type="hidden" class="crop-height">
-              <input type="hidden" class="is-vertical">
-            </td>
-          </tr>
-          </tbody>
-        </table>
+    <!-- Left Column: Picture and Buttons Area -->
+    <div class="col-md-6 d-flex flex-column justify-content-between align-items-stretch left-column">
+      <div class="d-flex flex-column align-items-center image-container">
+        <!-- File Upload Input -->
+        <input type="file" id="upload-drawing" accept="image/png, image/jpeg, application/pdf" class="form-control mb-2">
+        
+        <!-- Display File Name (Updated Dynamically) -->
+        <p id="file-name" style="display: none; font-size: 14px; color: gray;"></p>
+    
+        <!-- Image Preview (Updated Dynamically) -->
+        <img id="image" src="" alt="Uploaded Image Preview" style="max-width: 100%; height: auto; display: none;">
+      </div>
+      <div class="text-center p-3 button-container">
+          <button id="crop-button" class="btn btn-primary">Crop</button>
+          <button id="preview-button" class="btn btn-secondary ml-2">Preview</button>
       </div>
     </div>
+    <!-- Right Column: Crop Preview and Table -->
+    <div class="col-md-6 right-column">
+      <!-- Table Section (Scrollable) -->
+      <div class="table-container">
+        <div class="table-responsive">
+          <table class="table table-bordered" id="data-table">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Value</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Type</th>
+                <th>More</th>
+              </tr>
+            </thead>
+            <tbody>
+            <!-- Hidden row structure template -->
+            <tr id="row-template" class="d-none">
+              <td class="row-number"></td>
+              <td><input type="number" class="form-control value-input" placeholder="Enter value" step="any" inputmode="decimal"></td>
+              <td><input type="number" class="form-control min-input" placeholder="Min" step="any" inputmode="decimal"></td>
+              <td><input type="number" class="form-control max-input" placeholder="Max" step="any" inputmode="decimal"></td>
+              <td>
+                  <div class="btn-group" role="group">
+                      <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
+                      <label class="btn btn-outline-primary" for="type1">1</label>
+
+                      <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
+                      <label class="btn btn-outline-primary" for="type2">2</label>
+
+                      <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
+                      <label class="btn btn-outline-primary" for="type3">3</label>
+                  </div>
+              </td>
+              <td class="text-center">
+                  <button class="btn btn-light more-options">
+                      <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+              </td>
+              <!-- Hidden fields for cropped image data -->
+              <td style="display: none;">
+                <input type="hidden" class="dimension-id">
+                <input type="hidden" class="crop-x">
+                <input type="hidden" class="crop-y">
+                <input type="hidden" class="crop-width">
+                <input type="hidden" class="crop-height">
+                <input type="hidden" class="is-vertical">
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Preview Section (Fixed Size) -->
+      <div class="preview-container">
+        <img id="preview-image" src="" alt="Preview Image">
+      </div>
+    </div>
+  </div>
 </div>
+
 <!-- Spinner Overlay when OCR is processing -->
 <div id="spinner-container" class="d-flex justify-content-center align-items-center spinner-overlay">
   <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Loading...</span>
   </div>
 </div>
+
 {% endblock %}
 
 {% block additional_scripts %}
+  <script type="module">
+    import * as pdfjsLib from "{% static 'js/pdf.js' %}";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
+    window.pdfjsLib = pdfjsLib; // Ensure global availability
+  </script>
+  <script src="{% static 'js/upload_file.js' %}"></script>
   <script src="{% static 'js/cropper.js' %}"></script>
   <script src="{% static 'js/tesseract.min.js' %}"></script>
   <script src="{% static 'js/new_template.js' %}"></script>

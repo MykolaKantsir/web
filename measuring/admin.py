@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import Dimension, Drawing
 
-# Register your models here.
+
+# Register other models
+admin.site.register(Dimension)
+admin.site.register(Drawing)
