@@ -1,50 +1,58 @@
+// ✅ Ensure proper UI state on page load
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("upload_file.js loaded and ready!");
-
     const fileInput = document.getElementById("upload-drawing");
-    const fileNameDisplay = document.getElementById("file-name");
     const imageElement = document.getElementById("image");
+    const resetButton = document.getElementById("reset-drawing");
+    const rotateButton = document.getElementById("rotate-button");
 
-    if (!fileInput || !fileNameDisplay || !imageElement) {
-        console.error("Some elements are missing! Check your HTML IDs.");
+    if (!fileInput || !imageElement || !resetButton || !rotateButton) {
         return;
     }
 
+    // ✅ Disable Rotate button initially
+    rotateButton.disabled = true;
+
+    // ✅ Check session storage and update UI on page load
+    const storedImage = sessionStorage.getItem("uploadedImage");
+
+    if (storedImage) {
+        imageElement.src = storedImage;
+        imageElement.style.display = "block";
+        fileInput.style.display = "none";
+
+        // ✅ Enable Rotate button after restoring image
+        rotateButton.disabled = false;
+
+        // ✅ Dispatch event to initialize Cropper
+        document.dispatchEvent(new Event("imageLoaded"));
+    } else {
+        fileInput.style.display = "block";
+        imageElement.style.display = "none";
+    }
+
+    // ✅ Handle file selection
     fileInput.addEventListener("change", function (event) {
         const file = event.target.files[0];
-
         if (!file) {
-            console.warn("No file selected.");
             return;
         }
 
-        const fileName = file.name;
         const fileType = file.type;
-        const virtualPath = `/virtual/path/${fileName}`; // Simulated file path
-
-        console.log(`📂 Selected File: ${fileName}`);
-        console.log(`📁 Virtual Path: ${virtualPath}`);
 
         if (fileType === "application/pdf") {
-            console.log("📜 PDF detected, processing...");
-
-            processPDF(file, fileName, virtualPath).then(() => {
+            processPDF(file).then(() => {
                 finalizeUpload();
             });
 
-        } else if (fileType === "image/jpeg" || fileType === "image/png") {
-            console.log("🖼️ Image detected, displaying preview...");
-
+        } else if (fileType.startsWith("image/")) {
             const fileReader = new FileReader();
             fileReader.onload = function (e) {
                 const base64Image = e.target.result;
                 imageElement.src = base64Image;
                 imageElement.style.display = "block";
 
-                // ✅ Save in session storage
+                // ✅ Store in session storage
                 sessionStorage.setItem("uploadedImage", base64Image);
-                sessionStorage.setItem("uploadedFileName", fileName);
-                sessionStorage.setItem("uploadedFilePath", virtualPath);
 
                 finalizeUpload();
             };
@@ -54,81 +62,121 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // ✅ Load stored image after page refresh
-    const storedImage = sessionStorage.getItem("uploadedImage");
-    const storedFileName = sessionStorage.getItem("uploadedFileName");
-    const storedFilePath = sessionStorage.getItem("uploadedFilePath");
+    // ✅ Attach reset button event listener
+    resetButton.addEventListener("click", resetDrawing);
 
-    if (storedImage) {
-        imageElement.src = storedImage;
-        imageElement.style.display = "block";
-
-        console.log(`✅ Restored File: ${storedFileName}`);
-        console.log(`✅ Restored Path: ${storedFilePath}`);
-
-        finalizeUpload();
-    }
+    // ✅ Attach Rotate button event listener
+    rotateButton.addEventListener("click", image_rotate90);
 });
 
 // ✅ Function to process the uploaded PDF and convert it to an image
-function processPDF(file, fileName, virtualPath) {
+function processPDF(file) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
         fileReader.onload = function () {
             const typedArray = new Uint8Array(this.result);
+
             pdfjsLib.getDocument(typedArray).promise.then(function (pdf) {
                 pdf.getPage(1).then(function (page) {
                     const viewport = page.getViewport({ scale: 1.5 });
                     const canvas = document.createElement("canvas");
                     const context = canvas.getContext("2d");
+
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
 
                     page.render({ canvasContext: context, viewport: viewport }).promise.then(function () {
                         const base64Image = canvas.toDataURL("image/jpeg");
+
                         const imageElement = document.getElementById("image");
                         imageElement.src = base64Image;
                         imageElement.style.display = "block";
 
-                        // ✅ Save in session storage
                         sessionStorage.setItem("uploadedImage", base64Image);
-                        sessionStorage.setItem("uploadedFileName", fileName);
-                        sessionStorage.setItem("uploadedFilePath", virtualPath);
 
-                        console.log(`📂 PDF Converted: ${fileName}`);
-                        console.log(`📁 Saved Path: ${virtualPath}`);
+                        document.getElementById("rotate-button").disabled = false;
+                        document.dispatchEvent(new Event("imageLoaded"));
 
                         resolve();
                     });
                 });
             }).catch((error) => {
-                console.error("❌ Error processing PDF:", error);
-                reject();
+                reject(error);
             });
         };
         fileReader.readAsArrayBuffer(file);
     });
 }
 
-// ✅ Function to hide file input & file name display, and prevent continuous reloads
+// ✅ Function to finalize upload (hide file input and prevent multiple uploads)
 function finalizeUpload() {
-    console.log("✅ Finalizing upload: Hiding file input and file name display.");
-
     const fileInput = document.getElementById("upload-drawing");
-    const fileNameDisplay = document.getElementById("file-name");
+    const rotateButton = document.getElementById("rotate-button");
 
     if (fileInput) {
-        fileInput.style.display = "none"; // Hide file input
-    }
-    if (fileNameDisplay) {
-        fileNameDisplay.style.display = "none"; // Hide file name display
+        fileInput.style.display = "none";
+        fileInput.classList.add("d-none");
     }
 
-    // ✅ Prevent continuous page reloads
-    if (!sessionStorage.getItem("pageReloaded")) {
-        sessionStorage.setItem("pageReloaded", "true");
+    rotateButton.disabled = false;
+    document.dispatchEvent(new Event("imageLoaded"));
+}
+
+// ✅ Function to reset the drawing and allow new upload
+function resetDrawing() {
+    sessionStorage.removeItem("uploadedImage");
+
+    const imageElement = document.getElementById("image");
+    const fileInput = document.getElementById("upload-drawing");
+    const rotateButton = document.getElementById("rotate-button");
+
+    imageElement.src = "";
+    imageElement.style.display = "none";
+
+    fileInput.style.display = "block";
+    fileInput.classList.remove("d-none");
+    fileInput.value = "";
+
+    rotateButton.disabled = true;
+}
+
+// ✅ Rotate Image Physically in <img> Tag and Refresh Page
+function image_rotate90() {
+    const imageElement = document.getElementById("image");
+    if (!imageElement || !imageElement.src) {
+        return;
+    }
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.src = imageElement.src;
+
+    img.onload = function () {
+        let currentAngle = parseInt(imageElement.getAttribute("flip_angle")) || 0;
+        let newAngle = (currentAngle + 90) % 360;
+        imageElement.setAttribute("flip_angle", newAngle);
+
+        if (newAngle === 90 || newAngle === 270) {
+            canvas.width = img.height;
+            canvas.height = img.width;
+        } else {
+            canvas.width = img.width;
+            canvas.height = img.height;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((90 * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        const rotatedImageSrc = canvas.toDataURL("image/jpeg");
+
+        sessionStorage.setItem("uploadedImage", rotatedImageSrc);
+        sessionStorage.setItem("flipAngle", newAngle);
+
         setTimeout(() => {
             location.reload();
-        }, 500);
-    }
+        }, 300);
+    };
 }

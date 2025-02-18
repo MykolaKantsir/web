@@ -9,26 +9,39 @@ html, body {
 .left-column {
     border-right: 1px solid #ccc;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    max-height: 100vh; /* Ensures the entire column fits within Full HD */
 }
 
+/* Image Container: Keeps Image from Expanding Too Much */
 .image-container {
     flex-grow: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    max-height: 95vh; /* Prevents image from pushing buttons down */
+    overflow: hidden;
 }
 
+/* Ensuring Image Scales Correctly */
 #image {
-    width: 100%;
-    height: auto;
-    display: block;
+    max-width: 100%;
+    max-height: 90vh; /* Prevents image from expanding beyond screen */
+    object-fit: contain;
 }
 
+/* Buttons Always Visible */
 .button-container {
     border-top: 1px solid #ccc;
     width: 100%;
     padding: 10px;
     text-align: center;
+    height: 80px; /* Fixed height to prevent hiding */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Right Column: Fixed Height */
@@ -36,6 +49,7 @@ html, body {
     display: flex;
     flex-direction: column;
     height: 100vh; /* Ensures the entire right column fits the screen */
+    max-height: 100vh; /* Prevents it from expanding beyond Full HD */
 }
 
 /* Table Section (Becomes Scrollable Only When Needed) */
@@ -54,6 +68,7 @@ html, body {
     align-items: center;
     justify-content: center;
     padding: 10px;
+    max-height: 33vh; /* Ensures it doesn’t expand too much */
 }
 
 #preview-image {

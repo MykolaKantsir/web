@@ -14,22 +14,67 @@
     <!-- Left Column: Picture and Buttons Area -->
     <div class="col-md-6 d-flex flex-column justify-content-between align-items-stretch left-column">
       <div class="d-flex flex-column align-items-center image-container">
-        <!-- File Upload Input -->
+        <!-- File Upload Input (Hidden if an image is already uploaded) -->
         <input type="file" id="upload-drawing" accept="image/png, image/jpeg, application/pdf" class="form-control mb-2">
-        
-        <!-- Display File Name (Updated Dynamically) -->
-        <p id="file-name" style="display: none; font-size: 14px; color: gray;"></p>
-    
-        <!-- Image Preview (Updated Dynamically) -->
+
+        <!-- Image Preview (Hidden until an image is loaded) -->
         <img id="image" src="" alt="Uploaded Image Preview" style="max-width: 100%; height: auto; display: none;">
       </div>
+
       <div class="text-center p-3 button-container">
           <button id="crop-button" class="btn btn-primary">Crop</button>
-          <button id="preview-button" class="btn btn-secondary ml-2">Preview</button>
+          <button id="rotate-button" class="btn btn-secondary ml-2" disabled>Rotate</button>
       </div>
     </div>
     <!-- Right Column: Crop Preview and Table -->
     <div class="col-md-6 right-column">
+      <!-- Navigation Panel (Foldable - Collapsed by Default) -->
+      <div class="card mb-2">
+        <div class="card-header text-center fw-bold bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#navPanel" style="cursor: pointer;">
+          Navigation ▼
+        </div>
+        <div id="navPanel" class="collapse card-body">
+          <div class="d-flex gap-2">
+            <!-- ✅ Ratio Button Group: R / M / F -->
+            <div class="btn-group flex-fill" role="group">
+              <input type="radio" class="btn-check" name="mode-selection" id="mode-r" autocomplete="off">
+              <label class="btn btn-primary" for="mode-r">R</label>
+
+              <input type="radio" class="btn-check" name="mode-selection" id="mode-m" autocomplete="off" checked>
+              <label class="btn btn-primary" for="mode-m">M</label>
+
+              <input type="radio" class="btn-check" name="mode-selection" id="mode-f" autocomplete="off">
+              <label class="btn btn-primary" for="mode-f">F</label>
+            </div>
+
+            <!-- ✅ Ratio Button Group: 1 / 2 / 3 -->
+            <div class="btn-group flex-fill" role="group">
+              <input type="radio" class="btn-check" name="level-selection" id="level-1" autocomplete="off">
+              <label class="btn btn-primary" for="level-1">1</label>
+
+              <input type="radio" class="btn-check" name="level-selection" id="level-2" autocomplete="off" checked>
+              <label class="btn btn-primary" for="level-2">2</label>
+
+              <input type="radio" class="btn-check" name="level-selection" id="level-3" autocomplete="off">
+              <label class="btn btn-primary" for="level-3">3</label>
+            </div>
+
+            <div class="dropdown flex-fill">
+              <button class="btn btn-primary dropdown-toggle w-100" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                Dropdown
+              </button>
+              <ul class="dropdown-menu w-100" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#">Option 1</a></li>
+                <li><a class="dropdown-item" href="#">Option 2</a></li>
+                <li><a class="dropdown-item" href="#">Option 3</a></li>
+              </ul>
+            </div>
+
+            <button class="btn btn-primary flex-fill" id="reset-drawing">Reset Drawing</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Table Section (Scrollable) -->
       <div class="table-container">
         <div class="table-responsive">
@@ -101,13 +146,26 @@
 {% endblock %}
 
 {% block additional_scripts %}
+  <!-- ✅ Load external libraries first -->
   <script type="module">
     import * as pdfjsLib from "{% static 'js/pdf.js' %}";
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
     window.pdfjsLib = pdfjsLib; // Ensure global availability
   </script>
+
+  <!-- ✅ Load all other scripts as modules -->
   <script src="{% static 'js/upload_file.js' %}"></script>
   <script src="{% static 'js/cropper.js' %}"></script>
+  <script src="{% static 'js/cropper_manager.js' %}"></script>
   <script src="{% static 'js/tesseract.min.js' %}"></script>
+
+  <script src="{% static 'js/table_manager.js' %}"></script>
+  <script src="{% static 'js/drawing_manager.js' %}"></script>
+  <script src="{% static 'js/text_recognition.js' %}"></script>
+  <script src="{% static 'js/testing_script.js' %}"></script>
+  <script src="{% static 'js/django_communicator.js' %}"></script>
+
   <script src="{% static 'js/new_template.js' %}"></script>
 {% endblock %}
+
+
