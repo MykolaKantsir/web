@@ -1,5 +1,5 @@
 // ✅ Function to add a new row with structured dimension data
-function addRow(content, cropBoxData, isDimensionVertical, general_tolerance = 0.1, manualMin = null, manualMax = null) {
+function addRow(content, cropBoxData, isDimensionVertical, toleranceLevel = "M") {
     const tableBody = document.querySelector("#data-table tbody");
     const rowTemplate = document.getElementById("row-template");
 
@@ -36,13 +36,8 @@ function addRow(content, cropBoxData, isDimensionVertical, general_tolerance = 0
     newRow.querySelector(".crop-height").value = cropBoxData.height.toFixed(2);
     newRow.querySelector(".is-vertical").value = isDimensionVertical ? "1" : "0";
 
-    // ✅ Handle tolerances (manually entered or calculated)
-    let min = manualMin !== null ? manualMin : "";
-    let max = manualMax !== null ? manualMax : "";
-
-    if (manualMin === null || manualMax === null) {
-        [min, max] = calculateTolerances(normalizedValue, general_tolerance);
-    }
+    // ✅ Get tolerance based on the selected level ("R", "M", or "F")
+    let [min, max] = calculateTolerances(normalizedValue, toleranceLevel);
 
     newRow.querySelector(".min-input").value = min !== null ? min : "";
     newRow.querySelector(".max-input").value = max !== null ? max : "";
@@ -54,9 +49,12 @@ function addRow(content, cropBoxData, isDimensionVertical, general_tolerance = 0
         radio.id = `type${index + 1}-row${rowCount}`;
         const label = newRow.querySelector(`label[for="type${index + 1}"]`);
         if (label) {
-            label.setAttribute("for", `type${index + 1}-row${rowCount}`);
+            label.setAttribute("for", `type${index + 1}-row${rowCount}`); 
         }
     });
+
+    // ✅ Attach event listener for Enter key on value input field
+    newRow.querySelector(".value-input").addEventListener("keydown", handleValueChange);
 
     // ✅ Attach event listeners for preview
     newRow.addEventListener("mouseenter", renderPreview);
@@ -81,12 +79,29 @@ function updateTolerances(testDimensions) {
     });
 }
 
-// ✅ Function to calculate tolerances correctly
-function calculateTolerances(value, general_tolerance) {
+// ✅ General Tolerance Lookup Table (ISO 2768-based)
+// "c" = Coarse, "m" = Medium, "f" = Fine
+const toleranceTable = {
+    "0-3": { "c": 0.2, "m": 0.1, "f": 0.05 },
+    "3-6": { "c": 0.3, "m": 0.1, "f": 0.05 },
+    "6-30": { "c": 0.5, "m": 0.2, "f": 0.1 },
+    "30-120": { "c": 0.8, "m": 0.3, "f": 0.15 },
+    "120-400": { "c": 1.2, "m": 0.5, "f": 0.2 },
+    "400-1000": { "c": 2, "m": 0.8, "f": 0.3 },
+    "1000-2000": { "c": 3, "m": 1.2, "f": 0.5 },
+    "2000-4000": { "c": 4, "m": 2, "f": 0.5 },
+};
+
+// ✅ Function to calculate tolerances based on size and tolerance level
+function calculateTolerances(value) {
+    if (typeof value !== "string") {
+        value = value.toString(); // ✅ Convert number to string if needed
+    }
+
     let cleanedValue = value.replace(",", ".").trim();
 
     if (!/^\d*\.?\d+$/.test(cleanedValue)) {
-        return [null, null];
+        return [null, null]; // Invalid input
     }
 
     const parsedValue = parseFloat(cleanedValue);
@@ -94,8 +109,25 @@ function calculateTolerances(value, general_tolerance) {
         return [null, null];
     }
 
-    let min = parsedValue - general_tolerance;
-    let max = parsedValue + general_tolerance;
+    // ✅ Get selected tolerance level from HTML
+    const selectedTolerance = document.querySelector('input[name="mode-selection"]:checked')?.id.split("-")[1] || "M";
+
+    // ✅ Determine the correct tolerance range
+    let selectedValue = null;
+    for (const range in toleranceTable) {
+        const [min, max] = range.split("-").map(Number);
+        if (parsedValue >= min && parsedValue < max) {
+            selectedValue = toleranceTable[range][selectedTolerance];
+            break;
+        }
+    }
+
+    if (selectedValue === null) {
+        return [null, null]; // Out of range
+    }
+
+    let min = parsedValue - selectedValue;
+    let max = parsedValue + selectedValue;
 
     if (min < 0) min = 0;
 
@@ -103,4 +135,30 @@ function calculateTolerances(value, general_tolerance) {
     max = parseFloat(max.toFixed(10)).toString();
 
     return [min, max];
+}
+
+
+// ✅ Function to handle value changes in the table
+function handleValueChange(event) {
+    if (event.key === "Enter") {
+        const inputField = event.target;
+        const row = inputField.closest("tr"); // ✅ Find the closest row
+
+        if (!row || row.id === "row-template") {
+            console.warn("⚠ No valid row found. Ignoring input.");
+            return;
+        }
+
+        const value = parseFloat(inputField.value.replace(",", ".").trim());
+        if (isNaN(value)) {
+            alert("⚠ Invalid number entered.");
+            return;
+        }
+
+        const selectedTolerance = document.querySelector('input[name="mode-selection"]:checked')?.id.split("-")[1] || "M";
+        const [min, max] = calculateTolerances(value, selectedTolerance);
+
+        row.querySelector(".min-input").value = min;
+        row.querySelector(".max-input").value = max;
+    }
 }

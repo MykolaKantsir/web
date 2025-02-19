@@ -17,13 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include
-from . import views
+from django.shortcuts import redirect
+
+# ✅ Add this function at the top of your urls.py
+def home_redirect(request):
+    return redirect('measuring/')
 
 urlpatterns = [
+    path('', home_redirect, name='home'),
+    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     path('inventory/', include('inventory.urls')),
     path('monitoring/', include('monitoring.urls')),
     path('measuring/', include('measuring.urls')),
-    path('accounts/login/', views.login_view, name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]

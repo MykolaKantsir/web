@@ -32,16 +32,22 @@ async function handleCrop() {
     try {
         let canvasToProcess = croppedCanvas;
         if (isVertical(croppedCanvas)) {
-            canvasToProcess = window.rotate90(croppedCanvas); // ✅ Use from cropper_manager.js
+            canvasToProcess = window.rotate90(croppedCanvas);
         }
 
         const recognizedText = await readText(canvasToProcess);
         const rowCount = document.querySelectorAll("#data-table tbody tr:not(#row-template)").length + 1;
         const isDimensionVertical = cropBoxData.height > cropBoxData.width;
 
-        addRow(recognizedText || "No text found", cropBoxData, isDimensionVertical);
-        markCropped(cropBoxData, rowCount);
+        // ✅ Get the selected tolerance level from the radio button group
+        let selectedTolerance = document.querySelector('input[name="mode-selection"]:checked')?.id || "mode-m";
+        selectedTolerance = selectedTolerance.replace("mode-", "").toUpperCase(); // Convert to "R", "M", or "F"
 
+        // ✅ Pass selectedTolerance to addRow()
+        addRow(recognizedText || "No text found", cropBoxData, isDimensionVertical, selectedTolerance);
+
+        markCropped(cropBoxData, rowCount);
+        
         // ✅ Disable Rotate Button After First Crop
         const rotateButton = document.getElementById("rotate-button");
         if (rotateButton) {
@@ -51,7 +57,7 @@ async function handleCrop() {
         console.error("❌ Error recognizing text:", error);
         alert("Error recognizing text.");
     } finally {
-        hideSpinner(); // ✅ Hide spinner after processing is complete
+        hideSpinner();
     }
 }
 

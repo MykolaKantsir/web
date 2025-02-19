@@ -112,6 +112,21 @@ function processPDF(file) {
 function finalizeUpload() {
     const fileInput = document.getElementById("upload-drawing");
     const rotateButton = document.getElementById("rotate-button");
+    const imageElement = document.getElementById("image");
+    let cleanImageElement = document.getElementById("clean-image");
+
+    // ✅ Ensure clean-image element exists
+    if (!cleanImageElement) {
+        cleanImageElement = document.createElement("img");
+        cleanImageElement.id = "clean-image";
+        cleanImageElement.style.display = "none"; // Keep it hidden
+        imageElement.parentElement.appendChild(cleanImageElement); // Append inside the same parent
+    }
+
+    // ✅ Store the clean image only once
+    if (!cleanImageElement.src) {
+        cleanImageElement.src = imageElement.src;
+    }
 
     if (fileInput) {
         fileInput.style.display = "none";

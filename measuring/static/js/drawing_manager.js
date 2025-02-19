@@ -52,6 +52,53 @@ function markCropped(cropBoxData, rowNumber, position = 1) {
     img.onerror = function () {};
 }
 
+// ✅ Function to mark all dimensions on the clean drawing
+function markAllDimensions(cleanDrawing, dimensions) {
+    if (!cleanDrawing || !cleanDrawing.src || dimensions.length === 0) {
+        return;
+    }
+
+    const img = new Image();
+    img.src = cleanDrawing.src; // ✅ Start with a clean drawing
+
+    img.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0); // ✅ Draw the base clean drawing
+
+        // ✅ Iterate over dimensions and draw markings
+        dimensions.forEach((dim, index) => {
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(dim.x, dim.y, dim.width, dim.height);
+
+            // ✅ Draw row number
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText(index + 1, dim.x, dim.y - 10);
+        });
+
+        // ✅ Convert canvas back to an image
+        const markedImageSrc = canvas.toDataURL();
+        document.getElementById("image").src = markedImageSrc;
+
+        // ✅ Store the marked version in session storage
+        sessionStorage.setItem("uploadedImage", markedImageSrc);
+
+        // ✅ Ensure Cropper.js uses the updated image
+        if (window.cropper) {
+            window.cropper.replace(markedImageSrc);
+        } else {
+            reinitializeCropper(); // ✅ Call from cropper_manager.js
+        }
+    };
+
+    img.onerror = function () {};
+}
+
 // ✅ Function to render the cropped image preview when hovering or focusing on a row
 function renderPreview(event) {
     const row = event.currentTarget.closest("tr"); // Get the hovered or focused row

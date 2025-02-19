@@ -5,6 +5,7 @@ class Drawing(models.Model):
     drawing_image_base64 = models.TextField(blank=True, null=True)  # Base64-encoded image of the drawing
     flip_angle = models.FloatField(default=0)  # Angle of the drawing, use if the orientation is vertical
     pages_count = models.IntegerField(default=1)  # Number of pages in the drawingS
+    url = models.URLField(blank=True, null=True)  # URL of the drawing
 
     def __str__(self):
         return self.filename
@@ -16,7 +17,6 @@ class Page(models.Model):
 
     def __str__(self):
         return f"Page {self.page_number} for {self.drawing.filename}"
-
 
 class Dimension(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="dimensions")
