@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Drawing(models.Model):
     filename = models.CharField(max_length=255)  # Name of the drawing file
@@ -6,6 +7,8 @@ class Drawing(models.Model):
     flip_angle = models.FloatField(default=0)  # Angle of the drawing, use if the orientation is vertical
     pages_count = models.IntegerField(default=1)  # Number of pages in the drawingS
     url = models.URLField(blank=True, null=True)  # URL of the drawing
+    created_at = models.DateTimeField(default=timezone.now)  # Date and time of creation
+    updated_at = models.DateTimeField(auto_now=True)  # Date and time of last update
 
     def __str__(self):
         return self.filename

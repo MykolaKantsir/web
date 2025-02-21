@@ -36,7 +36,7 @@ function addRow(content, cropBoxData, isDimensionVertical, toleranceLevel = "M")
     newRow.querySelector(".crop-height").value = cropBoxData.height.toFixed(2);
     newRow.querySelector(".is-vertical").value = isDimensionVertical ? "1" : "0";
 
-    // ✅ Get tolerance based on the selected level ("R", "M", or "F")
+    // ✅ Get tolerance based on the selected level ("c", "m", or "f")
     let [min, max] = calculateTolerances(normalizedValue, toleranceLevel);
 
     newRow.querySelector(".min-input").value = min !== null ? min : "";
@@ -64,6 +64,11 @@ function addRow(content, cropBoxData, isDimensionVertical, toleranceLevel = "M")
 
     // ✅ Append the new row to the table
     tableBody.appendChild(newRow);
+
+    // ✅ Validate & auto-save if OCR produced valid values
+    if (validateDimension(newRow)) {
+        saveDimension(newRow);
+    }
 }
 
 // ✅ Function to update tolerances after adding all test dimensions
@@ -160,5 +165,80 @@ function handleValueChange(event) {
 
         row.querySelector(".min-input").value = min;
         row.querySelector(".max-input").value = max;
+
+        saveDimension(row); // ✅ Save the dimension data
     }
+}
+
+// ✅ Function to send dimension data & update row sync status
+async function saveDimension(row) {
+    const drawingId = document.getElementById("image").getAttribute("drawing-id");
+    if (!drawingId) {
+        console.error("❌ No drawing ID found. Cannot save dimension.");
+        return;
+    }
+
+    // ✅ Get dimension ID (convert empty string to null)
+    const dimensionId = row.getAttribute("dimension-id") || null;
+
+    const dimensionData = {
+        dimension_id: dimensionId,  // ✅ Send null if new
+        drawing_id: drawingId,
+        x: parseFloat(row.querySelector(".crop-x").value),
+        y: parseFloat(row.querySelector(".crop-y").value),
+        width: parseFloat(row.querySelector(".crop-width").value),
+        height: parseFloat(row.querySelector(".crop-height").value),
+        value: row.querySelector(".value-input").value.trim(),
+        min_value: parseFloat(row.querySelector(".min-input").value),
+        max_value: parseFloat(row.querySelector(".max-input").value),
+        is_vertical: row.querySelector(".is-vertical").value === "1",
+        page: 1,  // Adjust if multiple pages exist
+        type_selection: parseInt(row.querySelector('input[name^="type-selection-"]:checked')?.value || "2")
+    };
+
+    // ✅ Get the sync status cell
+    let syncStatusCell = row.querySelector(".sync-status");
+    if (!syncStatusCell) {
+        syncStatusCell = document.createElement("td");
+        syncStatusCell.classList.add("sync-status");
+        row.appendChild(syncStatusCell);
+    }
+
+    // ⏳ Show loading icon while sending
+    syncStatusCell.innerHTML = "⏳";
+
+    try {
+        const updatedDimensionId = await sendDimensionData(dimensionData);
+        if (updatedDimensionId) {
+            syncStatusCell.innerHTML = "✅";  // Success
+            row.setAttribute("dimension-id", updatedDimensionId);  // Store new dimension ID in row
+        } else {
+            syncStatusCell.innerHTML = "⚠️";  // Failure
+        }
+    } catch (error) {
+        syncStatusCell.innerHTML = "❌";  // Error
+    }
+}
+
+// ✅ Function to validate if a dimension row contains valid data
+function validateDimension(row) {
+    if (!row || row.id === "row-template") {
+        return false; // ❌ Ignore template row
+    }
+
+    // ✅ Get input values
+    const valueInput = row.querySelector(".value-input");
+    const minInput = row.querySelector(".min-input");
+    const maxInput = row.querySelector(".max-input");
+
+    const value = parseFloat(valueInput?.value.replace(",", ".").trim());
+    const minValue = parseFloat(minInput?.value.replace(",", ".").trim());
+    const maxValue = parseFloat(maxInput?.value.replace(",", ".").trim());
+
+    // ✅ Ensure all values are valid positive numbers
+    if (isNaN(value) || value <= 0 || isNaN(minValue) || minValue <= 0 || isNaN(maxValue) || maxValue <= 0) {
+        return false; // ❌ Invalid data
+    }
+
+    return true; // ✅ Valid data
 }

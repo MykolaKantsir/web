@@ -36,24 +36,34 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!file) {
             return;
         }
-
+    
+        // ✅ Store filename in an HTML element
+        let fileNameElement = document.getElementById("file-name");
+        if (!fileNameElement) {
+            fileNameElement = document.createElement("span");
+            fileNameElement.id = "file-name";
+            fileNameElement.style.display = "none"; // Keep it hidden
+            fileInput.parentElement.appendChild(fileNameElement);
+        }
+        fileNameElement.textContent = file.name; // ✅ Store filename
+    
         const fileType = file.type;
-
+    
         if (fileType === "application/pdf") {
             processPDF(file).then(() => {
                 finalizeUpload();
             });
-
+    
         } else if (fileType.startsWith("image/")) {
             const fileReader = new FileReader();
             fileReader.onload = function (e) {
                 const base64Image = e.target.result;
                 imageElement.src = base64Image;
                 imageElement.style.display = "block";
-
+    
                 // ✅ Store in session storage
                 sessionStorage.setItem("uploadedImage", base64Image);
-
+    
                 finalizeUpload();
             };
             fileReader.readAsDataURL(file);

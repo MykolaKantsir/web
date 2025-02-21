@@ -21,7 +21,8 @@
         <img id="image" src="" alt="Uploaded Image Preview" style="max-width: 100%; height: auto; display: none;">
         <!-- Hidden copy of clean image -->
         <img id="clean-image" style="display: none;">
-
+        <!-- Hidden field for filename -->
+        <span id="file-name" style="display: none;"></span>
       </div>
 
       <div class="text-center p-3 button-container">
@@ -102,29 +103,46 @@
             <!-- Hidden row structure template -->
             <tr id="row-template" class="d-none">
               <td class="row-number"></td>
-              <td><input type="number" class="form-control value-input" placeholder="Enter value" step="any" inputmode="decimal"></td>
-              <td><input type="number" class="form-control min-input" placeholder="Min" step="any" inputmode="decimal"></td>
-              <td><input type="number" class="form-control max-input" placeholder="Max" step="any" inputmode="decimal"></td>
+              
               <td>
-                  <div class="btn-group" role="group">
-                      <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
-                      <label class="btn btn-outline-primary" for="type1">∩</label>
-
-                      <input type="radio" class="btn-check" name="type-selection" id="type2" value="2">
-                      <label class="btn btn-outline-primary" for="type2">↔</label>
-
-                      <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
-                      <label class="btn btn-outline-primary" for="type3">∪</label>
-                  </div>
+                <input type="number" class="form-control value-input" placeholder="Enter value" step="any" inputmode="decimal">
               </td>
+
+              <td>
+                <input type="number" class="form-control min-input" placeholder="Min" step="any" inputmode="decimal">
+              </td>
+
+              <td>
+                <input type="number" class="form-control max-input" placeholder="Max" step="any" inputmode="decimal">
+              </td>
+
+              <td>
+                <div class="btn-group" role="group">
+                  <input type="radio" class="btn-check" name="type-selection" id="type1" value="1">
+                  <label class="btn btn-outline-primary" for="type1">∩</label>
+
+                  <input type="radio" class="btn-check" name="type-selection" id="type2" value="2" checked>
+                  <label class="btn btn-outline-primary" for="type2">↔</label>
+
+                  <input type="radio" class="btn-check" name="type-selection" id="type3" value="3">
+                  <label class="btn btn-outline-primary" for="type3">∪</label>
+                </div>
+              </td>
+
+              <!-- ✅ Status column for showing save status -->
+              <td class="text-center status-column">
+                <i class="bi bi-exclamation-circle text-warning dimension-status" title="Not saved"></i>
+              </td>
+
               <td class="text-center">
-                  <button class="btn btn-light more-options">
-                      <i class="bi bi-three-dots-vertical"></i>
-                  </button>
+                <button class="btn btn-light more-options">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
               </td>
-              <!-- Hidden fields for cropped image data -->
+
+              <!-- Hidden fields for cropped image data and database ID -->
               <td style="display: none;">
-                <input type="hidden" class="dimension-id">
+                <input type="hidden" class="dimension-id" value=""> <!-- ✅ Holds database ID -->
                 <input type="hidden" class="crop-x">
                 <input type="hidden" class="crop-y">
                 <input type="hidden" class="crop-width">
@@ -161,8 +179,6 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
     window.pdfjsLib = pdfjsLib; // Ensure global availability
   </script>
-
-  <!-- ✅ Load all other scripts as modules -->
   <script src="{% static 'js/upload_file.js' %}"></script>
   <script src="{% static 'js/cropper.js' %}"></script>
   <script src="{% static 'js/cropper_manager.js' %}"></script>
