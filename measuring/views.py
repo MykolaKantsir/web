@@ -18,8 +18,52 @@ def new_template(request):
 
 # Measure view
 #@login_required
-def measure(request):
-    return render(request, 'measuring/measure.html')
+def measure_view(request, drawing_id=None):
+    """
+    Renders the measurement page. If a drawing_id is provided, the frontend
+    will fetch the drawing and its dimensions via JavaScript.
+    """
+    return render(request, 'measuring/measure.html', {'drawing_id': drawing_id})
+
+# Get drawing data
+#@login_required
+def get_drawing_data(request, drawing_id):
+    """
+    API endpoint that returns the drawing and its dimensions as JSON.
+    """
+    drawing = get_object_or_404(Drawing, id=drawing_id)
+    
+    # Serialize drawing
+    drawing_data = {
+        "id": drawing.id,
+        "filename": drawing.filename,
+        "drawing_image_base64": drawing.drawing_image_base64,
+        "flip_angle": drawing.flip_angle,
+        "pages_count": drawing.pages_count,
+        "url": drawing.url,
+        "created_at": drawing.created_at.isoformat(),
+        "updated_at": drawing.updated_at.isoformat(),
+    }
+
+    # Serialize related dimensions
+    dimensions = [
+        {
+            "id": dim.id,
+            "x": dim.x,
+            "y": dim.y,
+            "width": dim.width,
+            "height": dim.height,
+            "value": dim.value,
+            "min_value": dim.min_value,
+            "max_value": dim.max_value,
+            "is_vertical": dim.is_vertical,
+            "page": dim.page,
+            "type_selection": dim.type_selection,
+        }
+        for dim in drawing.dimensions.all()
+    ]
+
+    return JsonResponse({"drawing": drawing_data, "dimensions": dimensions})
 
 #@login_required
 @csrf_exempt  # Keep CSRF exemption for now

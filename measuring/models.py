@@ -21,6 +21,15 @@ class Page(models.Model):
     def __str__(self):
         return f"Page {self.page_number} for {self.drawing.filename}"
 
+class MonittorInformation(models.Model):
+    drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="monitor_informations")
+    path = models.CharField(max_length=255)  # Path of the drawing file
+    # Monitor operation number and monitor order number are used to have 
+    # an additional option to get the drawing file, it can be any
+    # order or operatio that use this drawing file
+    monitor_operation_number = models.IntegerField(blank=True, null=True)  # Monitor operation number
+    monitor_order_number = models.IntegerField(blank=True, null=True)  # Monitor order number
+
 class Dimension(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="dimensions")
     x = models.FloatField()  # X coordinate of cropped area
@@ -35,7 +44,7 @@ class Dimension(models.Model):
     type_selection = models.IntegerField(choices=[(1, "Shaft"), (2, "Bilateral"), (3, "Hole")], default=1)  # Type of dimension
 
     def __str__(self):
-        return f"Dimension {self.id} for {self.drawing.filename}"
+        return f"{self.value} for {self.drawing.filename}"
     
 class DrawingView(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="views")
@@ -47,7 +56,15 @@ class DrawingView(models.Model):
 
     def __str__(self):
         return f"View {self.view_number} for {self.drawing.filename}"
-    
+
+class MeasuredValue(models.Model):
+    dimension = models.ForeignKey(Dimension, on_delete=models.CASCADE, related_name="measured_values")
+    value = models.FloatField()  # Measured value
+    measured_at = models.DateTimeField(default=timezone.now)  # Date and time of measurement
+
+    def __str__(self):
+        return f"{self.value} for {self.dimension.value}"
+
 class Protocol(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="protocols")
     dimentions = models.ManyToManyField(Dimension, related_name="protocols")

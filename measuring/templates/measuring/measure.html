@@ -1,7 +1,90 @@
 {% extends "measuring/index.html" %}
+{% load static %}
 
 {% block title %} Measure {% endblock %}
 
+{% block additional_css %}
+  <link href="{% static 'css/measure.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-  <h1> Measure </h1
+<body data-drawing-id="{{ drawing_id|default:'' }}">
+<div class="container-fluid">
+  <!-- Left Column (Twice as wide as right) -->
+  <div class="left-column d-flex flex-column">
+    <!-- Measurement Input Row (10% height) -->
+    <div class="input-row d-flex align-items-center p-2">
+      <input type="number" class="form-control me-2" id="measurement-input" placeholder="Enter measurement">
+      <button class="btn btn-primary" id="submit-measurement">Enter</button>
+    </div>
+    <!-- Drawing Area Row (Remaining 90%) -->
+    <div class="drawing-row flex-grow-1 d-flex justify-content-center align-items-center">
+      <img id="measure-image" src="" alt="Uploaded Measurement Image" style="display: none;">
+      <input type="file" id="upload-measure" accept="image/png, image/jpeg, application/pdf" class="form-control" style="display: none;">
+    </div>
+  </div>
+  
+  <!-- Right Column with Three Rows -->
+  <div class="right-column">
+    <!-- Navigation Panel (Foldable) -->
+    <div class="nav-row">
+      <div class="card">
+        <div class="card-header text-center fw-bold bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#navPanel" style="cursor: pointer;">
+          Navigation ▼
+        </div>
+        <div id="navPanel" class="collapse card-body">
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary flex-fill">Option 1</button>
+            <button class="btn btn-primary flex-fill">Option 2</button>
+            <button class="btn btn-primary flex-fill">Option 3</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="top-row">
+      <!-- Table Section -->
+      <table id="measure-dimension-table" class="table table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Value</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th>More</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dimension in dimensions %}
+          <tr data-dimension-id="{{ dimension.id }}" data-x="{{ dimension.x }}" data-y="{{ dimension.y }}" data-width="{{ dimension.width }}" data-height="{{ dimension.height }}">
+            <td>{{ forloop.counter }}</td>
+            <td>{{ dimension.value }}</td>
+            <td>{{ dimension.min_value }}</td>
+            <td>{{ dimension.max_value }}</td>
+            <td>...</td>
+            <td>...</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="bottom-row">
+      <!-- Preview Section -->
+      <div class="preview-container">
+        <img id="preview-image" src="" alt="Preview Image">
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{% static 'js/django_communicator.js' %}"></script>
+<script src="{% static 'js/measureDrawingManager.js' %}"></script>
+<script src="{% static 'js/measureTableManager.js' %}"></script>
+<script src="{% static 'js/measureInputManager.js' %}"></script>
+<script src="{% static 'js/measurePreviewManager.js' %}"></script>
+<script src="{% static 'js/measure.js' %}"></script>
 {% endblock %}

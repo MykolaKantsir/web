@@ -106,9 +106,72 @@ async function sendDrawingData(drawingData) {
     } catch (error) {}
 }
 
+// ✅ Function to send measured values and create a protocol
+async function sendMeasuredValue(measuredData) {
+    if (!measuredData || !measuredData.drawing_id) {
+        console.error("❌ Invalid measured data");
+        return;
+    }
+
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error("❌ CSRF token is missing.");
+        return null;
+    }
+
+    try {
+        const response = await fetch("/measuring/api/create_protocol/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify(measuredData),
+            credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log("✅ Protocol created successfully:", data.protocol_id);
+            return data.protocol_id;
+        } else {
+            console.error("❌ Failed to create protocol:", data.error);
+            return null;
+        }
+    } catch (error) {
+        console.error("❌ Error sending measured values:", error);
+        return null;
+    }
+}
+
+
+// ✅ Function to fetch drawing and dimension data
+async function getDrawingData(drawingId) {
+    // Use only for existing measuring templates
+    // to fill up the protocol
+    try {
+        const response = await fetch(`/measuring/api/drawing/${drawingId}/`, {
+            method: "GET",
+            credentials: "include",
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch drawing data");
+        }
+
+        const data = await response.json();
+        console.log("✅ Drawing Data:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Error fetching drawing data:", error);
+        return null;
+    }
+}
+
 // ✅ Function to fetch saved drawing and dimensions when the page loads
-function fetchDrawingData() {
-    // TODO: Implement AJAX GET request to Django
+async function fetchDrawingData(drawingId) {
+    return getDrawingData(drawingId);
 }
 
 // ✅ Function to update an existing dimension in Django
@@ -125,3 +188,12 @@ function deleteDimension(id) {
 document.addEventListener("DOMContentLoaded", function () {
     fetchCsrfToken();
 });
+
+window.django_communicator = {
+    checkLoginStatus,
+    fetchCsrfToken,
+    getCsrfToken,
+    getDrawingData,
+    fetchDrawingData,
+    sendDrawingData
+};
