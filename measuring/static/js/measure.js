@@ -1,12 +1,8 @@
-// ✅ Main script for measuring functionality
-
 document.addEventListener("DOMContentLoaded", async function () {
     console.log("Measure.js loaded");
 
-    // ✅ Global variable to store current drawing ID
     let drawingId = document.body.dataset.drawingId || null;
 
-    // ✅ If no drawing is requested, do nothing
     if (!drawingId) {
         console.log("No drawing requested. Exiting initialization.");
         return;
@@ -14,10 +10,20 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     console.log("Fetching drawing data for ID:", drawingId);
     const drawingData = await django_communicator.getDrawingData(drawingId);
-    await measureDrawingManager.init(drawingId, drawingData);
+
+    if (drawingData) {
+        await measureDrawingManager.init(drawingId, drawingData);
+        
+        // ✅ Populate table with dimensions
+        if (drawingData.dimensions) {
+            measureTableManager.populateTable(drawingData.dimensions);
+            
+            // ✅ Mark all dimensions on the drawing
+            measureDrawingManager.markAllDimensions(document.getElementById("measure-image"), drawingData.dimensions);
+        }
+    }
 
     // ✅ Initialize event listeners for table and input interactions
-    measureTableManager.init();
     measureInputManager.init();
     measurePreviewManager.init();
 

@@ -53,5 +53,70 @@ const measureDrawingManager = {
         } catch (error) {
             console.error("❌ Error searching in Monitor G5:", error);
         }
-    }
+    },
+
+    markDimension: function (dimension, rowNumber, color = 'orange') {
+        const imageElement = document.getElementById("measure-image");
+        if (!imageElement || !imageElement.src) {
+            return;
+        }
+    
+        const img = new Image();
+        img.src = imageElement.src;
+    
+        img.onload = function () {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+    
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+    
+            // Draw rectangle
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(dimension.x, dimension.y, dimension.width, dimension.height);
+    
+            // Draw row number
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = color;
+            ctx.fillText(rowNumber, dimension.x, dimension.y - 10);
+    
+            // Update image source
+            imageElement.src = canvas.toDataURL();
+        };
+    },
+    
+    markAllDimensions: function (cleanDrawing, dimensions, color = 'orange') {
+        if (!cleanDrawing || !cleanDrawing.src || dimensions.length === 0) {
+            return;
+        }
+    
+        const img = new Image();
+        img.src = cleanDrawing.src;
+    
+        img.onload = function () {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+    
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+    
+            // Iterate over dimensions and draw markings
+            dimensions.forEach((dim, index) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(dim.x, dim.y, dim.width, dim.height);
+    
+                // Draw row number
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = color;
+                ctx.fillText(index + 1, dim.x, dim.y - 10);
+            });
+    
+            // Update image source
+            document.getElementById("measure-image").src = canvas.toDataURL();
+        };
+    }    
 };

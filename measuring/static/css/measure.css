@@ -30,17 +30,24 @@ html, body {
     height: 100vh;
 }
 
-/* Right Column: Top Row (2/3 of space) */
+/* Right Column: Top Row (Takes 2/3 of space) */
 .top-row {
     flex-grow: 2;
-    border-bottom: 1px solid #ccc;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
     padding: 10px;
+    border-bottom: 2px solid #ccc; /* Clear visual separation */
 }
 
-/* Right Column: Bottom Row (1/3 of space) */
+/* Table Styling */
+#measure-dimension-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Right Column: Bottom Row (Takes 1/3 of space) */
 .bottom-row {
     flex-grow: 1;
     display: flex;
@@ -58,6 +65,13 @@ html, body {
     height: 100%;
     overflow: hidden;
 }
+
+/* Highlighted row styling */
+.selected-row {
+    background-color: #cce5ff !important; /* Light blue highlight */
+    font-weight: bold;
+}
+
 
 /* Ensuring Image Scales Correctly */
 #measure-image {

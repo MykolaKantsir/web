@@ -56,16 +56,23 @@
           </tr>
         </thead>
         <tbody>
-          {% for dimension in dimensions %}
-          <tr data-dimension-id="{{ dimension.id }}" data-x="{{ dimension.x }}" data-y="{{ dimension.y }}" data-width="{{ dimension.width }}" data-height="{{ dimension.height }}">
-            <td>{{ forloop.counter }}</td>
-            <td>{{ dimension.value }}</td>
-            <td>{{ dimension.min_value }}</td>
-            <td>{{ dimension.max_value }}</td>
-            <td>...</td>
-            <td>...</td>
+          <tr id="row-template" class="d-none">
+            <td class="row-number"></td>
+            <td class="value-cell"></td>
+            <td class="min-cell"></td>
+            <td class="max-cell"></td>
+            <td class="text-center">...</td>
+            <td class="text-center status-column">...</td>
+            <!-- Hidden fields for additional attributes -->
+            <td style="display: none;">
+              <td class="dimension-id" style="display: none;"></td>
+              <td class="crop-x" style="display: none;"></td>
+              <td class="crop-y" style="display: none;"></td>
+              <td class="crop-width" style="display: none;"></td>
+              <td class="crop-height" style="display: none;"></td>
+              <td class="is-vertical" style="display: none;"></td>
+            </td>
           </tr>
-          {% endfor %}
         </tbody>
       </table>
     </div>

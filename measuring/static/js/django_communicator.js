@@ -184,6 +184,45 @@ function deleteDimension(id) {
     // TODO: Implement AJAX DELETE request to Django
 }
 
+// ✅ Function to send measured values to Django
+async function sendMeasurement(measuredData) {
+    if (!measuredData || !measuredData.dimensionId || !measuredData.drawingId || !measuredData.measuredValue) {
+        console.error("❌ Invalid measurement data");
+        return;
+    }
+
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error("❌ CSRF token is missing.");
+        return null;
+    }
+
+    try {
+        const response = await fetch("/measuring/api/save_measurement/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify(measuredData),
+            credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log("✅ Measurement saved successfully:", data);
+            return { protocolId: data.protocolId, dimensionId: data.dimensionId };
+        } else {
+            console.error("❌ Failed to save measurement:", data.error);
+            return null;
+        }
+    } catch (error) {
+        console.error("❌ Error sending measurement data:", error);
+        return null;
+    }
+}
+
 // ✅ Fetch CSRF Token as soon as page loads
 document.addEventListener("DOMContentLoaded", function () {
     fetchCsrfToken();

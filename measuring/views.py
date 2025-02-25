@@ -4,7 +4,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from .models import Drawing, Dimension
+from .models import Drawing, Dimension, MeasuredValue, Protocol
 
 # Create your views here.
 #@login_required
@@ -83,12 +83,53 @@ def create_drawing(request):
             return JsonResponse({"success": False, "error": str(e)}, status=400)
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
+#@login_required
+@csrf_exempt
+def save_measurement(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-import json
-from .models import Dimension, Drawing
+    try:
+        data = json.loads(request.body)
+        measured_value = float(data.get("measuredValue", 0))
+        dimension_id = data.get("dimensionId")
+        drawing_id = data.get("drawingId")
+        protocol_id = data.get("protocolId", None)
+
+        if measured_value <= 0 or not dimension_id or not drawing_id:
+            return JsonResponse({"success": False, "error": "Invalid input data"}, status=400)
+
+        # Get or create the protocol
+        if protocol_id:
+            protocol = get_object_or_404(Protocol, id=protocol_id)
+        else:
+            drawing = get_object_or_404(Drawing, id=drawing_id)
+            protocol = Protocol.objects.create(drawing=drawing)
+
+        # Get the dimension
+        dimension = get_object_or_404(Dimension, id=dimension_id)
+
+        # Create a new measured value
+        measured_value_obj = MeasuredValue.objects.create(
+            dimension=dimension,
+            value=measured_value,
+        )
+
+        # Ensure the measured value is linked to the protocol
+        protocol.measured_values.add(measured_value_obj)
+        protocol.save()
+
+        return JsonResponse({
+            "success": True,
+            "protocolId": protocol.id,
+            "dimensionId": dimension.id
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON format"}, status=400)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 # @login_required
 @csrf_exempt  # Keep CSRF exemption for now

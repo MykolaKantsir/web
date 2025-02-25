@@ -67,7 +67,7 @@ class MeasuredValue(models.Model):
 
 class Protocol(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="protocols")
-    dimentions = models.ManyToManyField(Dimension, related_name="protocols")
+    measured_values = models.ManyToManyField(MeasuredValue, related_name="protocols")  # Measured values
     monitor_operaion_number = models.IntegerField(blank=True, null=True)  # Monitor operation number
 
     def __str__(self):
