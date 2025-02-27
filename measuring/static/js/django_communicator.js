@@ -46,47 +46,18 @@ function getCsrfToken() {
     return csrfCookie ? csrfCookie.split("=")[1] : null;
 }
 
-// ✅ Function to send cropped dimension data to Django
-async function sendDimensionData(dimensionData) {
-    if (!dimensionData || !dimensionData.drawing_id) {
-        return;  // ✅ Ensure valid data
-    }
-
-    // ✅ Ensure CSRF token is available
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) {
-        console.error("❌ CSRF token is missing.");
-        return null;
-    }
-
-    try {
-        const response = await fetch("/measuring/api/create_or_update_dimension/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken  // ✅ CSRF token for security
-            },
-            body: JSON.stringify(dimensionData),
-            credentials: "include"  // ✅ Ensure cookies (sessionid) are sent
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            return data.dimension_id;  // ✅ Return newly created or updated dimension_id
-        } else {
-            console.error("❌ Failed to save dimension:", data.error);
-            return null;
-        }
-    } catch (error) {
-        console.error("❌ Error sending dimension data:", error);
-        return null;
-    }
-}
-
 // ✅ Function to send drawing data to the backend
 async function sendDrawingData(drawingData) {
     const csrfToken = getCsrfToken();
+    const canvas = document.getElementById("measure-canvas");
+    if (!canvas) {
+        console.error("❌ Canvas element not found.");
+        return;
+    }
+
+    // Convert canvas to Base64
+    const imageBase64 = canvas.toDataURL("image/png");
+    drawingData.imageBase64 = imageBase64;
 
     try {
         const response = await fetch("/measuring/api/create_drawing/", {
@@ -101,55 +72,13 @@ async function sendDrawingData(drawingData) {
         const data = await response.json();
 
         if (data.success) {
-            document.getElementById("image").setAttribute("drawing-id", data.drawing_id);
+            document.getElementById("measure-canvas").setAttribute("drawing-id", data.drawing_id);
         }
     } catch (error) {}
 }
 
-// ✅ Function to send measured values and create a protocol
-async function sendMeasuredValue(measuredData) {
-    if (!measuredData || !measuredData.drawing_id) {
-        console.error("❌ Invalid measured data");
-        return;
-    }
-
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) {
-        console.error("❌ CSRF token is missing.");
-        return null;
-    }
-
-    try {
-        const response = await fetch("/measuring/api/create_protocol/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken,
-            },
-            body: JSON.stringify(measuredData),
-            credentials: "include",
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            console.log("✅ Protocol created successfully:", data.protocol_id);
-            return data.protocol_id;
-        } else {
-            console.error("❌ Failed to create protocol:", data.error);
-            return null;
-        }
-    } catch (error) {
-        console.error("❌ Error sending measured values:", error);
-        return null;
-    }
-}
-
-
 // ✅ Function to fetch drawing and dimension data
 async function getDrawingData(drawingId) {
-    // Use only for existing measuring templates
-    // to fill up the protocol
     try {
         const response = await fetch(`/measuring/api/drawing/${drawingId}/`, {
             method: "GET",
@@ -162,6 +91,25 @@ async function getDrawingData(drawingId) {
 
         const data = await response.json();
         console.log("✅ Drawing Data:", data);
+
+        if (data.drawing && data.drawing.drawing_image_base64) {  // ✅ Corrected key usage
+            const canvas = document.getElementById("measure-canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            img.src = `data:image/png;base64,${data.drawing.drawing_image_base64}`;  // ✅ Ensure proper Base64 format
+
+            img.onload = function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // ✅ Store clean drawing AFTER it is loaded
+                const cleanDrawing = document.getElementById("clean-drawing");
+                cleanDrawing.src = img.src;  // ✅ Use image source directly from the fetched data
+
+                // ✅ Now, mark all dimensions AFTER clean drawing is set
+                measureDrawingManager.markAllDimensions(data.dimensions);
+            };
+        }
         return data;
     } catch (error) {
         console.error("❌ Error fetching drawing data:", error);
@@ -169,20 +117,7 @@ async function getDrawingData(drawingId) {
     }
 }
 
-// ✅ Function to fetch saved drawing and dimensions when the page loads
-async function fetchDrawingData(drawingId) {
-    return getDrawingData(drawingId);
-}
 
-// ✅ Function to update an existing dimension in Django
-function updateDimension(id, newData) {
-    // TODO: Implement AJAX PUT request to Django
-}
-
-// ✅ Function to delete a dimension from Django
-function deleteDimension(id) {
-    // TODO: Implement AJAX DELETE request to Django
-}
 
 // ✅ Function to send measured values to Django
 async function sendMeasurement(measuredData) {
@@ -233,6 +168,5 @@ window.django_communicator = {
     fetchCsrfToken,
     getCsrfToken,
     getDrawingData,
-    fetchDrawingData,
     sendDrawingData
 };

@@ -56,7 +56,7 @@ html, body {
     padding: 10px;
 }
 
-/* Drawing Row: Ensures Image Fills the Space */
+/* Drawing Row: Ensures Canvas Fills the Space */
 .drawing-row {
     display: flex;
     justify-content: center;
@@ -66,19 +66,23 @@ html, body {
     overflow: hidden;
 }
 
+/* Canvas Styling to Ensure Proper Scaling */
+#measure-canvas {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    background-color: white; /* Ensures clear background */
+}
+
+/* Hidden Clean Drawing */
+#clean-drawing {
+    display: none;
+}
+
 /* Highlighted row styling */
 .selected-row {
     background-color: #cce5ff !important; /* Light blue highlight */
     font-weight: bold;
-}
-
-
-/* Ensuring Image Scales Correctly */
-#measure-image {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain; /* Ensures it scales while maintaining aspect ratio */
-    display: block;
 }

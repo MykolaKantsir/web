@@ -19,9 +19,11 @@
     </div>
     <!-- Drawing Area Row (Remaining 90%) -->
     <div class="drawing-row flex-grow-1 d-flex justify-content-center align-items-center">
-      <img id="measure-image" src="" alt="Uploaded Measurement Image" style="display: none;">
+      <canvas id="measure-canvas"></canvas>
       <input type="file" id="upload-measure" accept="image/png, image/jpeg, application/pdf" class="form-control" style="display: none;">
     </div>
+    <!-- Hidden clean drawing storage -->
+    <img id="clean-drawing" src="" alt="Clean Drawing" style="display: none;">
   </div>
   
   <!-- Right Column with Three Rows -->
