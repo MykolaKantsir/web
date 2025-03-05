@@ -15,40 +15,49 @@ const measureDrawingManager = {
 
         if (drawingImageBase64 && drawingImageBase64 !== "") {
             console.log("🖼️ Drawing found, rendering...");
-            this.showDrawing(drawingImageBase64);
+            await this.showDrawing(drawingImageBase64);
         } else {
             console.error("❌ No drawing found, searching in Monitor G5...");
             await this.handleNoDrawing();
+        }
+
+        // ✅ Populate table **before** initializing dimensions
+        if (drawingData.dimensions) {
+            measureTableManager.populateTable(drawingData.dimensions);
         }
 
         // ✅ Initialize dimensions once the drawing is set
         if (drawingData?.dimensions) {
             this.initializeDimensions(drawingData.dimensions);
         }
+
+        // ✅ Move click detection inside `init()` so it's only initialized once
+        this.initClickDetection();
     },
 
     showDrawing: function (base64Image) {
         console.log("🎨 Entering showDrawing...");
-        const canvas = this.getCanvasImage();
+        const canvas = document.getElementById("measure-canvas");
         const ctx = canvas.getContext("2d");
         const img = new Image();
         img.src = `data:image/png;base64,${base64Image}`;
-
-        img.onload = function () {
-            console.log(`🖼️ Original Image Size: ${img.naturalWidth}x${img.naturalHeight}`);
-            console.log(`📏 Canvas Client Size: ${canvas.clientWidth}x${canvas.clientHeight}`);
-
-            measureDrawingManager.applyTransformations(canvas, img);
-
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            console.log(`🖌️ Canvas Set to: ${canvas.width}x${canvas.height}`);
-
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            console.log(`✅ Drawing Rendered at: ${canvas.width}x${canvas.height}`);
-
-            document.getElementById("clean-drawing").src = img.src;
-        };
+    
+        return new Promise((resolve) => { // ✅ Return a Promise that resolves when the image loads
+            img.onload = function () {
+                console.log("✅ Image loaded! Now setting canvas size...");
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+    
+                // ✅ Draw the image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                console.log("✅ Drawing rendered.");
+    
+                // ✅ Store a clean copy
+                document.getElementById("clean-drawing").src = img.src;
+    
+                resolve(); // ✅ Resolve the promise after the image is fully loaded
+            };
+        });
     },
 
     applyTransformations: function (canvas, img) {
@@ -101,56 +110,87 @@ const measureDrawingManager = {
 
         console.log("✅ Dimensions data populated.");
     },
-
+    
+    getTextPosition: function (scaledX, scaledY, scaledWidth, scaledHeight, textPosition) {
+        let textX = scaledX;
+        let textY = scaledY - 10; // Default: above
+    
+        if (textPosition === 2) textY = scaledY + scaledHeight + 25; // Below
+        if (textPosition === 3) textX = scaledX - 30; // Left
+        if (textPosition === 4) textX = scaledX + scaledWidth + 5; // Right
+        // More positions can be added later
+    
+        return { textX, textY };
+    },
+    
     markDimension: function (dimData, color = "orange", canvas = null) {
         if (!canvas) canvas = this.getCanvasImage();
         if (!canvas) {
             console.error("❌ No valid canvas found.");
             return;
         }
-
+    
         const ctx = canvas.getContext("2d");
-
+    
         // ✅ Apply transformations using stored scaling factors
         const scaledX = dimData.originalX * this.scaleX;
         const scaledY = dimData.originalY * this.scaleY;
         const scaledWidth = dimData.originalWidth * this.scaleX;
         const scaledHeight = dimData.originalHeight * this.scaleY;
-
-        console.log(`📐 Marking Dimension - Row: ${dimData.row.rowIndex}, Scaled Position: (${scaledX}, ${scaledY}), Size: ${scaledWidth}x${scaledHeight}`);
-
+    
+        // ✅ Retrieve row number from the first cell in the row
+        const rowNumberCell = dimData.row.querySelector("td:first-child");
+        const rowNumber = rowNumberCell ? rowNumberCell.textContent.trim() : "??";
+    
+        console.log(`📐 Marking Dimension - Row: ${rowNumber}, Scaled Position: (${scaledX}, ${scaledY}), Size: ${scaledWidth}x${scaledHeight}`);
+    
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
-
+    
+        // ✅ Get text position
+        const { textX, textY } = this.getTextPosition(scaledX, scaledY, scaledWidth, scaledHeight, 1);
+    
         ctx.font = "bold 24px Arial";
         ctx.fillStyle = color;
-        ctx.fillText(dimData.row.rowIndex, scaledX, scaledY - 10);
-
-        return canvas;
+        ctx.fillText(rowNumber, textX, textY);
+    
+        return canvas; // ✅ Return updated canvas
     },
-
+    
     markAllDimensions: function (color = "orange") {
         console.log("🔄 Marking all dimensions...");
         let canvas = this.getCanvasImage();
-        const ctx = canvas.getContext("2d");
-
         if (!canvas || this.dimensionsData.length === 0) {
             console.error("❌ No valid canvas or empty dimensions.");
             return;
         }
-
-        // ✅ Clear canvas before drawing
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // ✅ Draw all dimensions using the same canvas instance
-        this.dimensionsData.forEach(dimData => {
-            canvas = this.markDimension(dimData, color, canvas);
-        });
-
-        console.log("✅ All dimensions marked.");
+    
+        const ctx = canvas.getContext("2d");
+    
+        // ✅ Ensure clean drawing is placed before marking dimensions
+        const cleanImage = this.getCleanImage();
+        if (!cleanImage || !cleanImage.src) {
+            console.error("❌ Clean drawing not found.");
+            return;
+        }
+    
+        const img = new Image();
+        img.src = cleanImage.src;
+    
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // ✅ Draw clean image
+    
+            // ✅ Draw all dimensions using the **same canvas instance**
+            this.dimensionsData.forEach(dimData => {
+                canvas = this.markDimension(dimData, color, canvas); // ✅ Keep using updated canvas
+            });
+    
+            console.log("✅ All dimensions marked.");
+        };
     },
-
+    
     initClickDetection: function () {
         console.log("🔄 Initializing click detection...");
         const canvas = this.getCanvasImage();
@@ -182,10 +222,11 @@ const measureDrawingManager = {
             }
             console.log("❌ No dimension found at this click location.");
         });
+    },
+
+    handleNoDrawing: async function () {
+        // Todo: Implement Monitor G5 drawing retrieval
+        console.error("❌ Monitor G5 drawing retrieval not implemented.");
     }
 };
 
-// ✅ Initialize click detection when the page loads
-document.addEventListener("DOMContentLoaded", function () {
-    measureDrawingManager.initClickDetection();
-});

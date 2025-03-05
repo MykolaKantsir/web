@@ -106,8 +106,6 @@ async function getDrawingData(drawingId) {
                 const cleanDrawing = document.getElementById("clean-drawing");
                 cleanDrawing.src = img.src;  // ✅ Use image source directly from the fetched data
 
-                // ✅ Now, mark all dimensions AFTER clean drawing is set
-                measureDrawingManager.markAllDimensions(data.dimensions);
             };
         }
         return data;
@@ -116,7 +114,6 @@ async function getDrawingData(drawingId) {
         return null;
     }
 }
-
 
 
 // ✅ Function to send measured values to Django
