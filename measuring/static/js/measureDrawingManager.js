@@ -29,8 +29,12 @@ const measureDrawingManager = {
         // ✅ Initialize dimensions once the drawing is set
         if (drawingData?.dimensions) {
             this.initializeDimensions(drawingData.dimensions);
-        }
 
+        }
+        
+        // ✅ Apply transformations after the drawing is rendered
+        this.applyTransformations(this.getCanvasImage(), this.getCleanImage());
+    
         // ✅ Move click detection inside `init()` so it's only initialized once
         this.initClickDetection();
     },
@@ -133,10 +137,10 @@ const measureDrawingManager = {
         const ctx = canvas.getContext("2d");
     
         // ✅ Apply transformations using stored scaling factors
-        const scaledX = dimData.originalX * this.scaleX;
-        const scaledY = dimData.originalY * this.scaleY;
-        const scaledWidth = dimData.originalWidth * this.scaleX;
-        const scaledHeight = dimData.originalHeight * this.scaleY;
+        const scaledX = dimData.originalX
+        const scaledY = dimData.originalY
+        const scaledWidth = dimData.originalWidth
+        const scaledHeight = dimData.originalHeight
     
         // ✅ Retrieve row number from the first cell in the row
         const rowNumberCell = dimData.row.querySelector("td:first-child");
@@ -214,9 +218,14 @@ const measureDrawingManager = {
                     clickX >= scaledX && clickX <= scaledX + scaledWidth &&
                     clickY >= scaledY && clickY <= scaledY + scaledHeight
                 ) {
-                    console.log(`✅ Clicked dimension row: ${dimData.row.rowIndex}`);
+                    console.log(`✅ Clicked dimension row: ${dimData.row.querySelector('.row-number')?.textContent.trim() || 'N/A'}`);
                     console.log(`Value: ${dimData.row.querySelector('.value-cell')?.textContent || 'N/A'}`);
-                    measureInputManager.selectDimension(dimData.row);
+                    const row = measureTableManager.getRowByDimensionId(dimData.row.querySelector(".dimension-id")?.textContent.trim());
+                    if (row) {
+                        measureInputManager.selectDimension(row);
+                    } else {
+                        console.warn(`⚠️ No table row found for clicked dimension.`);
+                    }
                     return;
                 }
             }

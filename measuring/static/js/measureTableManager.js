@@ -72,6 +72,20 @@ const measureTableManager = {
         console.error(`❌ Could not find dimension ${dimensionId} in table.`);
     },
 
+    getRowByDimensionId: function (dimensionId) {
+        const rows = document.querySelectorAll("#measure-dimension-table tbody tr");
+    
+        for (let row of rows) {
+            const rowDimensionId = row.querySelector(".dimension-id")?.textContent.trim();
+            if (rowDimensionId === dimensionId) {
+                return row; // ✅ Found the correct row
+            }
+        }
+    
+        console.warn(`⚠️ No row found for Dimension ID: ${dimensionId}`);
+        return null; // ✅ Return null if not found
+    },    
+
     highlightSelectedRow: function (row) {
         this.clearRowHighlights();
         row.classList.add("selected-row");
