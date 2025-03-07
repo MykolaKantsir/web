@@ -10,25 +10,24 @@
 {% block content %}
 <body data-drawing-id="{{ drawing_id|default:'' }}">
 <div class="container-fluid">
-  <!-- Left Column (Twice as wide as right) -->
+  <!-- Left Column (Drawing Area) -->
   <div class="left-column d-flex flex-column">
-    <!-- Measurement Input Row (10% height) -->
+    <!-- Measurement Input Row (Fixed Height) -->
     <div class="input-row d-flex align-items-center p-2">
       <input type="number" class="form-control me-2" id="measurement-input" placeholder="Enter measurement">
       <button class="btn btn-primary" id="submit-measurement">Enter</button>
     </div>
-    <!-- Drawing Area Row (Remaining 90%) -->
+    <!-- Drawing Area (Takes Remaining Space) -->
     <div class="drawing-row flex-grow-1 d-flex justify-content-center align-items-center">
       <canvas id="measure-canvas"></canvas>
+      <img id="clean-drawing" src="" alt="Clean Drawing Backup" style="display: none;">
       <input type="file" id="upload-measure" accept="image/png, image/jpeg, application/pdf" class="form-control" style="display: none;">
     </div>
-    <!-- Hidden clean drawing storage -->
-    <img id="clean-drawing" src="" alt="Clean Drawing" style="display: none;">
   </div>
   
-  <!-- Right Column with Three Rows -->
+  <!-- Right Column (Table Area) -->
   <div class="right-column">
-    <!-- Navigation Panel (Foldable) -->
+    <!-- Navigation Panel -->
     <div class="nav-row">
       <div class="card">
         <div class="card-header text-center fw-bold bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#navPanel" style="cursor: pointer;">
@@ -43,9 +42,9 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- Table Section -->
     <div class="top-row">
-      <!-- Table Section -->
       <table id="measure-dimension-table" class="table table-bordered">
         <thead class="table-light">
           <tr>
@@ -77,12 +76,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-    <div class="bottom-row">
-      <!-- Preview Section -->
-      <div class="preview-container">
-        <img id="preview-image" src="" alt="Preview Image">
-      </div>
     </div>
   </div>
 </div>

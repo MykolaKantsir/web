@@ -13,7 +13,7 @@ html, body {
     margin: 0;
 }
 
-/* Left Column Styling (Twice as wide as right) */
+/* ✅ Default Layout (Desktop) - Two Columns */
 .left-column {
     flex: 2;
     border-right: 1px solid #ccc;
@@ -22,7 +22,6 @@ html, body {
     justify-content: space-between;
 }
 
-/* Right Column Styling */
 .right-column {
     flex: 1;
     display: flex;
@@ -30,33 +29,27 @@ html, body {
     height: 100vh;
 }
 
-/* Right Column: Top Row (Takes 2/3 of space) */
+/* ✅ Table Section */
 .top-row {
-    flex-grow: 2;
+    flex-grow: 1;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
     padding: 10px;
-    border-bottom: 2px solid #ccc; /* Clear visual separation */
+    border-bottom: none; /* No need for separation */
+    overflow: auto;
 }
 
-/* Table Styling */
+/* ✅ Table Styling */
 #measure-dimension-table {
     width: 100%;
     border-collapse: collapse;
+    overflow: hidden;
 }
 
-/* Right Column: Bottom Row (Takes 1/3 of space) */
-.bottom-row {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-}
-
-/* Drawing Row: Ensures Canvas Fills the Space */
+/* ✅ Drawing Section */
 .drawing-row {
     display: flex;
     justify-content: center;
@@ -66,23 +59,50 @@ html, body {
     overflow: hidden;
 }
 
-/* Canvas Styling to Ensure Proper Scaling */
+/* ✅ Canvas Styling */
 #measure-canvas {
     width: 100%;
     height: 100%;
     max-width: 100%;
     max-height: 100%;
     display: block;
-    background-color: white; /* Ensures clear background */
+    background-color: white;
 }
 
-/* Hidden Clean Drawing */
+/* ✅ Hidden Clean Drawing */
 #clean-drawing {
     display: none;
 }
 
-/* Highlighted row styling */
+/* ✅ Highlighted Row Styling */
 .selected-row {
-    background-color: #cce5ff !important; /* Light blue highlight */
+    background-color: #cce5ff !important;
     font-weight: bold;
+}
+
+/* ✅ Responsive Layout for Mobile (Screens <= 992px) */
+@media (max-width: 992px) {
+    .container-fluid {
+        flex-direction: column; /* Stack left and right sections */
+    }
+
+    /* ✅ Ensure both sections take half the screen */
+    .left-column, .right-column {
+        width: 100%;
+        height: 50vh; /* Each takes half the screen */
+    }
+
+    /* ✅ Adjust drawing row */
+    .drawing-row {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* ✅ Ensure table takes full space */
+    .top-row {
+        flex-grow: 1;
+        overflow-x: auto;
+    }
 }
