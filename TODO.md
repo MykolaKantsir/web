@@ -1,5 +1,3 @@
-# update min and max on enter
+# Make sure it is not possible to measure one dimention twice for the same protocol, it should replace previous or be ignored
 
-# number on the drawing
-# add attribute number on the drawing so it is sortet by this number
-# and this number is always shown on the drawing
+# Replace "More field" or add more to show the measured value

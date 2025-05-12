@@ -36,7 +36,19 @@
         <div id="navPanel" class="collapse card-body">
           <div class="d-flex gap-2">
             <button class="btn btn-primary flex-fill">Option 1</button>
-            <button class="btn btn-primary flex-fill">Option 2</button>
+
+            <!-- Dropdown for Option 2 -->
+            <div class="btn-group flex-fill">
+              <button type="button" class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                Download
+              </button>
+              <ul class="dropdown-menu w-100 text-center">
+                <li><button class="dropdown-item" id="download-pdf">Download PDF</button></li>
+                <li><button class="dropdown-item" id="download-csv">Download CSV</button></li>
+                <li><button class="dropdown-item" id="download-json">Download JSON</button></li>
+              </ul>
+            </div>
+
             <button class="btn btn-primary flex-fill">Option 3</button>
           </div>
         </div>

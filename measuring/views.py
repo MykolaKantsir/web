@@ -1,9 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
 import json
-from django.http import JsonResponse
+import csv
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import get_object_or_404
+from django.shortcuts import render, get_object_or_404
+from django.utils.dateparse import parse_date
 from .models import Drawing, Dimension, MeasuredValue, Protocol
 
 # Create your views here.
@@ -182,3 +183,171 @@ def create_or_update_dimension(request):
             return JsonResponse({"success": False, "error": str(e)}, status=400)
 
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+# @login_required
+@csrf_exempt
+def download_protocol(request):
+    format_type = request.GET.get("format")
+    protocol_ids = request.GET.get("protocol_id")
+    drawing_id = request.GET.get("drawing_id")
+    latest = request.GET.get("latest") == "true"
+    date_from = request.GET.get("date_from")
+    date_to = request.GET.get("date_to")
+
+    # Validate format
+    if not format_type or format_type not in ["csv", "json", "pdf"]:
+        return JsonResponse({"error": "Invalid or missing format parameter"}, status=400)
+
+    # Start with all protocols
+    protocols = Protocol.objects.all()
+
+    # Filter by protocol_id
+    if protocol_ids:
+        try:
+            ids = [int(pid) for pid in protocol_ids.split(",") if pid.strip().isdigit()]
+            protocols = protocols.filter(id__in=ids)
+        except ValueError:
+            return JsonResponse({"error": "Invalid protocol_id list"}, status=400)
+
+    # Filter by drawing_id (+ optional date or latest)
+    elif drawing_id:
+        try:
+            drawing = Drawing.objects.get(id=drawing_id)
+        except Drawing.DoesNotExist:
+            return JsonResponse({"error": "Drawing not found"}, status=404)
+
+        protocols = protocols.filter(drawing=drawing)
+
+        if latest:
+            protocols = protocols.order_by("-id")[:1]
+
+        if date_from:
+            protocols = protocols.filter(drawing__created_at__date__gte=parse_date(date_from))
+        if date_to:
+            protocols = protocols.filter(drawing__created_at__date__lte=parse_date(date_to))
+
+    else:
+        return JsonResponse({"error": "Please provide either protocol_id or drawing_id"}, status=400)
+
+    # Prefetch all needed data
+    protocols = protocols.prefetch_related("measured_values__dimension")
+
+    if not protocols.exists():
+        return JsonResponse({"error": "No matching protocols found"}, status=404)
+
+    # Step 3: Collect and structure data
+    compiled_protocols = []
+
+    for protocol in protocols:
+        measured_values = protocol.measured_values.all()
+
+        if not measured_values:
+            continue
+
+        protocol_datetime = min(mv.measured_at for mv in measured_values)
+
+        measurements = []
+        for mv in measured_values:
+            dim = mv.dimension
+            measurements.append({
+                "dimension_number": "",  # Placeholder
+                "nominal_value": dim.value,
+                "min_value": dim.min_value,
+                "max_value": dim.max_value,
+                "measured_value": mv.value
+            })
+
+        compiled_protocols.append({
+            "protocol_id": protocol.id,
+            "drawing": protocol.drawing.filename,
+            "protocol_datetime": protocol_datetime.isoformat(),
+            "measurements": measurements
+        })
+
+    # Step 4: Return as JSON
+    if format_type == "json":
+        return JsonResponse({"protocols": compiled_protocols})
+
+    # Step 5: Return as CSV
+    elif format_type == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="protocols.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["Protocol ID", "Drawing", "Protocol Datetime",
+                         "Dimension Number", "Nominal Value", "Min", "Max", "Measured Value"])
+
+        for entry in compiled_protocols:
+            for m in entry["measurements"]:
+                writer.writerow([
+                    entry["protocol_id"],
+                    entry["drawing"],
+                    entry["protocol_datetime"],
+                    m["dimension_number"],
+                    m["nominal_value"],
+                    m["min_value"],
+                    m["max_value"],
+                    m["measured_value"]
+                ])
+
+        return response
+    
+    # Step 5: Return as PDF
+    elif format_type == "pdf":
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        from io import BytesIO
+        buffer = BytesIO()
+
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        elements = []
+        styles = getSampleStyleSheet()
+        styleN = styles["Normal"]
+        styleH = styles["Heading2"]
+
+        for entry in compiled_protocols:
+            # Drawing name
+            elements.append(Paragraph(f"<b>Drawing:</b> {entry['drawing']}", styleN))
+            elements.append(Paragraph(f"<b>Protocol ID:</b> {entry['protocol_id']} &nbsp;&nbsp;&nbsp; <b>Date:</b> {entry['protocol_datetime']}", styleN))
+            elements.append(Spacer(1, 6))
+
+            # Table data
+            table_data = [["#", "Nominal", "Min", "Max", "MV"]]
+            for i, m in enumerate(entry["measurements"], 1):
+                table_data.append([
+                    str(i),
+                    m["nominal_value"],
+                    str(m["min_value"]),
+                    str(m["max_value"]),
+                    str(m["measured_value"])
+                ])
+
+            # Table style
+            table = Table(table_data, hAlign='LEFT')
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ]))
+
+            # Alternating row background
+            for i in range(1, len(table_data)):
+                bg_color = colors.whitesmoke if i % 2 == 0 else colors.lightgrey
+                table.setStyle(TableStyle([('BACKGROUND', (0, i), (-1, i), bg_color)]))
+
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+
+        doc.build(elements)
+
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            "Content-Disposition": 'attachment; filename="protocols.pdf"'
+        })
