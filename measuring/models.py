@@ -69,6 +69,7 @@ class Protocol(models.Model):
     drawing = models.ForeignKey(Drawing, on_delete=models.CASCADE, related_name="protocols")
     measured_values = models.ManyToManyField(MeasuredValue, related_name="protocols")  # Measured values
     monitor_operaion_number = models.IntegerField(blank=True, null=True)  # Monitor operation number
+    is_finished = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Protocol for {self.drawing.filename}"
