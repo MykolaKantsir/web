@@ -20,4 +20,5 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ✅ Initialize event listeners for table and input interactions
     measureInputManager.init();
     measurePreviewManager.init();
+    navigationPanelManager.init();
 });

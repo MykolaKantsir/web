@@ -43,13 +43,13 @@
                 Download
               </button>
               <ul class="dropdown-menu w-100 text-center">
-                <li><button class="dropdown-item" id="download-pdf">Download PDF</button></li>
-                <li><button class="dropdown-item" id="download-csv">Download CSV</button></li>
                 <li><button class="dropdown-item" id="download-json">Download JSON</button></li>
+                <li><button class="dropdown-item" id="download-csv">Download CSV</button></li>
+                <li><button class="dropdown-item" id="download-pdf">Download PDF</button></li>
+              <li><button class="dropdown-item" id="download-overlay-pdf">Overlay PDF</button></li>
               </ul>
+              <button class="btn btn-primary flex-fill">Option 3</button>
             </div>
-
-            <button class="btn btn-primary flex-fill">Option 3</button>
           </div>
         </div>
       </div>
@@ -95,10 +95,13 @@
 {% endblock %}
 
 {% block additional_scripts %}
+<script src="{% static 'js/jspdf.umd.min.js' %}"></script>
 <script src="{% static 'js/django_communicator.js' %}"></script>
 <script src="{% static 'js/measureDrawingManager.js' %}"></script>
 <script src="{% static 'js/measureTableManager.js' %}"></script>
 <script src="{% static 'js/measureInputManager.js' %}"></script>
 <script src="{% static 'js/measurePreviewManager.js' %}"></script>
+<script src="{% static 'js/drawingOverlayRenderer.js' %}"></script>
+<script src="{% static 'js/navigationPanelManager.js' %}"></script>
 <script src="{% static 'js/measure.js' %}"></script>
 {% endblock %}

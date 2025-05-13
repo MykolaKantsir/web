@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from io import BytesIO
 import json
 import csv
 from django.http import JsonResponse, HttpResponse
@@ -61,7 +62,7 @@ def get_drawing_data(request, drawing_id):
             "page": dim.page,
             "type_selection": dim.type_selection,
         }
-        for dim in drawing.dimensions.all()
+        for dim in drawing.dimensions.all().order_by("id")
     ]
 
     return JsonResponse({"drawing": drawing_data, "dimensions": dimensions})
@@ -194,14 +195,11 @@ def download_protocol(request):
     date_from = request.GET.get("date_from")
     date_to = request.GET.get("date_to")
 
-    # Validate format
-    if not format_type or format_type not in ["csv", "json", "pdf"]:
+    if not format_type or format_type not in ["csv", "json", "pdf", "overlay_pdf"]:
         return JsonResponse({"error": "Invalid or missing format parameter"}, status=400)
 
-    # Start with all protocols
     protocols = Protocol.objects.all()
 
-    # Filter by protocol_id
     if protocol_ids:
         try:
             ids = [int(pid) for pid in protocol_ids.split(",") if pid.strip().isdigit()]
@@ -209,7 +207,6 @@ def download_protocol(request):
         except ValueError:
             return JsonResponse({"error": "Invalid protocol_id list"}, status=400)
 
-    # Filter by drawing_id (+ optional date or latest)
     elif drawing_id:
         try:
             drawing = Drawing.objects.get(id=drawing_id)
@@ -229,28 +226,25 @@ def download_protocol(request):
     else:
         return JsonResponse({"error": "Please provide either protocol_id or drawing_id"}, status=400)
 
-    # Prefetch all needed data
     protocols = protocols.prefetch_related("measured_values__dimension")
 
     if not protocols.exists():
         return JsonResponse({"error": "No matching protocols found"}, status=404)
 
-    # Step 3: Collect and structure data
     compiled_protocols = []
 
     for protocol in protocols:
-        measured_values = protocol.measured_values.all()
-
+        measured_values = protocol.measured_values.select_related("dimension").all().order_by("dimension__id")
         if not measured_values:
             continue
 
         protocol_datetime = min(mv.measured_at for mv in measured_values)
 
         measurements = []
-        for mv in measured_values:
+        for idx, mv in enumerate(measured_values, start=1):
             dim = mv.dimension
             measurements.append({
-                "dimension_number": "",  # Placeholder
+                "dimension_number": idx,
                 "nominal_value": dim.value,
                 "min_value": dim.min_value,
                 "max_value": dim.max_value,
@@ -264,11 +258,9 @@ def download_protocol(request):
             "measurements": measurements
         })
 
-    # Step 4: Return as JSON
     if format_type == "json":
         return JsonResponse({"protocols": compiled_protocols})
 
-    # Step 5: Return as CSV
     elif format_type == "csv":
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="protocols.csv"'
@@ -289,45 +281,36 @@ def download_protocol(request):
                     m["max_value"],
                     m["measured_value"]
                 ])
-
         return response
-    
-    # Step 5: Return as PDF
+
     elif format_type == "pdf":
         from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-        from reportlab.lib import colors
-        from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
 
-        from io import BytesIO
         buffer = BytesIO()
-
         doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
         elements = []
         styles = getSampleStyleSheet()
         styleN = styles["Normal"]
-        styleH = styles["Heading2"]
 
         for entry in compiled_protocols:
-            # Drawing name
             elements.append(Paragraph(f"<b>Drawing:</b> {entry['drawing']}", styleN))
             elements.append(Paragraph(f"<b>Protocol ID:</b> {entry['protocol_id']} &nbsp;&nbsp;&nbsp; <b>Date:</b> {entry['protocol_datetime']}", styleN))
             elements.append(Spacer(1, 6))
 
-            # Table data
             table_data = [["#", "Nominal", "Min", "Max", "MV"]]
-            for i, m in enumerate(entry["measurements"], 1):
+            for m in entry["measurements"]:
                 table_data.append([
-                    str(i),
+                    str(m["dimension_number"]),
                     m["nominal_value"],
                     str(m["min_value"]),
                     str(m["max_value"]),
                     str(m["measured_value"])
                 ])
 
-            # Table style
             table = Table(table_data, hAlign='LEFT')
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
@@ -337,7 +320,6 @@ def download_protocol(request):
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ]))
 
-            # Alternating row background
             for i in range(1, len(table_data)):
                 bg_color = colors.whitesmoke if i % 2 == 0 else colors.lightgrey
                 table.setStyle(TableStyle([('BACKGROUND', (0, i), (-1, i), bg_color)]))
@@ -346,8 +328,44 @@ def download_protocol(request):
             elements.append(Spacer(1, 12))
 
         doc.build(elements)
-
         buffer.seek(0)
         return HttpResponse(buffer, content_type='application/pdf', headers={
             "Content-Disposition": 'attachment; filename="protocols.pdf"'
         })
+    
+    elif format_type == "overlay_pdf":
+        overlay_data = []
+
+        for protocol in protocols:
+            measured_values = protocol.measured_values.select_related("dimension").all().order_by("dimension__id")
+            if not measured_values:
+                continue
+
+            protocol_datetime = min(mv.measured_at for mv in measured_values)
+            drawing_base64 = protocol.drawing.drawing_image_base64 or ""
+
+            dimensions = []
+            for idx, mv in enumerate(measured_values, start=1):
+                dim = mv.dimension
+                dimensions.append({
+                    "dimension_number": idx,
+                    "x": dim.x,
+                    "y": dim.y,
+                    "width": dim.width,
+                    "height": dim.height,
+                    "nominal_value": dim.value,
+                    "min_value": dim.min_value,
+                    "max_value": dim.max_value,
+                    "measured_value": mv.value,
+                    "is_vertical": dim.is_vertical
+                })
+
+            overlay_data.append({
+                "protocol_id": protocol.id,
+                "drawing": protocol.drawing.filename,
+                "drawing_image_base64": drawing_base64,
+                "protocol_datetime": protocol_datetime.isoformat(),
+                "dimensions": dimensions
+            })
+
+        return JsonResponse({"protocols": overlay_data})
