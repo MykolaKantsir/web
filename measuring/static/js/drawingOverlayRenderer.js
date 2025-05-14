@@ -143,6 +143,74 @@ const drawingOverlayRenderer = {
     this.savePDF(pdf);
     },
 
+    renderEmptyForm(drawingData, { numbering = false } = {}) {
+    const { jsPDF } = window.jspdf;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const img = new Image();
+    img.src = `data:image/png;base64,${drawingData.drawing_image_base64}`;
+
+    img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.font = "bold 16px Arial";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        drawingData.dimensions.forEach((dim, i) => {
+            const { x, y, width: w, height: h } = dim;
+
+            // Overlay white rectangle to hide underlying content
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(x, y, w, h);
+
+            // Draw rectangle border
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+
+            // Draw number OUTSIDE the box (top-left corner), no "#"
+            if (numbering && dim.dimension_number) {
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 24px Arial";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(String(dim.dimension_number), x, y - 4);
+            }
+        });
+
+        const imageData = canvas.toDataURL("image/png");
+        const aspectRatio = canvas.width / canvas.height;
+        const orientation = aspectRatio > 1 ? "landscape" : "portrait";
+
+        const pdf = new jsPDF(orientation, "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const margin = 10;
+        const targetWidth = pageWidth - 2 * margin;
+        const targetHeight = targetWidth / aspectRatio;
+
+        const finalHeight = (targetHeight + 2 * margin > pageHeight)
+            ? pageHeight - 2 * margin
+            : targetHeight;
+
+        const finalWidth = finalHeight * aspectRatio;
+        const offsetX = (pageWidth - finalWidth) / 2;
+        const offsetY = margin;
+
+        pdf.addImage(imageData, "PNG", offsetX, offsetY, finalWidth, finalHeight);
+        pdf.save("empty_protocol_form.pdf");
+    };
+    },
+
     savePDF(pdf) {
         pdf.save("overlay_protocols.pdf");
     }

@@ -47,32 +47,50 @@ const measureInputManager = {
     },
 
     submitMeasurement: async function () {
-        const measuredValue = parseFloat(this.inputField.value);
-        if (!this.inputField || isNaN(measuredValue) || measuredValue <= 0) {
-            console.error("❌ Invalid measurement value entered");
-            return;
-        }
+    const input = this.inputField;
+    const measuredValue = parseFloat(input.value);
 
-        const measuredData = {
-            measuredValue: measuredValue.toFixed(3),
-            dimensionId: this.inputField.dataset.dimensionId,
-            drawingId: this.inputField.dataset.drawingId,
-            protocolId: this.inputField.dataset.protocolId || null,
-        };
+    if (!input || isNaN(measuredValue) || measuredValue <= 0) {
+        console.error("❌ Invalid measurement value entered");
+        alert("Please enter a valid positive number.");
+        return;
+    }
 
-        console.log("Submitting measurement:", measuredData);
+    const measuredData = {
+        measuredValue: measuredValue.toFixed(3),
+        dimensionId: input.dataset.dimensionId,
+        drawingId: input.dataset.drawingId,
+        protocolId: input.dataset.protocolId || null,
+    };
 
-        const response = await sendMeasurement(measuredData);
+    console.log("📤 Submitting measurement:", measuredData);
 
-        if (response && response.protocolId && response.dimensionId) {
-            console.log("✅ Measurement saved successfully:", response);
-            this.inputField.dataset.protocolId = response.protocolId;
-            measureTableManager.markAsMeasured(response.dimensionId);
-            this.inputField.value = "";
-            this.selectNextDimension(response.dimensionId);
-        } else {
-            console.error("❌ Failed to save measurement");
-        }
+    let response = await sendMeasurement(measuredData);
+
+    // Handle duplicate detection
+    if (response?.duplicate) {
+        const confirmReplace = confirm(
+            `A value (${response.existing_value}) has already been recorded for this dimension.\nDo you want to replace it with ${measuredValue.toFixed(3)}?`
+        );
+
+        if (!confirmReplace) return;
+
+        measuredData.replace = true;
+        response = await sendMeasurement(measuredData);
+    }
+
+    // Final success check
+    if (response?.success && response.protocolId && response.dimensionId) {
+        console.log("✅ Measurement saved successfully:", response);
+        input.dataset.protocolId = response.protocolId;
+        measureTableManager.markAsMeasured(response.dimensionId);
+        measureTableManager.updateMeasuredValue(response.dimensionId, measuredData.measuredValue);
+        input.value = "";
+        this.selectNextDimension(response.dimensionId);
+    } else {
+        console.error("❌ Failed to save measurement");
+        alert("Failed to save measurement. Please try again.");
+    }
     },
 
     selectNextDimension: function (currentDimensionId) {

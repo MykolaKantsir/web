@@ -106,3 +106,15 @@ html, body {
         overflow-x: auto;
     }
 }
+
+/* ================================
+   Desktop Layout (Default)
+   ================================ */
+
+#measure-dimension-table.layout-desktop .col-number  { width: 10%; }
+#measure-dimension-table.layout-desktop .col-value   { width: 20%; }
+#measure-dimension-table.layout-desktop .col-min     { width: 20%; }
+#measure-dimension-table.layout-desktop .col-max     { width: 20%; }
+#measure-dimension-table.layout-desktop .col-mv      { width: 20%; }
+#measure-dimension-table.layout-desktop .col-status  { width: 5%; }
+#measure-dimension-table.layout-desktop .col-more    { width: 5%; }

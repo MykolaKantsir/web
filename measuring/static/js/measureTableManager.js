@@ -95,6 +95,38 @@ const measureTableManager = {
         document.querySelectorAll("#measure-dimension-table tbody tr").forEach(row => {
             row.classList.remove("selected-row");
         });
+    },
+
+    updateMeasuredValue: function (dimensionId, measuredValue) {
+        const rows = document.querySelectorAll("#measure-dimension-table tbody tr");
+
+        rows.forEach(row => {
+            const dimIdCell = row.querySelector(".dimension-id");
+            if (!dimIdCell) return;
+
+            if (dimIdCell.textContent === String(dimensionId)) {
+                const mvCell = row.querySelector(".measured-cell");
+                const min = parseFloat(row.querySelector(".min-cell").textContent);
+                const max = parseFloat(row.querySelector(".max-cell").textContent);
+
+                // Format value by removing trailing zeros
+                const formattedValue = parseFloat(measuredValue).toString();
+
+                // Update the cell
+                mvCell.textContent = formattedValue;
+
+                // Clear previous styling
+                mvCell.classList.remove("bg-success", "bg-danger", "text-white");
+
+                // Apply tolerance-based styling
+                const value = parseFloat(measuredValue);
+                if (value >= min && value <= max) {
+                    mvCell.classList.add("bg-success", "text-white");
+                } else {
+                    mvCell.classList.add("bg-danger", "text-white");
+                }
+            }
+        });
     }
     
 };

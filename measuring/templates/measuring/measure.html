@@ -36,20 +36,20 @@
         <div id="navPanel" class="collapse card-body">
           <div class="d-flex gap-2">
             <button class="btn btn-primary flex-fill">Option 1</button>
-
             <!-- Dropdown for Option 2 -->
             <div class="btn-group flex-fill">
               <button type="button" class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
                 Download
               </button>
               <ul class="dropdown-menu w-100 text-center">
-                <li><button class="dropdown-item" id="download-json">Download JSON</button></li>
-                <li><button class="dropdown-item" id="download-csv">Download CSV</button></li>
-                <li><button class="dropdown-item" id="download-pdf">Download PDF</button></li>
+                <li><button class="dropdown-item" id="download-empty-form">Empty Form</button></li>
+                <li><button class="dropdown-item" id="download-json">JSON</button></li>
+                <li><button class="dropdown-item" id="download-csv">CSV</button></li>
+                <li><button class="dropdown-item" id="download-pdf">PDF</button></li>
               <li><button class="dropdown-item" id="download-overlay-pdf">Overlay PDF</button></li>
               </ul>
-              <button class="btn btn-primary flex-fill">Option 3</button>
             </div>
+            <button class="btn btn-primary flex-fill">Option 3</button>
           </div>
         </div>
       </div>
@@ -57,15 +57,25 @@
 
     <!-- Table Section -->
     <div class="top-row">
-      <table id="measure-dimension-table" class="table table-bordered">
+      <table id="measure-dimension-table" class="table table-bordered layout-desktop">
+        <colgroup>
+          <col class="col-number">
+          <col class="col-value">
+          <col class="col-min">
+          <col class="col-max">
+          <col class="col-mv">
+          <col class="col-status">
+          <col class="col-more">
+        </colgroup>
         <thead class="table-light">
           <tr>
             <th>#</th>
             <th>Value</th>
             <th>Min</th>
             <th>Max</th>
-            <th>More</th>
-            <th>Status</th>
+            <th>MV</th>
+            <th>S</th>
+            <th>M</th>
           </tr>
         </thead>
         <tbody>
@@ -74,8 +84,9 @@
             <td class="value-cell"></td>
             <td class="min-cell"></td>
             <td class="max-cell"></td>
-            <td class="text-center">...</td>
+            <td class="measured-cell"></td>
             <td class="text-center status-column">...</td>
+            <td class="text-center">...</td>
             <!-- Hidden fields for additional attributes -->
             <td style="display: none;">
               <td class="dimension-id" style="display: none;"></td>

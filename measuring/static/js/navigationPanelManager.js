@@ -9,6 +9,7 @@ const navigationPanelManager = {
     document.getElementById("download-csv")?.addEventListener("click", this.downloadCSV);
     document.getElementById("download-json")?.addEventListener("click", this.downloadJSON);
     document.getElementById("download-overlay-pdf")?.addEventListener("click", this.downloadOverlayPDF);
+    document.getElementById("download-empty-form")?.addEventListener("click", this.downloadEmptyForm);
   },
 
   getDrawingId: function () {
@@ -50,7 +51,24 @@ const navigationPanelManager = {
         console.error("❌ Failed to fetch overlay data:", err);
         alert("Failed to generate overlay PDF.");
       });
+  },
+
+  downloadEmptyForm: function () {
+  const drawingId = navigationPanelManager.getDrawingId();
+  if (!drawingId) return;
+
+  fetch(`/measuring/api/empty_protocol_form/?drawing_id=${drawingId}&numbering=false`)
+    .then(res => res.json())
+    .then(data => {
+      drawingOverlayRenderer.renderEmptyForm(data, { numbering: false });
+    })
+    .catch(err => {
+      console.error("❌ Failed to load empty form data:", err);
+      alert("Failed to generate empty protocol form.");
+    });
   }
+
+
 };
 
 window.navigationPanelManager = navigationPanelManager;

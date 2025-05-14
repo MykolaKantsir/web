@@ -116,11 +116,11 @@ async function getDrawingData(drawingId) {
 }
 
 
-// ✅ Function to send measured values to Django
+// ✅ Sends the measurement to Django, returns full response object
 async function sendMeasurement(measuredData) {
     if (!measuredData || !measuredData.dimensionId || !measuredData.drawingId || !measuredData.measuredValue) {
         console.error("❌ Invalid measurement data");
-        return;
+        return null;
     }
 
     const csrfToken = getCsrfToken();
@@ -141,14 +141,8 @@ async function sendMeasurement(measuredData) {
         });
 
         const data = await response.json();
+        return data; // ✅ Always return full response for caller to handle
 
-        if (data.success) {
-            console.log("✅ Measurement saved successfully:", data);
-            return { protocolId: data.protocolId, dimensionId: data.dimensionId };
-        } else {
-            console.error("❌ Failed to save measurement:", data.error);
-            return null;
-        }
     } catch (error) {
         console.error("❌ Error sending measurement data:", error);
         return null;

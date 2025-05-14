@@ -88,38 +88,47 @@ def create_drawing(request):
 #@login_required
 @csrf_exempt
 def save_measurement(request):
-    if request.method != "POST":
-        return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
-
     try:
-        data = json.loads(request.body)
-        measured_value = float(data.get("measuredValue", 0))
+        data = json.loads(request.body.decode("utf-8"))
         dimension_id = data.get("dimensionId")
+        measured_value = data.get("measuredValue")
         drawing_id = data.get("drawingId")
-        protocol_id = data.get("protocolId", None)
+        protocol_id = data.get("protocolId")
+        replace_existing = data.get("replace", False)
 
-        if measured_value <= 0 or not dimension_id or not drawing_id:
-            return JsonResponse({"success": False, "error": "Invalid input data"}, status=400)
+        if not (dimension_id and measured_value is not None and drawing_id):
+            return JsonResponse({"error": "Missing data"}, status=400)
 
-        # Get or create the protocol
+        dimension = Dimension.objects.get(id=dimension_id)
+        drawing = Drawing.objects.get(id=drawing_id)
+
         if protocol_id:
-            protocol = get_object_or_404(Protocol, id=protocol_id)
+            protocol = Protocol.objects.get(id=protocol_id)
         else:
-            drawing = get_object_or_404(Drawing, id=drawing_id)
             protocol = Protocol.objects.create(drawing=drawing)
 
-        # Get the dimension
-        dimension = get_object_or_404(Dimension, id=dimension_id)
+        # Check for existing value for this dimension in this protocol
+        existing_mv = protocol.measured_values.filter(dimension=dimension).first()
 
-        # Create a new measured value
+        if existing_mv and not replace_existing:
+            return JsonResponse({
+                "success": False,
+                "duplicate": True,
+                "existing_value": existing_mv.value,
+                "dimensionId": dimension.id,
+                "protocolId": protocol.id
+            })
+
+        if existing_mv and replace_existing:
+            protocol.measured_values.remove(existing_mv)
+            existing_mv.delete()
+
+        # Save new measured value
         measured_value_obj = MeasuredValue.objects.create(
             dimension=dimension,
             value=measured_value,
         )
-
-        # Ensure the measured value is linked to the protocol
         protocol.measured_values.add(measured_value_obj)
-        protocol.save()
 
         return JsonResponse({
             "success": True,
@@ -127,11 +136,9 @@ def save_measurement(request):
             "dimensionId": dimension.id
         })
 
-    except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Invalid JSON format"}, status=400)
-
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
+    
 
 # @login_required
 @csrf_exempt  # Keep CSRF exemption for now
@@ -369,3 +376,38 @@ def download_protocol(request):
             })
 
         return JsonResponse({"protocols": overlay_data})
+
+# @login_required    
+@csrf_exempt
+def empty_protocol_form(request):
+    drawing_id = request.GET.get("drawing_id")
+    numbering = request.GET.get("numbering", "false").lower() == "true"
+
+    if not drawing_id:
+        return JsonResponse({"error": "Missing drawing_id"}, status=400)
+
+    try:
+        drawing = Drawing.objects.get(id=drawing_id)
+    except Drawing.DoesNotExist:
+        return JsonResponse({"error": "Drawing not found"}, status=404)
+
+    dimensions = drawing.dimensions.all().order_by("id")
+
+    dimension_data = []
+    for index, dim in enumerate(dimensions, start=1):
+        item = {
+            "x": dim.x,
+            "y": dim.y,
+            "width": dim.width,
+            "height": dim.height,
+            "is_vertical": dim.is_vertical,
+        }
+        if numbering:
+            item["dimension_number"] = index
+        dimension_data.append(item)
+
+    return JsonResponse({
+        "drawing": drawing.filename,
+        "drawing_image_base64": drawing.drawing_image_base64 or "",
+        "dimensions": dimension_data
+    })
