@@ -99,11 +99,25 @@
           </tr>
         </tbody>
       </table>
+      <!-- Hidden "Finished" Message -->
+      <div id="finished-banner" class="text-center mt-4" style="display: none;">
+        <h1 class="display-2 text-success">Protocol Finished</h1>
+      </div>
+      <!-- Finish Protocol Button -->
+      <div class="finish-protocol-container mt-3">
+        <button id="finish-protocol-btn" class="btn btn-success w-100" disabled>
+          Finish Protocol
+        </button>
+      </div>
     </div>
+    {% block modal %}
+      {% include "measuring/partials/unfinished_protocol_modal.html" %}
+    {% endblock %}
   </div>
 </div>
 </body>
 {% endblock %}
+
 
 {% block additional_scripts %}
 <script src="{% static 'js/jspdf.umd.min.js' %}"></script>
@@ -111,6 +125,7 @@
 <script src="{% static 'js/measureDrawingManager.js' %}"></script>
 <script src="{% static 'js/measureTableManager.js' %}"></script>
 <script src="{% static 'js/measureInputManager.js' %}"></script>
+<script src="{% static 'js/protocolManager.js' %}"></script>
 <script src="{% static 'js/measurePreviewManager.js' %}"></script>
 <script src="{% static 'js/drawingOverlayRenderer.js' %}"></script>
 <script src="{% static 'js/navigationPanelManager.js' %}"></script>

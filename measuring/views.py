@@ -1,8 +1,9 @@
-from django.contrib.auth.decorators import login_required
-from io import BytesIO
 import json
 import csv
+from io import BytesIO
 from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404
 from django.utils.dateparse import parse_date
@@ -26,6 +27,82 @@ def measure_view(request, drawing_id=None):
     will fetch the drawing and its dimensions via JavaScript.
     """
     return render(request, 'measuring/measure.html', {'drawing_id': drawing_id})
+
+#@login_required
+@csrf_exempt
+def check_unfinished_protocols(request):
+    drawing_id = request.GET.get("drawing_id")
+    if not drawing_id:
+        return JsonResponse({"error": "Missing drawing_id"}, status=400)
+
+    try:
+        drawing = Drawing.objects.get(id=drawing_id)
+    except Drawing.DoesNotExist:
+        return JsonResponse({"error": "Drawing not found"}, status=404)
+
+    unfinished_protocols = (
+        Protocol.objects
+        .filter(drawing=drawing, is_finished=False)
+        .prefetch_related("measured_values")
+    )
+
+    data = []
+    for protocol in unfinished_protocols:
+        data.append({
+            "id": protocol.id,
+            "created_at": protocol.created_at.isoformat() if hasattr(protocol, "created_at") else None,
+            "measured_count": protocol.measured_values.count(),
+        })
+
+    return JsonResponse({"protocols": data})
+
+#@login_required
+@csrf_exempt
+def get_protocol_data(request):
+    protocol_id = request.GET.get("protocol_id")
+
+    if not protocol_id:
+        return JsonResponse({"error": "Missing protocol_id"}, status=400)
+
+    try:
+        protocol = Protocol.objects.prefetch_related("measured_values__dimension").get(id=protocol_id)
+    except Protocol.DoesNotExist:
+        return JsonResponse({"error": "Protocol not found"}, status=404)
+
+    data = {
+        "protocol": {
+            "id": protocol.id,
+            "measured_values": []
+        }
+    }
+
+    for mv in protocol.measured_values.all():
+        data["protocol"]["measured_values"].append({
+            "dimension_id": mv.dimension.id,
+            "value": float(mv.value),
+        })
+
+    return JsonResponse(data)
+
+#@login_required
+@csrf_exempt
+@require_POST
+def finish_protocol(request):
+    try:
+        data = json.loads(request.body)
+        protocol_id = data.get("protocol_id")
+        if not protocol_id:
+            return JsonResponse({"error": "Missing protocol_id"}, status=400)
+
+        protocol = Protocol.objects.get(id=protocol_id)
+        protocol.is_finished = True
+        protocol.save()
+
+        return JsonResponse({"success": True})
+    except Protocol.DoesNotExist:
+        return JsonResponse({"error": "Protocol not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 # Get drawing data
 #@login_required

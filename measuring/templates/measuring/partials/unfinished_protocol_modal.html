@@ -1,0 +1,20 @@
+<!-- templates/measuring/partials/unfinished_protocol_modal.html -->
+<div id="unfinished-protocol-modal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Unfinished Protocols</h5>
+            <button type="button" class="btn-close" onclick="protocolManager.hideModal()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <p>There are unfinished protocols for this drawing. Please choose one:</p>
+            <div id="unfinished-protocol-options">
+            <!-- JS will inject content here -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="protocolManager.createNewProtocol()">Start New Protocol</button>
+        </div>
+        </div>
+    </div>
+</div>

@@ -1,19 +1,35 @@
 const measureInputManager = {
     inputField: null,
     submitButton: null,
+    selectedProtocolId: null,
+    finishButton: null,
     
     init: function () {
         console.log("Initializing measureInputManager...");
+
+        // ✅ Grab references to input + submit button
         this.inputField = document.getElementById("measurement-input");
         this.submitButton = document.getElementById("submit-measurement");
-        
+
+        // ✅ Grab reference to the finish protocol button
+        this.finishButton = document.getElementById("finish-protocol-btn");
+
+        // ✅ Hook up enter key and click submission
         if (this.inputField && this.submitButton) {
             this.inputField.addEventListener("keypress", (event) => {
                 if (event.key === "Enter") {
                     this.submitMeasurement();
                 }
             });
+
             this.submitButton.addEventListener("click", () => this.submitMeasurement());
+        }
+
+        // ✅ Hook up finish protocol button
+        if (this.finishButton) {
+            this.finishButton.addEventListener("click", () => {
+                this.finishCurrentProtocol();
+            });
         }
     },
 
@@ -60,7 +76,7 @@ const measureInputManager = {
         measuredValue: measuredValue.toFixed(3),
         dimensionId: input.dataset.dimensionId,
         drawingId: input.dataset.drawingId,
-        protocolId: input.dataset.protocolId || null,
+        protocolId: this.selectedProtocolId || input.dataset.protocolId || null,
     };
 
     console.log("📤 Submitting measurement:", measuredData);
@@ -87,10 +103,26 @@ const measureInputManager = {
         measureTableManager.updateMeasuredValue(response.dimensionId, measuredData.measuredValue);
         input.value = "";
         this.selectNextDimension(response.dimensionId);
+            // ✅ Enable finish button
+        if (this.finishButton && this.finishButton.disabled) {
+            this.finishButton.disabled = false;
+        }
     } else {
         console.error("❌ Failed to save measurement");
         alert("Failed to save measurement. Please try again.");
     }
+    },
+
+    disableMeasurementInput: function () {
+        // Disable the input field
+        if (this.inputField) {
+            this.inputField.disabled = true;
+        }
+
+        // Disable the submit button
+        if (this.submitButton) {
+            this.submitButton.disabled = true;
+        }
     },
 
     selectNextDimension: function (currentDimensionId) {
@@ -112,5 +144,25 @@ const measureInputManager = {
                 selectNext = true;
             }
         }
-    }
+    },
+
+    finishCurrentProtocol: async function () {
+        if (!this.selectedProtocolId) return;
+
+        const success = await django_communicator.finishProtocol(this.selectedProtocolId);
+
+        if (success) {
+            this.finishButton.disabled = true;
+            this.disableMeasurementInput();
+
+            // ✅ Hide table, show "Finished" banner
+            const tableSection = document.getElementById("measure-dimension-table");
+            const finishedBanner = document.getElementById("finished-banner");
+
+            if (tableSection) tableSection.style.display = "none";
+            if (finishedBanner) finishedBanner.style.display = "block";
+
+            console.log(`✅ Protocol ${this.selectedProtocolId} has been finished.`);
+        }
+    },
 };

@@ -115,6 +115,54 @@ async function getDrawingData(drawingId) {
     }
 }
 
+// ✅ Function to check for unfinished protocols
+async function checkUnfinishedProtocols(drawingId) {
+    try {
+        const res = await fetch(`/measuring/api/check_unfinished_protocols/?drawing_id=${drawingId}`);
+        return await res.json();
+    } catch (err) {
+        console.error("❌ Failed to fetch unfinished protocols:", err);
+        return null;
+    }
+}
+
+// ✅ Function to get data of unfinished protocols
+async function getProtocolData(protocolId) {
+    try {
+        const res = await fetch(`/measuring/api/get_protocol_data/?protocol_id=${protocolId}`);
+        return await res.json();
+    } catch (err) {
+        console.error("❌ Failed to fetch protocol data:", err);
+        return null;
+    }
+}
+
+async function finishProtocol(protocolId) {
+    try {
+        const response = await fetch("/measuring/api/finish_protocol/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+            },
+            body: JSON.stringify({ protocol_id: protocolId }),
+            credentials: "include"
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log(`✅ Protocol ${protocolId} marked as finished`);
+            return true;
+        } else {
+            console.error("❌ Failed to finish protocol:", data.error);
+            return false;
+        }
+    } catch (err) {
+        console.error("❌ Error finishing protocol:", err);
+        return false;
+    }
+}
 
 // ✅ Sends the measurement to Django, returns full response object
 async function sendMeasurement(measuredData) {
@@ -158,6 +206,9 @@ window.django_communicator = {
     checkLoginStatus,
     fetchCsrfToken,
     getCsrfToken,
+    checkUnfinishedProtocols,
+    getProtocolData,
     getDrawingData,
-    sendDrawingData
+    sendDrawingData,
+    finishProtocol
 };
