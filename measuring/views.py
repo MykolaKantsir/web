@@ -7,7 +7,8 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404
 from django.utils.dateparse import parse_date
-from .models import Drawing, Dimension, MeasuredValue, Protocol
+from django.db.models import Q
+from .models import Drawing, Dimension, MeasuredValue, Protocol, MonittorInformation
 
 # Create your views here.
 #@login_required
@@ -27,6 +28,38 @@ def measure_view(request, drawing_id=None):
     will fetch the drawing and its dimensions via JavaScript.
     """
     return render(request, 'measuring/measure.html', {'drawing_id': drawing_id})
+
+#@login_required
+def find_drawing(request):
+    query = request.GET.get("query", "").strip()
+
+    if not query:
+        return JsonResponse({"error": "Missing query"}, status=400)
+
+    try:
+        # Try to find drawing by filename or URL first
+        drawing = Drawing.objects.filter(
+            Q(filename__icontains=query) |
+            Q(url__icontains=query)
+        ).first()
+
+        # If not found, try to find it through monitor information
+        if not drawing:
+            monitor_match = MonitorInformation.objects.filter(
+                Q(monitor_operation_number__icontains=query) |
+                Q(monitor_order_number__icontains=query)
+            ).select_related("drawing").first()
+
+            if monitor_match:
+                drawing = monitor_match.drawing
+
+        if drawing:
+            return JsonResponse({"drawing_id": drawing.id})
+        else:
+            return JsonResponse({"error": "Drawing not found"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 #@login_required
 @csrf_exempt

@@ -8,126 +8,145 @@
 {% endblock %}
 
 {% block content %}
-<body data-drawing-id="{{ drawing_id|default:'' }}">
-<div class="container-fluid">
-  <!-- Left Column (Drawing Area) -->
-  <div class="left-column d-flex flex-column">
-    <!-- Measurement Input Row (Fixed Height) -->
-    <div class="input-row d-flex align-items-center p-2">
-      <input type="number" class="form-control me-2" id="measurement-input" placeholder="Enter measurement">
-      <button class="btn btn-primary" id="submit-measurement">Enter</button>
+{% if drawing_id %}
+  <body data-drawing-id="{{ drawing_id|default:'' }}">
+  <div class="container-fluid">
+    <!-- Left Column (Drawing Area) -->
+    <div class="left-column d-flex flex-column">
+      <!-- Measurement Input Row (Fixed Height) -->
+      <div class="input-row d-flex align-items-center p-2">
+        <input type="number" class="form-control me-2" id="measurement-input" placeholder="Enter measurement">
+        <button class="btn btn-primary" id="submit-measurement">Enter</button>
+      </div>
+      <!-- Drawing Area (Takes Remaining Space) -->
+      <div class="drawing-row flex-grow-1 d-flex justify-content-center align-items-center">
+        <canvas id="measure-canvas"></canvas>
+        <img id="clean-drawing" src="" alt="Clean Drawing Backup" style="display: none;">
+        <input type="file" id="upload-measure" accept="image/png, image/jpeg, application/pdf" class="form-control" style="display: none;">
+      </div>
     </div>
-    <!-- Drawing Area (Takes Remaining Space) -->
-    <div class="drawing-row flex-grow-1 d-flex justify-content-center align-items-center">
-      <canvas id="measure-canvas"></canvas>
-      <img id="clean-drawing" src="" alt="Clean Drawing Backup" style="display: none;">
-      <input type="file" id="upload-measure" accept="image/png, image/jpeg, application/pdf" class="form-control" style="display: none;">
-    </div>
-  </div>
-  
-  <!-- Right Column (Table Area) -->
-  <div class="right-column">
-    <!-- Navigation Panel -->
-    <div class="nav-row">
-      <div class="card">
-        <div class="card-header text-center fw-bold bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#navPanel" style="cursor: pointer;">
-          Navigation ▼
-        </div>
-        <div id="navPanel" class="collapse card-body">
-          <div class="d-flex gap-2">
-            <button class="btn btn-primary flex-fill">Option 1</button>
-            <!-- Dropdown for Option 2 -->
-            <div class="btn-group flex-fill">
-              <button type="button" class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
-                Download
-              </button>
-              <ul class="dropdown-menu w-100 text-center">
-                <li><button class="dropdown-item" id="download-empty-form">Empty Form</button></li>
-                <li><button class="dropdown-item" id="download-json">JSON</button></li>
-                <li><button class="dropdown-item" id="download-csv">CSV</button></li>
-                <li><button class="dropdown-item" id="download-pdf">PDF</button></li>
-              <li><button class="dropdown-item" id="download-overlay-pdf">Overlay PDF</button></li>
-              </ul>
+    
+    <!-- Right Column (Table Area) -->
+    <div class="right-column">
+      <!-- Navigation Panel -->
+      <div class="nav-row">
+        <div class="card">
+          <div class="card-header text-center fw-bold bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#navPanel" style="cursor: pointer;">
+            Navigation ▼
+          </div>
+          <div id="navPanel" class="collapse card-body">
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary flex-fill">Option 1</button>
+              <!-- Dropdown for Option 2 -->
+              <div class="btn-group flex-fill">
+                <button type="button" class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                  Download
+                </button>
+                <ul class="dropdown-menu w-100 text-center">
+                  <li><button class="dropdown-item" id="download-empty-form">Empty Form</button></li>
+                  <li><button class="dropdown-item" id="download-json">JSON</button></li>
+                  <li><button class="dropdown-item" id="download-csv">CSV</button></li>
+                  <li><button class="dropdown-item" id="download-pdf">PDF</button></li>
+                <li><button class="dropdown-item" id="download-overlay-pdf">Overlay PDF</button></li>
+                </ul>
+              </div>
+              <button class="btn btn-primary flex-fill">Option 3</button>
             </div>
-            <button class="btn btn-primary flex-fill">Option 3</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Table Section -->
-    <div class="top-row">
-      <table id="measure-dimension-table" class="table table-bordered layout-desktop">
-        <colgroup>
-          <col class="col-number">
-          <col class="col-value">
-          <col class="col-min">
-          <col class="col-max">
-          <col class="col-mv">
-          <col class="col-status">
-          <col class="col-more">
-        </colgroup>
-        <thead class="table-light">
-          <tr>
-            <th>#</th>
-            <th>Value</th>
-            <th>Min</th>
-            <th>Max</th>
-            <th>MV</th>
-            <th>S</th>
-            <th>M</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr id="row-template" class="d-none">
-            <td class="row-number"></td>
-            <td class="value-cell"></td>
-            <td class="min-cell"></td>
-            <td class="max-cell"></td>
-            <td class="measured-cell"></td>
-            <td class="text-center status-column">...</td>
-            <td class="text-center">...</td>
-            <!-- Hidden fields for additional attributes -->
-            <td style="display: none;">
-              <td class="dimension-id" style="display: none;"></td>
-              <td class="crop-x" style="display: none;"></td>
-              <td class="crop-y" style="display: none;"></td>
-              <td class="crop-width" style="display: none;"></td>
-              <td class="crop-height" style="display: none;"></td>
-              <td class="is-vertical" style="display: none;"></td>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Hidden "Finished" Message -->
-      <div id="finished-banner" class="text-center mt-4" style="display: none;">
-        <h1 class="display-2 text-success">Protocol Finished</h1>
+      <!-- Table Section -->
+      <div class="top-row">
+        <table id="measure-dimension-table" class="table table-bordered layout-desktop">
+          <colgroup>
+            <col class="col-number">
+            <col class="col-value">
+            <col class="col-min">
+            <col class="col-max">
+            <col class="col-mv">
+            <col class="col-status">
+            <col class="col-more">
+          </colgroup>
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Value</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>MV</th>
+              <th>S</th>
+              <th>M</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="row-template" class="d-none">
+              <td class="row-number"></td>
+              <td class="value-cell"></td>
+              <td class="min-cell"></td>
+              <td class="max-cell"></td>
+              <td class="measured-cell"></td>
+              <td class="text-center status-column">...</td>
+              <td class="text-center">...</td>
+              <!-- Hidden fields for additional attributes -->
+              <td style="display: none;">
+                <td class="dimension-id" style="display: none;"></td>
+                <td class="crop-x" style="display: none;"></td>
+                <td class="crop-y" style="display: none;"></td>
+                <td class="crop-width" style="display: none;"></td>
+                <td class="crop-height" style="display: none;"></td>
+                <td class="is-vertical" style="display: none;"></td>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- Hidden "Finished" Message -->
+        <div id="finished-banner" class="text-center mt-4" style="display: none;">
+          <h1 class="display-2 text-success">Protocol Finished</h1>
+        </div>
+        <!-- Finish Protocol Button -->
+        <div class="finish-protocol-container mt-3">
+          <button id="finish-protocol-btn" class="btn btn-success w-100" disabled>
+            Finish Protocol
+          </button>
+        </div>
       </div>
-      <!-- Finish Protocol Button -->
-      <div class="finish-protocol-container mt-3">
-        <button id="finish-protocol-btn" class="btn btn-success w-100" disabled>
-          Finish Protocol
-        </button>
-      </div>
+      {% block modal %}
+        {% include "measuring/partials/unfinished_protocol_modal.html" %}
+      {% endblock %}
     </div>
-    {% block modal %}
-      {% include "measuring/partials/unfinished_protocol_modal.html" %}
-    {% endblock %}
   </div>
-</div>
-</body>
+  </body>
+{% else %}
+  <!-- Drawing selection panel only -->
+  <div class="container-fluid d-flex justify-content-center align-items-center vh-100">
+    <div id="drawing-selection-panel" class="text-center w-50">
+      <h2>Select Drawing to Measure</h2>
+      <div class="d-flex justify-content-center gap-2 mt-3">
+        <input type="text" id="drawing-search-input" class="form-control" placeholder="Enter filename, URL, or monitor number">
+        <button class="btn btn-primary" id="drawing-search-btn">Search</button>
+      </div>
+      <p id="drawing-search-error" class="text-danger mt-3" style="display: none;">No matching drawing found.</p>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}
 
 
 {% block additional_scripts %}
-<script src="{% static 'js/jspdf.umd.min.js' %}"></script>
-<script src="{% static 'js/django_communicator.js' %}"></script>
-<script src="{% static 'js/measureDrawingManager.js' %}"></script>
-<script src="{% static 'js/measureTableManager.js' %}"></script>
-<script src="{% static 'js/measureInputManager.js' %}"></script>
-<script src="{% static 'js/protocolManager.js' %}"></script>
-<script src="{% static 'js/measurePreviewManager.js' %}"></script>
-<script src="{% static 'js/drawingOverlayRenderer.js' %}"></script>
-<script src="{% static 'js/navigationPanelManager.js' %}"></script>
-<script src="{% static 'js/measure.js' %}"></script>
+  {% if drawing_id %}
+    <script src="{% static 'js/jspdf.umd.min.js' %}"></script>
+    <script src="{% static 'js/django_communicator.js' %}"></script>
+    <script src="{% static 'js/measureDrawingManager.js' %}"></script>
+    <script src="{% static 'js/measureTableManager.js' %}"></script>
+    <script src="{% static 'js/measureInputManager.js' %}"></script>
+    <script src="{% static 'js/protocolManager.js' %}"></script>
+    <script src="{% static 'js/measurePreviewManager.js' %}"></script>
+    <script src="{% static 'js/drawingOverlayRenderer.js' %}"></script>
+    <script src="{% static 'js/navigationPanelManager.js' %}"></script>
+    <script src="{% static 'js/measure.js' %}"></script>
+  {% else %}
+    <script src="{% static 'js/django_communicator.js' %}"></script>
+    <script src="{% static 'js/drawingSelector.js' %}"></script>
+  {% endif %}
 {% endblock %}

@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/create_drawing/", views.create_drawing, name="create_drawing"),
     path("api/create_or_update_dimension/", views.create_or_update_dimension, name="create_or_update_dimension"),
     path("api/drawing/<int:drawing_id>/", views.get_drawing_data, name="get_drawing_data"),
+    path("api/find_drawing/", views.find_drawing, name="find_drawing"),
     path("api/save_measurement/", views.save_measurement, name="save_measurement"),
     path("api/download_protocol/", views.download_protocol, name="download_protocol"),
     path("api/empty_protocol_form/", views.empty_protocol_form, name="empty_protocol_form"),

@@ -69,6 +69,12 @@ async function handleCrop() {
             rotateButton.disabled = true;
         }
 
+        // ✅ Scroll to the last row in the dimension table
+        const lastRow = document.querySelector("#data-table tbody tr:last-child");
+        if (lastRow) {
+            lastRow.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
     } catch (error) {
         console.error("❌ Error recognizing text:", error);
         alert("Error recognizing text.");

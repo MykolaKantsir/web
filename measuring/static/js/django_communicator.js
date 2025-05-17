@@ -48,33 +48,71 @@ function getCsrfToken() {
 
 // ✅ Function to send drawing data to the backend
 async function sendDrawingData(drawingData) {
-    const csrfToken = getCsrfToken();
-    const canvas = document.getElementById("measure-canvas");
-    if (!canvas) {
-        console.error("❌ Canvas element not found.");
+    const imageElement = document.getElementById("clean-image");
+
+    if (!imageElement || !imageElement.src) {
+        console.error("❌ Clean image not found or not loaded.");
         return;
     }
 
-    // Convert canvas to Base64
-    const imageBase64 = canvas.toDataURL("image/png");
-    drawingData.imageBase64 = imageBase64;
+    // Extract clean base64 string (strip the data:image/png;base64, prefix)
+    const base64Data = imageElement.src.split(",")[1];
+    if (!base64Data) {
+        console.error("❌ Invalid base64 image data.");
+        return;
+    }
+
+    drawingData.drawing_image_base64 = base64Data;
 
     try {
         const response = await fetch("/measuring/api/create_drawing/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken
+                "X-CSRFToken": getCsrfToken()
             },
+            credentials: "include",
             body: JSON.stringify(drawingData)
         });
 
         const data = await response.json();
 
         if (data.success) {
-            document.getElementById("measure-canvas").setAttribute("drawing-id", data.drawing_id);
+            console.log(`✅ Drawing saved. ID: ${data.drawing_id}`);
+            document.getElementById("image").setAttribute("drawing-id", data.drawing_id);
+        } else {
+            console.error("❌ Drawing upload failed:", data.error);
         }
-    } catch (error) {}
+    } catch (error) {
+        console.error("❌ Error sending drawing data:", error);
+    }
+}
+
+// ✅ Function to send dimension data
+async function sendDimensionData(dimensionData) {
+    try {
+        const response = await fetch("/measuring/api/create_or_update_dimension/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+            },
+            credentials: "include",
+            body: JSON.stringify(dimensionData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            return data.dimension_id;
+        } else {
+            console.error("❌ Failed to save dimension:", data.error);
+            return null;
+        }
+    } catch (error) {
+        console.error("❌ Error sending dimension data:", error);
+        return null;
+    }
 }
 
 // ✅ Function to fetch drawing and dimension data
