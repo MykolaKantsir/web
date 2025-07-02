@@ -1,12 +1,14 @@
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
-from django.http import HttpRequest, JsonResponse, HttpResponse, HttpResponseRedirect
-from django.views.decorators.http import require_POST
+from django.http import Http404, JsonResponse, HttpResponse, HttpResponseRedirect
+from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
+from django.contrib.staticfiles import finders
 from django.db import transaction
 from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
@@ -16,13 +18,13 @@ from monitoring.utils import convert_time_django_javascript, convert_to_local_ti
 from monitoring.utils import timedelta_to_HHMMSS, parse_isoformat
 from monitoring.utils import update_machine, update_machine_state
 from monitoring import strings
+from pywebpush import webpush, WebPushException
 from datetime import timedelta, datetime
 from collections import defaultdict
 import json
+import os
 import threading
 import time
-
-
 
 # Cache for machine states
 machine_states_cache = {}
@@ -31,6 +33,11 @@ machine_states_cache = {}
 machines_data = {name: (machine, machine.current_state.id) for name, machine in {name: Machine.objects.get(id=id) for name, id in machines_to_show.items()}.items() if machine.current_state}
 
 cache_lock = threading.Lock()
+
+
+# TEMP: store only the most recent subscription in memory
+# Replace with DB later
+last_subscription = {}
 
 def initialize_machine_states_cache():
     """
@@ -54,6 +61,7 @@ def initialize_machine_states_cache():
 
 # Initialize the cache at startup
 initialize_machine_states_cache()
+
 
 def home(request):
     machines = Machine.objects.all().exclude(name=strings.machine_uknown)
@@ -81,6 +89,68 @@ def home(request):
         'virtual_machines': virtual_machines,
     }        
     return render(request, "monitoring/dashboard_main.html", context)
+
+
+def get_webpush_public_key(request):
+    return JsonResponse({"publicKey": settings.WEBPUSH_PUBLIC_KEY})
+
+def service_worker(request):
+    js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
+    print("🛠️  Serving service-worker.js")  # or use logging.info()
+    with open(js_path, "rb") as f:
+        return HttpResponse(f.read(), content_type="application/javascript")
+
+@login_required
+def notify_test_page(request):
+    return render(request, "monitoring/notify_test.html")
+
+@csrf_exempt
+def notify_all(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        subscription_info = last_subscription
+        payload = {
+            "title": "Test Push",
+            "body": "It works!"
+        }
+
+        response = webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(payload),
+            vapid_private_key=settings.WEBPUSH_PRIVATE_KEY,
+            vapid_claims={"sub": "mailto:admin@example.com"},
+        )
+
+        print("📬 Push response status:", response.status_code)
+        print("📬 Push response body:", response.text)
+
+    except WebPushException as e:
+        print("❌ WebPush failed", e)
+        return JsonResponse({"error": "Push failed"}, status=500)
+
+    except Exception as e:
+        print("❌ Other error:", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"status": "sent"})
+
+@csrf_exempt
+def save_subscription(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    try:
+        subscription = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    global last_subscription
+    last_subscription = subscription
+
+    return JsonResponse({"status": "Subscription saved"})
 
 
 def save_states_to_database():

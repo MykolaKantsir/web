@@ -30,6 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost', 
     '127.0.0.1', 
+    '192.168.112.145',
     'gastoninternal.azurewebsites.net', 
     'https://gastoninternal.azurewebsites.net',
     'http://gastoninternal.azurewebsites.net',
@@ -163,6 +164,10 @@ STATIC_URL = 'static/'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Custom settings (Web Push, third-party keys, etc.)
+WEBPUSH_PUBLIC_KEY = "BDkKDo9DtZDizB04X_ZYw17YUXvwte7zVF0Wf9dC-9kOimQkHt7We-7SQcpnVuqxro9PbLfz3fgghN4fTDJLUgM"
+WEBPUSH_PRIVATE_KEY = "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgKt9WmXyNiBNbt6M53YgECajsCM0s1l9Gdrb8Kzz1dzuhRANCAAQ5Cg6PQ7WQ4swdOF/2WMNe2FF78LXu81RdFn/XQvvZDopkJB7e1nvu0kHKZ1bqsa6PT2y38934IITeH0wyS1ID"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -171,11 +176,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Define the log directory
 log_dir = '/home/LogFiles'
 
-# Logging configuration
+
 # Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {message}',
@@ -186,23 +192,45 @@ LOGGING = {
             'style': '{',
         },
     },
+
     'handlers': {
         'logfile': {
             'class': 'logging.handlers.WatchedFileHandler',
             'filename': os.path.join(log_dir, 'django_app.log'),
             'formatter': 'verbose',
         },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
     },
+
     'loggers': {
-        'django': {
-            'handlers': ['logfile'],
-            'level': 'ERROR',
+        # Show Django's internal request logs only in terminal
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': False,
         },
-        'inventory': {  # Added 'inventory' logger configuration
-            'handlers': ['logfile'],
-            'level': 'INFO',  # Ensure the level is set to INFO
-            'propagate': True,
+
+        # Your own logs — show in both terminal and file
+        'django': {
+            'handlers': ['logfile', 'console'],
+            'level': 'WARNING',  # Only warnings/errors from Django internals
+            'propagate': False,
+        },
+
+        # Custom app logs
+        'inventory': {
+            'handlers': ['logfile', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+
+        'monitoring.views': {
+            'handlers': ['logfile', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     }
 }
