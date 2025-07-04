@@ -17,6 +17,9 @@
         {% endif %}
         <form method="POST">
             {% csrf_token %}
+            {# Preserve ?next=... from URL if available #}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" class="form-control" id="username" name="username" required>

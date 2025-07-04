@@ -33,6 +33,8 @@ urlpatterns = [
     # --------------------
     # 🔄 Update APIs (called from machine scripts or automation)
     # --------------------
+    path('api/login/', views.api_login_view, name='api_login'),
+    path("api/logout/", views.api_logout_view, name="api_logout"),
     path('update-monitor-operation/', views.update_monitor_operation, name='update_monitor_operation'),
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
 

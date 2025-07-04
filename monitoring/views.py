@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.decorators import method_decorator
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
 from django.db import transaction
@@ -91,8 +92,40 @@ def home(request):
     return render(request, "monitoring/dashboard_main.html", context)
 
 
+def api_login_view(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Only POST method is allowed"}, status=405)
+
+    username = request.POST.get("username")
+    password = request.POST.get("password")
+
+    if not username or not password:
+        return JsonResponse({"success": False, "error": "Missing username or password"}, status=400)
+
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        login(request, user)
+        return JsonResponse({
+            "success": True,
+            "username": user.username,
+            "user_id": user.id,
+            "is_staff": user.is_staff,
+        })
+    else:
+        return JsonResponse({"success": False, "error": "Invalid credentials"}, status=403)
+
+
+def api_logout_view(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Only POST method is allowed"}, status=405)
+
+    logout(request)
+    return JsonResponse({"success": True, "message": "Logged out successfully"})
+
+
 def get_webpush_public_key(request):
     return JsonResponse({"publicKey": settings.WEBPUSH_PUBLIC_KEY})
+
 
 def service_worker(request):
     js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
@@ -103,6 +136,7 @@ def service_worker(request):
 @login_required
 def notify_test_page(request):
     return render(request, "monitoring/notify_test.html")
+
 
 @csrf_exempt
 def notify_all(request):
@@ -136,6 +170,7 @@ def notify_all(request):
         return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"status": "sent"})
+
 
 @csrf_exempt
 def save_subscription(request):
