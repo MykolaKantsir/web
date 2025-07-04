@@ -6,11 +6,8 @@ db.sqlite3
 media/ 
 inventory/helper.py
 logs/
-inventory/migrations/
 inventory/management/
 monitoring/management/
-monitoring/migrations/
-measuring/migrations/
 to do.md
 django_db.sql
 temp/
