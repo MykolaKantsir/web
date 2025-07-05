@@ -35,6 +35,10 @@ urlpatterns = [
     # --------------------
     path('api/login/', views.api_login_view, name='api_login'),
     path("api/logout/", views.api_logout_view, name="api_logout"),
+    path("save_subscription/", views.save_subscription, name="save_subscription"),
+    path("my_subscriptions/", views.my_subscriptions, name="my_subscriptions"),
+    path("unsubscribe/", views.unsubscribe, name="unsubscribe"),
+    path("send_notification/", views.send_notification_to_user, name="send_notification"),
     path('update-monitor-operation/', views.update_monitor_operation, name='update_monitor_operation'),
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
 

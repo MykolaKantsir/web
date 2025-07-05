@@ -6,6 +6,7 @@ from os import path
 from math import ceil
 from collections import Counter
 from django.db import models
+from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -1307,4 +1308,46 @@ class Archived_cycle(models.Model):
         self.ended = cycle.ended
         self.finished_by = cycle.finished_by
 
-# Create your models here.
+# Subscription models
+
+# Model to store user push subscriptions for web notifications
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.URLField(unique=True)  # Web push endpoint
+    public_key = models.TextField()
+    auth_key = models.TextField()
+    user_agent = models.TextField(blank=True, null=True)  # Optional, for logging/debug
+    is_active = models.BooleanField(default=True)  # Soft deactivate if needed
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'endpoint')
+
+    def __str__(self):
+        return f"Subscription for {self.user.username} @ {self.endpoint[:30]}..."
+
+# Model to link machines with user subscriptions
+class MachineSubscription(models.Model):
+    EVENT_CHOICES = [
+        ("alarm", "Alarm"),
+        ("cycle_end", "Cycle End"),
+    ]
+
+    machine = models.ForeignKey(Machine, on_delete=models.CASCADE)
+    subscription = models.ForeignKey(PushSubscription, on_delete=models.CASCADE)
+    event_type = models.CharField(max_length=20, choices=EVENT_CHOICES, default="cycle_end")
+
+    class Meta:
+        unique_together = ('machine', 'subscription', 'event_type')
+
+# Model to log notifications sent to users
+class NotificationLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    subscription = models.ForeignKey(PushSubscription, on_delete=models.SET_NULL, null=True)
+    payload = models.JSONField()
+    status = models.CharField(max_length=100)  # e.g., "sent", "failed"
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification to {self.user.username} at {self.sent_at}"

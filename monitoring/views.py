@@ -5,7 +5,7 @@ from django.http import Http404, JsonResponse, HttpResponse, HttpResponseRedirec
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, now
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -13,6 +13,7 @@ from django.contrib.staticfiles import finders
 from django.db import transaction
 from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
+from monitoring.models import PushSubscription, MachineSubscription
 from monitoring.defaults import machines_to_show
 from monitoring.utils import is_ajax, machine_current_database_state
 from monitoring.utils import convert_time_django_javascript, convert_to_local_time
@@ -172,20 +173,154 @@ def notify_all(request):
     return JsonResponse({"status": "sent"})
 
 
-@csrf_exempt
+@csrf_exempt  
+@require_POST
+@login_required
 def save_subscription(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
-
     try:
-        subscription = json.loads(request.body)
+        data = json.loads(request.body)
+
+        endpoint = data.get("endpoint")
+        keys = data.get("keys", {})
+        auth = keys.get("auth")
+        public_key = keys.get("p256dh")
+        user_agent = request.headers.get("User-Agent", "")
+
+        if not endpoint or not auth or not public_key:
+            return JsonResponse({"error": "Missing fields"}, status=400)
+
+        # Either update existing or create new subscription
+        subscription, created = PushSubscription.objects.update_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={
+                "auth_key": auth,
+                "public_key": public_key,
+                "user_agent": user_agent,
+                "is_active": True,
+                "updated_at": now(),
+            },
+        )
+
+        return JsonResponse({
+            "status": "created" if created else "updated",
+            "subscription_id": subscription.id
+        })
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
-    global last_subscription
-    last_subscription = subscription
+@csrf_exempt
+@require_POST
+@login_required
+def unsubscribe(request):
+    try:
+        data = json.loads(request.body)
+        endpoint = data.get("endpoint")
 
-    return JsonResponse({"status": "Subscription saved"})
+        if not endpoint:
+            return JsonResponse({"error": "Missing endpoint"}, status=400)
+
+        # Try to find a matching subscription
+        try:
+            subscription = PushSubscription.objects.get(user=request.user, endpoint=endpoint)
+        except PushSubscription.DoesNotExist:
+            return JsonResponse({"status": "not found"}, status=404)
+
+        if not subscription.is_active:
+            return JsonResponse({"status": "already inactive"})
+
+        # Soft-deactivate
+        subscription.is_active = False
+        subscription.save()
+
+        return JsonResponse({"status": "unsubscribed"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+@login_required
+def my_subscriptions(request):
+    # Get all active subscriptions for this user
+    subscriptions = PushSubscription.objects.filter(user=request.user, is_active=True)
+
+    # Get all machine subscriptions linked to those subscriptions
+    machine_subs = MachineSubscription.objects.filter(subscription__in=subscriptions)
+
+    # Format response
+    results = [
+        {"machine": sub.machine.name, "event": sub.event_type}
+        for sub in machine_subs
+    ]
+
+    return JsonResponse(results, safe=False)
+
+@csrf_exempt
+@require_POST
+def send_notification_to_user(request):
+    try:
+        data = json.loads(request.body)
+
+        machine_name = data.get("machine_name")
+        event_type = data.get("event_type")  # "alarm" or "cycle_end"
+        message = data.get("message")
+
+        if not machine_name or not event_type:
+            return JsonResponse({"error": "Missing machine_name or event_type"}, status=400)
+
+        # Get machine
+        try:
+            machine = Machine.objects.get(name=machine_name)
+        except Machine.DoesNotExist:
+            return JsonResponse({"error": "Machine not found"}, status=404)
+
+        # Construct payload
+        title = f"Machine {machine.name}"
+        body = message or ("Cycle ended" if event_type == "cycle_end" else f"{machine.name} stopped")
+
+        payload = {
+            "title": title,
+            "body": body
+        }
+
+        # Get all active subscriptions for this machine
+        machine_subs = MachineSubscription.objects.filter(machine=machine).select_related("subscription")
+        active_subs = [s.subscription for s in machine_subs if s.subscription.is_active]
+
+        results = []
+
+        for sub in active_subs:
+            subscription_info = {
+                "endpoint": sub.endpoint,
+                "keys": {
+                    "p256dh": sub.public_key,
+                    "auth": sub.auth_key
+                }
+            }
+
+            try:
+                response = webpush(
+                    subscription_info=subscription_info,
+                    data=json.dumps(payload),
+                    vapid_private_key=settings.WEBPUSH_PRIVATE_KEY,
+                    vapid_claims={"sub": "mailto:admin@example.com"}
+                )
+                results.append({"endpoint": sub.endpoint, "status": "sent"})
+            except WebPushException as e:
+                sub.is_active = False
+                sub.save()
+                results.append({"endpoint": sub.endpoint, "status": f"failed: {str(e)}"})
+
+        return JsonResponse({"results": results})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 def save_states_to_database():
@@ -293,6 +428,7 @@ def proxy(request):
 # View for day activity logs
 def day_activity(reqeust):
     return HttpResponse('')
+
 
 def about(request):
     return HttpResponse('<h1>About</h1>')
