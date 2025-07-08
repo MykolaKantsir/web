@@ -6,7 +6,7 @@ from django.utils.timezone import make_aware, is_aware
 from pytz import timezone
 from os import path, mkdir, listdir
 from re import match
-from .testing_variables_defaut import path_to_save, offline_path_device
+from ..testing_variables_defaut import path_to_save, offline_path_device
 
 # Additional functions
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Machine, Job, Cycle, Machine_state, Day_activity_log, Archived_cycle
-from .models import Monitor_operation
+from .models import Monitor_operation, PushSubscription, MachineSubscription
 
 # ModelAdmin for Cycle with search_fields defined
 @admin.register(Cycle)
@@ -22,3 +22,5 @@ admin.site.register(Machine_state)
 admin.site.register(Day_activity_log)
 admin.site.register(Archived_cycle)
 admin.site.register(Monitor_operation)
+admin.site.register(PushSubscription)
+admin.site.register(MachineSubscription)

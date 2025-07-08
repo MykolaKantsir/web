@@ -8,11 +8,12 @@ from collections import Counter
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.utils.text import Truncator
 from django.utils.dateparse import parse_datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from datetime import datetime, timedelta, date
-from monitoring.utils import when_work_will_end, timedelta_from_string, round_to_seconds
-from monitoring.utils import clean_nc_program_name, normalize_tool_sequence
+from monitoring.utils.utils import when_work_will_end, timedelta_from_string, round_to_seconds
+from monitoring.utils.utils import clean_nc_program_name, normalize_tool_sequence
 from monitoring import strings, defaults, testing_variables_defaut
 
 # Model of a job
@@ -1320,12 +1321,30 @@ class PushSubscription(models.Model):
     is_active = models.BooleanField(default=True)  # Soft deactivate if needed
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    user_agetnt = models.TextField(blank=True, default="")
+
+    def get_system(self):
+        ua = self.user_agent.lower()
+        if "windows" in ua:
+            return "Windows"
+        elif "mac os" in ua or "macintosh" in ua:
+            return "Mac"
+        elif "android" in ua:
+            return "Android"
+        elif "iphone" in ua or "ios" in ua:
+            return "iPhone"
+        elif "linux" in ua:
+            return "Linux"
+        else:
+            return "Unknown"
 
     class Meta:
         unique_together = ('user', 'endpoint')
 
     def __str__(self):
-        return f"Subscription for {self.user.username} @ {self.endpoint[:30]}..."
+        system = self.get_system()
+        truncated_endpoint = Truncator(self.endpoint).chars(30)
+        return f"{self.user.username} ({system}) [{truncated_endpoint}]"
 
 # Model to link machines with user subscriptions
 class MachineSubscription(models.Model):
@@ -1337,6 +1356,10 @@ class MachineSubscription(models.Model):
     machine = models.ForeignKey(Machine, on_delete=models.CASCADE)
     subscription = models.ForeignKey(PushSubscription, on_delete=models.CASCADE)
     event_type = models.CharField(max_length=20, choices=EVENT_CHOICES, default="cycle_end")
+
+    def __str__(self):
+        system = self.subscription.get_system() if hasattr(self.subscription, "get_system") else "Unknown"
+        return f"{self.subscription.user.username} / {system} / {self.machine.name} / {self.event_type}"
 
     class Meta:
         unique_together = ('machine', 'subscription', 'event_type')

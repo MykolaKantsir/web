@@ -15,12 +15,11 @@ from django.db.models import Min, Max
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.models import PushSubscription, MachineSubscription
 from monitoring.defaults import machines_to_show
-from monitoring.utils import is_ajax, machine_current_database_state
-from monitoring.utils import convert_time_django_javascript, convert_to_local_time
-from monitoring.utils import timedelta_to_HHMMSS, parse_isoformat
-from monitoring.utils import update_machine, update_machine_state
+from monitoring.utils.utils import is_ajax, machine_current_database_state
+from monitoring.utils.utils import convert_time_django_javascript, convert_to_local_time
+from monitoring.utils.utils import timedelta_to_HHMMSS, parse_isoformat
+from monitoring.utils.push_notifications import send_push_to_subscribers
 from monitoring import strings
-from pywebpush import webpush, WebPushException
 from datetime import timedelta, datetime
 from collections import defaultdict
 import json
@@ -134,43 +133,43 @@ def service_worker(request):
     with open(js_path, "rb") as f:
         return HttpResponse(f.read(), content_type="application/javascript")
 
-@login_required
-def notify_test_page(request):
-    return render(request, "monitoring/notify_test.html")
-
 
 @csrf_exempt
-def notify_all(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
-
+@require_POST
+def trigger_notification(request):
     try:
         data = json.loads(request.body)
-        subscription_info = last_subscription
-        payload = {
-            "title": "Test Push",
-            "body": "It works!"
-        }
+        machine_name = data.get("machine")
+        event_type = data.get("event_type")
+        extra_info = data.get("message", "")  # Optional custom message
 
-        response = webpush(
-            subscription_info=subscription_info,
-            data=json.dumps(payload),
-            vapid_private_key=settings.WEBPUSH_PRIVATE_KEY,
-            vapid_claims={"sub": "mailto:admin@example.com"},
-        )
+        if not machine_name or not event_type:
+            return JsonResponse({"error": "Missing machine or event_type"}, status=400)
 
-        print("📬 Push response status:", response.status_code)
-        print("📬 Push response body:", response.text)
+        try:
+            machine = Machine.objects.get(name=machine_name)
+        except Machine.DoesNotExist:
+            return JsonResponse({"error": f"Machine '{machine_name}' not found"}, status=404)
 
-    except WebPushException as e:
-        print("❌ WebPush failed", e)
-        return JsonResponse({"error": "Push failed"}, status=500)
+        # Define the message
+        if event_type == "alarm":
+            title = f"🚨 Alarm on {machine.name}"
+            body = f"{machine.name} alarm {extra_info}" or f"Alarm on {machine.name}"
+        elif event_type == "cycle_end":
+            title = f"✅ Cycle Ended on {machine.name}"
+            body = f"{machine.name} has finished a cycle."
+        else:
+            return JsonResponse({"error": f"Unsupported event_type: {event_type}"}, status=400)
 
+        # Call the helper to send the notifications
+        send_push_to_subscribers(machine, event_type, {"title": title, "body": body})
+
+        return JsonResponse({"status": "Notifications sent"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
-        print("❌ Other error:", e)
         return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"status": "sent"})
 
 
 @csrf_exempt  
@@ -243,84 +242,118 @@ def unsubscribe(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-@login_required
-def my_subscriptions(request):
-    # Get all active subscriptions for this user
-    subscriptions = PushSubscription.objects.filter(user=request.user, is_active=True)
-
-    # Get all machine subscriptions linked to those subscriptions
-    machine_subs = MachineSubscription.objects.filter(subscription__in=subscriptions)
-
-    # Format response
-    results = [
-        {"machine": sub.machine.name, "event": sub.event_type}
-        for sub in machine_subs
-    ]
-
-    return JsonResponse(results, safe=False)
 
 @csrf_exempt
 @require_POST
-def send_notification_to_user(request):
+@login_required
+def subscribe_machine(request):
     try:
         data = json.loads(request.body)
 
-        machine_name = data.get("machine_name")
-        event_type = data.get("event_type")  # "alarm" or "cycle_end"
-        message = data.get("message")
+        subscription_data = data.get("subscription", {})
+        machine_name = data.get("machine")
+        event_type = data.get("event_type")
 
-        if not machine_name or not event_type:
-            return JsonResponse({"error": "Missing machine_name or event_type"}, status=400)
+        endpoint = subscription_data.get("endpoint")
+        keys = subscription_data.get("keys", {})
+        auth = keys.get("auth")
+        public_key = keys.get("p256dh")
+        user_agent = request.headers.get("User-Agent", "")
+
+        if not endpoint or not auth or not public_key or not machine_name or not event_type:
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        # Get or create PushSubscription
+        subscription, _ = PushSubscription.objects.update_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={
+                "auth_key": auth,
+                "public_key": public_key,
+                "user_agent": user_agent,
+                "is_active": True,
+                "updated_at": now(),
+            }
+        )
 
         # Get machine
+        machine = Machine.objects.get(name=machine_name)
+
+        # Create MachineSubscription
+        ms, created = MachineSubscription.objects.get_or_create(
+            subscription=subscription,
+            machine=machine,
+            event_type=event_type
+        )
+
+        return JsonResponse({"status": "subscribed", "created": created})
+
+    except Machine.DoesNotExist:
+        return JsonResponse({"error": "Machine not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def unsubscribe_machine(request):
+    try:
+        data = json.loads(request.body)
+
+        subscription_data = data.get("subscription", {})
+        machine_name = data.get("machine")
+        event_type = data.get("event_type")
+
+        endpoint = subscription_data.get("endpoint")
+
+        if not endpoint or not machine_name or not event_type:
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        # Try to find the user's subscription with the same endpoint
+        try:
+            subscription = PushSubscription.objects.get(user=request.user, endpoint=endpoint)
+        except PushSubscription.DoesNotExist:
+            return JsonResponse({"error": "Subscription not found"}, status=404)
+
         try:
             machine = Machine.objects.get(name=machine_name)
         except Machine.DoesNotExist:
             return JsonResponse({"error": "Machine not found"}, status=404)
 
-        # Construct payload
-        title = f"Machine {machine.name}"
-        body = message or ("Cycle ended" if event_type == "cycle_end" else f"{machine.name} stopped")
+        deleted, _ = MachineSubscription.objects.filter(
+            subscription=subscription,
+            machine=machine,
+            event_type=event_type
+        ).delete()
 
-        payload = {
-            "title": title,
-            "body": body
-        }
-
-        # Get all active subscriptions for this machine
-        machine_subs = MachineSubscription.objects.filter(machine=machine).select_related("subscription")
-        active_subs = [s.subscription for s in machine_subs if s.subscription.is_active]
-
-        results = []
-
-        for sub in active_subs:
-            subscription_info = {
-                "endpoint": sub.endpoint,
-                "keys": {
-                    "p256dh": sub.public_key,
-                    "auth": sub.auth_key
-                }
-            }
-
-            try:
-                response = webpush(
-                    subscription_info=subscription_info,
-                    data=json.dumps(payload),
-                    vapid_private_key=settings.WEBPUSH_PRIVATE_KEY,
-                    vapid_claims={"sub": "mailto:admin@example.com"}
-                )
-                results.append({"endpoint": sub.endpoint, "status": "sent"})
-            except WebPushException as e:
-                sub.is_active = False
-                sub.save()
-                results.append({"endpoint": sub.endpoint, "status": f"failed: {str(e)}"})
-
-        return JsonResponse({"results": results})
+        return JsonResponse({"status": "unsubscribed", "deleted": deleted > 0})
 
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def my_subscriptions(request):
+    # Get all active subscriptions for this user
+    subscriptions = PushSubscription.objects.filter(user=request.user, is_active=True)
+
+    # Preload related MachineSubscription rows
+    machine_subs = MachineSubscription.objects.filter(subscription__in=subscriptions).select_related("machine", "subscription")
+
+    # Format the results with endpoint info
+    results = [
+        {
+            "machine": ms.machine.name,
+            "event": ms.event_type,
+            "endpoint": ms.subscription.endpoint
+        }
+        for ms in machine_subs
+    ]
+
+    return JsonResponse(results, safe=False)
 
 
 def save_states_to_database():
