@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Subscribe to {{ machine_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/machine_subscribe.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="subscription-box">
+        <h2>🔔 Subscribe to {{ machine_name }}</h2>
+
+        <div class="form-check">
+            <input class="form-check-input subscription-toggle" type="checkbox"
+                   data-machine="{{ machine_name }}" data-event="cycle_end"
+                   id="cycle_check_{{ machine_name }}">
+            <label class="form-check-label" for="cycle_check_{{ machine_name }}">Cycle End</label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input subscription-toggle" type="checkbox"
+                   data-machine="{{ machine_name }}" data-event="alarm"
+                   id="alarm_check_{{ machine_name }}">
+            <label class="form-check-label" for="alarm_check_{{ machine_name }}">Alarm</label>
+        </div>
+
+        <p class="text-muted mt-3" id="status_msg">Managing subscriptions...</p>
+    </div>
+
+    <script src="{% static 'js/push_subscription_manager.js' %}"></script>
+    <script src="{% static 'js/dashboard_subscription_controls.js' %}"></script>
+</body>
+</html>

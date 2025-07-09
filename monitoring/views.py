@@ -127,6 +127,14 @@ def get_webpush_public_key(request):
     return JsonResponse({"publicKey": settings.WEBPUSH_PUBLIC_KEY})
 
 
+def machine_subscribe_view(request, machine_id):
+    machine = get_object_or_404(Machine, pk=machine_id)
+    return render(request, "monitoring/machine_subscribe.html", {
+        "machine_id": machine.id,
+        "machine_name": machine.name
+    })
+
+
 def service_worker(request):
     js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
     print("🛠️  Serving service-worker.js")  # or use logging.info()

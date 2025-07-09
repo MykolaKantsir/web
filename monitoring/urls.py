@@ -47,6 +47,7 @@ urlpatterns = [
     # 🔔 Manual Notification Testing (temporary/dev)
     # --------------------
     path("trigger_notification", views.trigger_notification, name="api_trigger_notification"),
+    path("machine-subscribe/<int:machine_id>/", views.machine_subscribe_view, name="machine_subscribe"),
     path("service-worker.js", views.service_worker, name="service_worker"),
 
     # --------------------
