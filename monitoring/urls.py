@@ -44,10 +44,11 @@ urlpatterns = [
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
 
     # --------------------
-    # 🔔 Manual Notification Testing (temporary/dev)
+    # 🔔 Notification
     # --------------------
     path("trigger_notification", views.trigger_notification, name="api_trigger_notification"),
     path("machine-subscribe/<int:machine_id>/", views.machine_subscribe_view, name="machine_subscribe"),
+    path("monitoring/manifest/<int:machine_id>.json", views.dynamic_manifest, name="dynamic_manifest"),
     path("service-worker.js", views.service_worker, name="service_worker"),
 
     # --------------------

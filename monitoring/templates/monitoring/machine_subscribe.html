@@ -8,9 +8,9 @@
     <link rel="icon" href="{% static 'icons/favicon.ico' %}" type="image/x-icon">
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/machine_subscribe.css' %}" rel="stylesheet">
-    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="manifest" href="{% url 'dynamic_manifest' machine_id=machine_id %}">
     <meta name="theme-color" content="#1b2b68">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
     <div class="subscription-box">

@@ -141,6 +141,32 @@ def service_worker(request):
     with open(js_path, "rb") as f:
         return HttpResponse(f.read(), content_type="application/javascript")
 
+def dynamic_manifest(request, machine_id):
+    machine = get_object_or_404(Machine, id=machine_id)
+
+    manifest = {
+        "name": f"Subscribe {machine.name}",
+        "short_name": machine.name,
+        "start_url": f"/monitoring/machine-subscribe/{machine.id}/",
+        "display": "standalone",
+        "background_color": "#1b2b68",
+        "theme_color": "#1b2b68",
+        "orientation": "portrait",
+        "icons": [
+            {
+                "src": "/static/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "/static/icons/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }
+
+    return JsonResponse(manifest)
 
 @csrf_exempt
 @require_POST
