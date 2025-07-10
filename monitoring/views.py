@@ -126,7 +126,7 @@ def api_logout_view(request):
 def get_webpush_public_key(request):
     return JsonResponse({"publicKey": settings.WEBPUSH_PUBLIC_KEY})
 
-
+@login_required
 def machine_subscribe_view(request, machine_id):
     machine = get_object_or_404(Machine, pk=machine_id)
     return render(request, "monitoring/machine_subscribe.html", {
