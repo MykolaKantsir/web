@@ -170,7 +170,11 @@ def trigger_notification(request):
             return JsonResponse({"error": f"Unsupported event_type: {event_type}"}, status=400)
 
         # Call the helper to send the notifications
-        send_push_to_subscribers(machine, event_type, {"title": title, "body": body})
+        send_push_to_subscribers(machine, event_type, {
+            "title": title,
+            "body": body,
+            "machine_id": machine.id
+            })
 
         return JsonResponse({"status": "Notifications sent"})
 
