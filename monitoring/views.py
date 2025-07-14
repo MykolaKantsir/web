@@ -128,6 +128,9 @@ def get_webpush_public_key(request):
 
 @login_required
 def machine_subscribe_view(request, machine_id):
+    if not request.user.is_authenticated:
+        return redirect("login")  # Or your login URL
+    
     machine = get_object_or_404(Machine, pk=machine_id)
     return render(request, "monitoring/machine_subscribe.html", {
         "machine_id": machine.id,
