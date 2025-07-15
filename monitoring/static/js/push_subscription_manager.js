@@ -1,13 +1,3 @@
-function logToPage(label, value = null) {
-    const logDiv = document.getElementById("debug-log");
-    if (!logDiv) return;
-
-    const msg = document.createElement("div");
-    msg.innerHTML = value !== null
-        ? `<strong>${label}:</strong> <code>${JSON.stringify(value, null, 2)}</code>`
-        : `<strong>${label}</strong>`;
-    logDiv.appendChild(msg);
-}
 
 const publicKeyUrl = "/monitoring/webpush/public_key/";
 const subscribeUrl = "/monitoring/subscribe_machine/";
@@ -31,35 +21,14 @@ function urlBase64ToUint8Array(base64String) {
 
 // Register service worker + get existing or new subscription
 async function getCurrentSubscription() {
-    logToPage("📍 Entered getCurrentSubscription()");
-
-    if (!("serviceWorker" in navigator)) {
-        logToPage("❌ Service workers not supported in this browser.");
-        return null;
-    }
-
-    logToPage("✅ navigator.serviceWorker is available", navigator.serviceWorker);
-
     try {
         const registration = await navigator.serviceWorker.register(serviceWorkerPath);
-        logToPage("✅ Service worker registered", registration);
-
-        logToPage("⏳ Checking registration.pushManager...");
-        if (!registration.pushManager) {
-            logToPage("❌ registration.pushManager is undefined");
-            return null;
-        } else {
-            logToPage("✅ registration.pushManager is available", registration.pushManager);
-        }
 
         let subscription = await registration.pushManager.getSubscription();
-        logToPage("📦 subscription from pushManager.getSubscription()", subscription);
 
         if (!subscription) {
-            logToPage("📭 No existing subscription, requesting permission...");
             const permission = await Notification.requestPermission();
-            logToPage("🔐 Notification.requestPermission() result", permission);
-
+            
             if (permission === "granted") {
                 const publicKey = await getPublicKey();
                 const convertedKey = urlBase64ToUint8Array(publicKey);
@@ -67,18 +36,12 @@ async function getCurrentSubscription() {
                     userVisibleOnly: true,
                     applicationServerKey: convertedKey
                 });
-                logToPage("✅ New subscription created", subscription);
-            } else {
-                logToPage("❌ Notification permission was not granted");
             }
-        } else {
-            logToPage("📦 Re-using existing push subscription");
         }
 
         return subscription;
 
     } catch (err) {
-        logToPage("❌ Error during service worker or subscription setup", err.message || err);
         return null;
     }
 }
