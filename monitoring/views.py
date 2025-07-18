@@ -138,32 +138,6 @@ def machine_subscribe_view(request, machine_id):
     })
 
 
-# test view for push notifications on apple
-def push_test_view(request):
-    return render(request, "monitoring/push_test.html")
-
-
-@csrf_exempt
-def send_to_subscription(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid request method"}, status=405)
-
-    try:
-        data = json.loads(request.body)
-
-        subscription_info = data.get("subscription")
-        payload = data.get("payload")
-
-        if not subscription_info or not payload:
-            return JsonResponse({"error": "Missing subscription or payload"}, status=400)
-
-        result = send_push_to_raw_subscription(subscription_info, payload)
-        return JsonResponse(result, status=200 if result["status"] == "success" else 500)
-
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON format"}, status=400) 
-
-
 def service_worker(request):
     js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
     print("🛠️  Serving service-worker.js")  # or use logging.info()
@@ -848,3 +822,34 @@ def update_monitor_operation(request):
         return JsonResponse({'message': 'Monitor operation updated successfully'})
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# Test views
+# Notifictaions
+# ==========================================================
+
+# test view for push notifications on apple
+def push_test_view(request):
+    return render(request, "monitoring/push_test.html")
+
+
+@csrf_exempt
+def send_to_subscription(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        subscription_info = data.get("subscription")
+        payload = data.get("payload")
+
+        if not subscription_info or not payload:
+            return JsonResponse({"error": "Missing subscription or payload"}, status=400)
+
+        result = send_push_to_raw_subscription(subscription_info, payload)
+        return JsonResponse(result, status=200 if result["status"] == "success" else 500)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format"}, status=400) 
+
+# =============================================================
