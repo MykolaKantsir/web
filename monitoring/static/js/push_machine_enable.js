@@ -1,5 +1,5 @@
-const serviceWorkerPath = "/monitoring/service-worker.js";  // adjust only if needed
-const publicKeyUrl = "/monitoring/webpush/public_key/";
+const localServiceWorkerPath = "/monitoring/service-worker.js"; 
+const localPublicKeyUrl = "/monitoring/webpush/public_key/";
 
 // Log helper
 function logToPage(label, value = null) {
@@ -24,7 +24,7 @@ function urlBase64ToUint8Array(base64String) {
 // Get public key from backend
 async function getPublicKey() {
     try {
-        const response = await fetch(publicKeyUrl);
+        const response = await fetch(localPublicKeyUrl);
         const data = await response.json();
         if (data.publicKey) {
             logToPage("🔑 Public VAPID Key", data.publicKey);
@@ -47,7 +47,7 @@ async function requestPushPermission() {
 
     let registration;
     try {
-        registration = await navigator.serviceWorker.register(serviceWorkerPath);
+        registration = await navigator.serviceWorker.register(localServiceWorkerPath  );
         logToPage("✅ Service worker registered", registration.scope);
     } catch (err) {
         logToPage("❌ Service worker registration failed", err.message || err);
