@@ -32,3 +32,31 @@ def send_push_to_subscribers(machine, event_type, payload: dict):
             print(f"❌ Failed push, marking inactive: {e}")
             subscription.is_active = False
             subscription.save()
+
+# Test fuction to send push notifications to a raw subscription object
+# this was used to test on apple devices
+def send_push_to_raw_subscription(subscription_info: dict, payload: dict):
+    """
+    Sends a push notification to a raw subscription object (no DB lookup).
+
+    Args:
+        subscription_info (dict): A dict with 'endpoint' and 'keys' for 'p256dh' and 'auth'.
+        payload (dict): The notification payload to send.
+    
+    Returns:
+        dict: Status information.
+    """
+    try:
+        response = webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(payload),
+            vapid_private_key=settings.WEBPUSH_PRIVATE_KEY,
+            vapid_claims={"sub": "mailto:admin@example.com"},
+        )
+        return {"status": "success", "details": str(response)}
+    except WebPushException as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "response": getattr(e, 'response', None),
+        }

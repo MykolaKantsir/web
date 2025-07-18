@@ -42,6 +42,7 @@ urlpatterns = [
     path("my_subscriptions/", views.my_subscriptions, name="my_subscriptions"),
     path('update-monitor-operation/', views.update_monitor_operation, name='update_monitor_operation'),
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
+    
 
     # --------------------
     # 🔔 Notification
@@ -50,6 +51,10 @@ urlpatterns = [
     path("machine-subscribe/<int:machine_id>/", views.machine_subscribe_view, name="machine_subscribe"),
     path("monitoring/manifest/<int:machine_id>.json", views.dynamic_manifest, name="dynamic_manifest"),
     path("service-worker.js", views.service_worker, name="service_worker"),
+    path("push-test/", views.push_test_view, name="push_test"),
+    path("send_to_subscription/", views.send_to_subscription, name="send_to_subscription"),
+    
+
 
     # --------------------
     # 🔐 Web Push Configuration (for frontend JS)

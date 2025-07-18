@@ -18,7 +18,7 @@ from monitoring.defaults import machines_to_show
 from monitoring.utils.utils import is_ajax, machine_current_database_state
 from monitoring.utils.utils import convert_time_django_javascript, convert_to_local_time
 from monitoring.utils.utils import timedelta_to_HHMMSS, parse_isoformat
-from monitoring.utils.push_notifications import send_push_to_subscribers
+from monitoring.utils.push_notifications import send_push_to_subscribers, send_push_to_raw_subscription
 from monitoring import strings
 from datetime import timedelta, datetime
 from collections import defaultdict
@@ -138,11 +138,38 @@ def machine_subscribe_view(request, machine_id):
     })
 
 
+# test view for push notifications on apple
+def push_test_view(request):
+    return render(request, "monitoring/push_test.html")
+
+
+@csrf_exempt
+def send_to_subscription(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        subscription_info = data.get("subscription")
+        payload = data.get("payload")
+
+        if not subscription_info or not payload:
+            return JsonResponse({"error": "Missing subscription or payload"}, status=400)
+
+        result = send_push_to_raw_subscription(subscription_info, payload)
+        return JsonResponse(result, status=200 if result["status"] == "success" else 500)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format"}, status=400) 
+
+
 def service_worker(request):
     js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
     print("🛠️  Serving service-worker.js")  # or use logging.info()
     with open(js_path, "rb") as f:
         return HttpResponse(f.read(), content_type="application/javascript")
+
 
 def dynamic_manifest(request, machine_id):
     machine = get_object_or_404(Machine, id=machine_id)
@@ -744,7 +771,7 @@ def check_next_jobs(request):
         # Get the raw data from POST request
         data = request.POST['data']  # This retrieves the JSON string
 
-        # Parse the string into Python list of dictionaries
+        # Parse the string into Pthon list of dictionaries
         data = json.loads(data)  
 
         changed = False
