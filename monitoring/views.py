@@ -452,33 +452,46 @@ def my_subscriptions(request):
     return JsonResponse(results, safe=False)
 
 
+@csrf_exempt
+@require_POST
 @login_required
 def get_machine_subscriptions(request, machine_id):
     """
-    ✅ API view that returns a list of event types the user is subscribed to for a specific machine.
-    Used by the frontend to pre-check checkboxes on the machine subscription page.
+    ✅ API view that returns event types the user is subscribed to *on this device/browser*
+    for a specific machine. Matches by endpoint and user.
     """
 
-
     try:
+        data = json.loads(request.body)
+        endpoint = data.get("endpoint")
+        if not endpoint:
+            return JsonResponse({"error": "Missing endpoint"}, status=400)
+
         machine = Machine.objects.get(id=machine_id)
+
+        try:
+            subscription = PushSubscription.objects.get(user=request.user, endpoint=endpoint, is_active=True)
+        except PushSubscription.DoesNotExist:
+            return JsonResponse({"machine_id": machine_id, "subscribed_events": []})
+
+        subscriptions = MachineSubscription.objects.filter(
+            machine=machine,
+            subscription=subscription
+        )
+
+        event_types = [sub.event_type for sub in subscriptions]
+
+        return JsonResponse({
+            "machine_id": machine_id,
+            "subscribed_events": event_types
+        })
+
     except Machine.DoesNotExist:
         return JsonResponse({"error": "Machine not found"}, status=404)
-
-    # Get all active subscriptions for this machine and user
-    subscriptions = MachineSubscription.objects.filter(
-        machine=machine,
-        subscription__user=request.user,
-        subscription__is_active=True
-    ).select_related("subscription")
-
-    # Return the list of event types (e.g. ['alarm', 'cycle_end'])
-    event_types = [sub.event_type for sub in subscriptions]
-
-    return JsonResponse({
-        "machine_id": machine_id,
-        "subscribed_events": event_types
-    })
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 def save_states_to_database():

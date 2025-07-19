@@ -89,33 +89,45 @@ async function unsubscribeFromMachineEvent(machine, eventType, subscription) {
 
 // Fetch the list of subscribed event types for the current machine using its ID.
 // Returns an array like ["cycle_end", "alarm"] or an empty list on error.
-async function fetchMachineSubscriptions() {
-    if (!machineId) return [];
+async function fetchMachineSubscriptions(machineId) {
+    const subscription = await getCurrentSubscription();
+    if (!subscription) {
+        console.warn("No push subscription found — cannot prefill checkmarks.");
+        return;
+    }
 
     try {
-        const response = await fetch(`/api/subscriptions/${machineId}/`, {
-            credentials: "include"
+        const response = await fetch(`/monitoring/api/subscriptions/${machineId}/`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                endpoint: subscription.endpoint
+            })
         });
-        if (!response.ok) throw new Error("Failed to fetch subscriptions");
+
+        if (!response.ok) {
+            console.error("Failed to fetch machine subscriptions", response.status);
+            return;
+        }
 
         const data = await response.json();
-        return data.subscriptions || [];
+        const subscribedEvents = data.subscribed_events || [];
+
+        precheckSubscriptions(subscribedEvents);
     } catch (err) {
-        console.error("❌ Failed to load machine subscriptions:", err.message || err);
-        return [];
+        console.error("Error fetching machine subscriptions", err);
     }
 }
 
 // Use the fetched subscription list to pre-check matching checkboxes on the page.
 // Matches checkboxes by their data-event attribute.
-async function precheckSubscriptions() {
-    const subscriptions = await fetchMachineSubscriptions();
-
-    subscriptions.forEach(eventType => {
-        const checkbox = document.querySelector(
-            `.subscription-toggle[data-event="${eventType}"]`
-        );
-        if (checkbox) {
+function precheckSubscriptions(eventTypes) {
+    document.querySelectorAll(".subscription-toggle").forEach((checkbox) => {
+        const eventType = checkbox.dataset.event;
+        if (Array.isArray(eventTypes) && eventTypes.includes(eventType)) {
             checkbox.checked = true;
         }
     });
@@ -123,7 +135,9 @@ async function precheckSubscriptions() {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-    precheckSubscriptions();
+    if (machineId) {
+        fetchMachineSubscriptions(machineId);
+    }
 });
 
 // Export functions globally (optional if using modules)
