@@ -93,6 +93,11 @@ def home(request):
 
 
 def api_login_view(request):
+    """
+    🔐 API login endpoint.
+    Accepts POST with username and password, authenticates user, and starts a session.
+    Returns JSON with user info or error.
+    """
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Only POST method is allowed"}, status=405)
 
@@ -116,6 +121,10 @@ def api_login_view(request):
 
 
 def api_logout_view(request):
+    """
+    🚪 API logout endpoint.
+    Accepts POST and logs out the current user. Responds with success message.
+    """
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Only POST method is allowed"}, status=405)
 
@@ -124,21 +133,18 @@ def api_logout_view(request):
 
 
 def get_webpush_public_key(request):
+    """
+    🔑 Returns the VAPID public key for use in client-side push subscription.
+    Used by JavaScript before calling PushManager.subscribe().
+    """
     return JsonResponse({"publicKey": settings.WEBPUSH_PUBLIC_KEY})
-
-@login_required
-def machine_subscribe_view(request, machine_id):
-    if not request.user.is_authenticated:
-        return redirect("login")  # Or your login URL
-    
-    machine = get_object_or_404(Machine, pk=machine_id)
-    return render(request, "monitoring/machine_subscribe.html", {
-        "machine_id": machine.id,
-        "machine_name": machine.name
-    })
 
 
 def service_worker(request):
+    """
+    🛠️ Serves the service-worker.js script from the static/js directory.
+    This route is required for proper registration of service workers on some platforms.
+    """
     js_path = os.path.join(settings.BASE_DIR, 'monitoring', 'static', 'js', 'service-worker.js')
     print("🛠️  Serving service-worker.js")  # or use logging.info()
     with open(js_path, "rb") as f:
@@ -146,6 +152,10 @@ def service_worker(request):
 
 
 def dynamic_manifest(request, machine_id):
+    """
+    📱 Dynamically generates a manifest.json for a given machine ID.
+    Used to enable PWA install on a per-machine subscription page.
+    """
     machine = get_object_or_404(Machine, id=machine_id)
 
     manifest = {
@@ -172,9 +182,17 @@ def dynamic_manifest(request, machine_id):
 
     return JsonResponse(manifest)
 
+
 @csrf_exempt
 @require_POST
 def trigger_notification(request):
+    """
+    🧪 Manually triggers a push notification for testing purposes.
+    Accepts a POST with machine name and event_type, builds a test payload,
+    and sends notifications to subscribed users using `send_push_to_subscribers`.
+
+    Note: Not called automatically by production machine state logic.
+    """
     try:
         data = json.loads(request.body)
         machine_name = data.get("machine")
@@ -218,6 +236,10 @@ def trigger_notification(request):
 @require_POST
 @login_required
 def save_subscription(request):
+    """
+    💾 Saves or updates a push subscription in the database.
+    Associates it with the currently logged-in user. Required before linking to machine subscriptions.
+    """
     try:
         data = json.loads(request.body)
 
@@ -257,6 +279,10 @@ def save_subscription(request):
 @require_POST
 @login_required
 def unsubscribe(request):
+    """
+    ❌ Marks a push subscription as inactive based on endpoint.
+    Used when the client unsubscribes completely (not per-machine).
+    """
     try:
         data = json.loads(request.body)
         endpoint = data.get("endpoint")
@@ -289,6 +315,10 @@ def unsubscribe(request):
 @require_POST
 @login_required
 def subscribe_machine(request):
+    """
+    🔔 Subscribes a user to a specific event (e.g., 'alarm') on a specific machine.
+    Requires push subscription info and machine/event data.
+    """
     try:
         data = json.loads(request.body)
 
@@ -340,6 +370,10 @@ def subscribe_machine(request):
 @require_POST
 @login_required
 def unsubscribe_machine(request):
+    """
+    📴 Removes a machine-event subscription for the current user.
+    The base push subscription remains unless globally removed.
+    """
     try:
         data = json.loads(request.body)
 
@@ -378,7 +412,27 @@ def unsubscribe_machine(request):
 
 
 @login_required
+def machine_subscribe_view(request, machine_id):
+    """
+    📄 Renders the subscription management page for a specific machine.
+    Includes machine ID and name in the context.
+    """
+    if not request.user.is_authenticated:
+        return redirect("login")  # Or your login URL
+    
+    machine = get_object_or_404(Machine, pk=machine_id)
+    return render(request, "monitoring/machine_subscribe.html", {
+        "machine_id": machine.id,
+        "machine_name": machine.name
+    })
+
+
+@login_required
 def my_subscriptions(request):
+    """
+    📦 Returns all active subscriptions and related machine-event mappings for the logged-in user.
+    Used for account-wide subscription management or diagnostics.
+    """
     # Get all active subscriptions for this user
     subscriptions = PushSubscription.objects.filter(user=request.user, is_active=True)
 
@@ -396,6 +450,35 @@ def my_subscriptions(request):
     ]
 
     return JsonResponse(results, safe=False)
+
+
+@login_required
+def get_machine_subscriptions(request, machine_id):
+    """
+    ✅ API view that returns a list of event types the user is subscribed to for a specific machine.
+    Used by the frontend to pre-check checkboxes on the machine subscription page.
+    """
+
+
+    try:
+        machine = Machine.objects.get(id=machine_id)
+    except Machine.DoesNotExist:
+        return JsonResponse({"error": "Machine not found"}, status=404)
+
+    # Get all active subscriptions for this machine and user
+    subscriptions = MachineSubscription.objects.filter(
+        machine=machine,
+        subscription__user=request.user,
+        subscription__is_active=True
+    ).select_related("subscription")
+
+    # Return the list of event types (e.g. ['alarm', 'cycle_end'])
+    event_types = [sub.event_type for sub in subscriptions]
+
+    return JsonResponse({
+        "machine_id": machine_id,
+        "subscribed_events": event_types
+    })
 
 
 def save_states_to_database():

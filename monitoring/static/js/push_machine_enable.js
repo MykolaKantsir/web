@@ -11,6 +11,7 @@ function logToPage(label, value = null) {
         ? `<strong>${label}:</strong> <code>${JSON.stringify(value, null, 2)}</code>`
         : `<strong>${label}</strong>`;
     logDiv.appendChild(msg);
+    logDiv.style.display = "block"; // unhide if hidden
 }
 
 // Base64 to Uint8Array
@@ -47,7 +48,7 @@ async function requestPushPermission() {
 
     let registration;
     try {
-        registration = await navigator.serviceWorker.register(localServiceWorkerPath  );
+        registration = await navigator.serviceWorker.register(localServiceWorkerPath);
         logToPage("✅ Service worker registered", registration.scope);
     } catch (err) {
         logToPage("❌ Service worker registration failed", err.message || err);
@@ -89,13 +90,23 @@ async function requestPushPermission() {
         logToPage("📦 Existing push subscription", subscription.toJSON());
     }
 
-    logToPage("✅ Done. You can now receive notifications if the backend sends them.");
+    logToPage("✅ Done. You can now receive notifications.");
 }
 
-// Hook up the button
+// Automatically trigger permission when user toggles a checkbox
 document.addEventListener("DOMContentLoaded", () => {
-    const enableBtn = document.getElementById("enable-notifications");
-    if (enableBtn) {
-        enableBtn.addEventListener("click", requestPushPermission);
+    const checkboxes = document.querySelectorAll(".subscription-toggle");
+    checkboxes.forEach(box => {
+        box.addEventListener("click", async () => {
+            if (Notification.permission !== "granted") {
+                await requestPushPermission();
+            }
+        });
+    });
+
+    // Optional: Hide the debug log by default
+    const debugLog = document.getElementById("debug-log");
+    if (debugLog) {
+        debugLog.style.display = "none";
     }
 });

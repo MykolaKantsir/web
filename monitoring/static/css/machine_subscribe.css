@@ -54,3 +54,10 @@ body {
     font-size: 1rem;
     color: #666;
 }
+
+/* Debug log */
+#debug-log {
+  display: none;
+  max-height: 300px;
+  overflow-y: auto;
+}

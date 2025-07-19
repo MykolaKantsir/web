@@ -40,6 +40,7 @@ urlpatterns = [
     path("subscribe_machine/", views.subscribe_machine, name="subscribe_machine"),
     path("unsubscribe_machine/", views.unsubscribe_machine, name="unsubscribe_machine"),
     path("my_subscriptions/", views.my_subscriptions, name="my_subscriptions"),
+    path("api/subscriptions/<int:machine_id>/", views.get_machine_subscriptions, name="get_machine_subscriptions"),
     path('update-monitor-operation/', views.update_monitor_operation, name='update_monitor_operation'),
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
     
@@ -49,7 +50,7 @@ urlpatterns = [
     # --------------------
     path("trigger_notification", views.trigger_notification, name="api_trigger_notification"),
     path("machine-subscribe/<int:machine_id>/", views.machine_subscribe_view, name="machine_subscribe"),
-    path("monitoring/manifest/<int:machine_id>.json", views.dynamic_manifest, name="dynamic_manifest"),
+    path("manifest/<int:machine_id>.json", views.dynamic_manifest, name="dynamic_manifest"),
     path("service-worker.js", views.service_worker, name="service_worker"),
     path("push-test/", views.push_test_view, name="push_test"),
     path("send_to_subscription/", views.send_to_subscription, name="send_to_subscription"),
