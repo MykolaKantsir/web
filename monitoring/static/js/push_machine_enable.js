@@ -3,17 +3,22 @@ const localPublicKeyUrl = "/monitoring/webpush/public_key/";
 
 // Log helper
 function logToPage(label, value = null) {
-    if (!window.location.search.includes("debug")) return; // Only logs when ?debug is in URL
-    const logDiv = document.getElementById("debug-log");
-    if (!logDiv) return;
-
-    const msg = document.createElement("div");
-    msg.innerHTML = value !== null
-        ? `<strong>${label}:</strong> <code>${JSON.stringify(value, null, 2)}</code>`
-        : `<strong>${label}</strong>`;
-    logDiv.appendChild(msg);
-    logDiv.style.display = "block";
+    return; // Disable logging for production
 }
+
+// Uncomment this if you want to see debug logs in the page
+// // Log helper
+// function logToPage(label, value = null) {
+//     const logDiv = document.getElementById("debug-log");
+//     if (!logDiv) return;
+
+//     const msg = document.createElement("div");
+//     msg.innerHTML = value !== null
+//         ? `<strong>${label}:</strong> <code>${JSON.stringify(value, null, 2)}</code>`
+//         : `<strong>${label}</strong>`;
+//     logDiv.appendChild(msg);
+//     logDiv.style.display = "block";
+// }
 
 // Register service worker and return registration
 async function registerServiceWorker() {
