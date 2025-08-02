@@ -510,7 +510,7 @@ def save_states_to_database():
 
         # Bulk update the database outside the lock
         if machines_to_update:
-            Machine_state.objects.bulk_update(machines_to_update, ["status"])
+            Machine_state.objects.bulk_update(machines_to_update, ["status", "active_nc_program"])
 
         time.sleep(3)  # Save every 3 seconds
 
@@ -546,10 +546,12 @@ def update_machine_status(request):
             for machine_data in machines_data:
                 machine_name = machine_data.get("machine_name")
                 new_status = machine_data.get("status")
+                new_active_nc_program = machine_data.get("active_nc_program")
 
                 # Ensure the machine exists in the cache
                 if machine_name in machine_states_cache:
                     machine_states_cache[machine_name]["status"] = new_status
+                    machine_states_cache[machine_name]["active_nc_program"] = new_active_nc_program
 
         return JsonResponse({"message": "Machine states updated in cache successfully."}, status=200)
 
