@@ -1,11 +1,12 @@
 <!--Order snippet.html-->
 <!--order container-->
-<div id="order-card-{{ order.id }}" 
-class="order-card mb-3 order-status-{{ order.status|lower }}" 
-data-status="{{ order.status|lower }}"
-data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
+<div id="order-card-{{ order.id }}"
+     class="order-card mb-3 order-status-{{ order.status|lower }}"
+     data-status="{{ order.status|lower }}"
+     data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
     <!--hidden checkbox-->
     <input type="checkbox" class="order-checkbox" data-order-id="{{ order.id }}" hidden>
+
     <div class="row no-gutters">
         <!--image container-->
         <div class="col-md-4">
@@ -14,25 +15,52 @@ data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
                 <div class="checkmark-overlay"></div>
             </div>
         </div>
+
         <!--order info container-->
         <div class="col-md-8">
             <div class="card-body d-flex flex-column justify-content-between">
-                <!--order title container-->
+                <!--order title-->
                 <div class="card-title-container">
-                    <a href="{{ order.product_content_object.link }}" target="_blank">
+                    <a href="{{ order.product_content_object.link }}" target="_blank" rel="noopener">
                         <h5 class="card-title">{{ order.product_content_object.code }} - {{ order.quantity }} st</h5>
                     </a>
                 </div>
-                <!--order description-->
-                <p class="card-text">Description: {{ order.product_content_object.description }}</p>
-                <!--order date and manufacturer container-->
-                <div class="d-flex justify-content-between">
-                    <p class="card-text">Date: {{ order.order_date }}</p>
-                    <p class="card-text">{{ order.product_content_object.manufacturer | title }}</p>
+
+                <!-- description (wraps & linkifies) -->
+                <div class="card-text order-description">
+                    <strong>Description:</strong>
+                    {{ order.product_content_object.description|default:''|urlize|linebreaksbr }}
                 </div>
-                <!--order status container-->
+
+                <!-- meta: date • ordered_by(+country flag) • manufacturer -->
+                <div class="order-meta d-flex justify-content-between flex-wrap gap-2">
+                    <p class="card-text mb-0">Date: {{ order.order_date }}</p>
+
+                    <p class="card-text mb-0">
+                        {% if order.ordered_by %}
+                            {{ order.ordered_by.username }}
+                            {% if order.ordered_by.userprofile and order.ordered_by.userprofile.country %}
+                                {% with code=order.ordered_by.userprofile.country|upper %}
+                                    {% if code == "SE" %}
+                                        <span class="flag flag-se" title="{{ order.ordered_by.userprofile.get_country_display }}"></span>
+                                    {% elif code == "UA" %}
+                                        <span class="flag flag-ua" title="{{ order.ordered_by.userprofile.get_country_display }}"></span>
+                                    {% else %}
+                                        <span class="country-code" title="{{ order.ordered_by.userprofile.get_country_display }}">{{ code }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </p>
+
+                    <p class="card-text mb-0">{{ order.product_content_object.manufacturer|title }}</p>
+                </div>
+
+                <!-- status/actions -->
                 <div class="d-flex justify-content-between">
-                    <!-- Order Status Select -->
+                    <!-- Status Select -->
                     <form method="post" action="{% url 'change_order_status' order.id %}" class="form-inline">
                         {% csrf_token %}
                         <div class="form-group mr-2">
@@ -43,35 +71,36 @@ data-manufacturer="{{ order.product_content_object.manufacturer|lower}}">
                             </select>
                         </div>
                     </form>
-                    <!-- Delete Order Button -->
+
+                    <!-- Delete (kept hidden as before) -->
                     <form method="post" action="{% url 'delete_order' order.id %}" class="form-inline ml-auto">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger" hidden>Delete Order</button>
                     </form>
-                    <!-- Add Comment Button -->
-                    <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-form-container-{{ order.id }}" aria-expanded="false" aria-controls="comment-form-container-{{ order.id }}">
+
+                    <!-- Add Comment toggle -->
+                    <button class="btn btn-secondary" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#comment-form-container-{{ order.id }}"
+                            aria-expanded="false" aria-controls="comment-form-container-{{ order.id }}">
                         Add Comment
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    <!--order comment container-->
-    <div class="order-comments" style="{% if order.comments.all %}display: block;{% else %}display: none;{% endif %}">
+
+    <!-- comments (visibility controlled by CSS via 'has-comments' class) -->
+    <div class="order-comments{% if order.comments.all %} has-comments{% endif %}">
         <h4>Comments</h4>
         <ul id="comments-list-{{ order.id }}">
             {% for comment in order.comments.all %}
-            <li>{{ comment.text }}</li>
-            <!-- If you want to display the author of the comment, uncomment the following line -->
-            {% comment %} <li><strong>{{ comment.author.username }}:</strong> {{ comment.text }}</li> {% endcomment %}
+                <li class="comment-text">{{ comment.text|urlizetrunc:60|linebreaksbr }}</li>
             {% empty %}
-            <!-- If there are no comments, display a message -->
-            {% comment %} <li>No comments yet.</li> {% endcomment %}
             {% endfor %}
         </ul>
     </div>
-    <!-- Add a form or input field for submitting new comments -->
-    <!-- Comment form, initially collapsed -->
+
+    <!-- Comment form (collapsed) -->
     <div class="collapse comment-form-container" id="comment-form-container-{{ order.id }}">
         <div class="card card-body">
             <form method="post" action="{% url 'add_comment' order.id %}" data-order-id="{{ order.id }}">

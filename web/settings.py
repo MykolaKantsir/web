@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'inventory',
     'monitoring',
     'measuring',
+    'accounts.apps.AccountsConfig',
     'django_extensions',
     'django.contrib.admin',
     'django.contrib.auth',

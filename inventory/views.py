@@ -5,6 +5,8 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.forms import modelform_factory
 from django.template.loader import render_to_string
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.http import require_POST
@@ -13,7 +15,6 @@ from django.middleware.csrf import get_token
 from django.db.models.functions import ExtractWeek, ExtractYear
 from django.db.models import Q, Min, Max, ManyToManyField, Prefetch
 from django.db.models import Case, When, Value, IntegerField
-from django.contrib.contenttypes.models import ContentType
 from .models import *
 from inventory import models
 from inventory.choices import OrderStatus
@@ -54,6 +55,7 @@ non_abstract_subclasses = ProductSubclasses.get_instance().subclasses
 status_choices = Order._meta.get_field('status').choices
 
 # Create your views here.
+@login_required
 def index(request):
     return render(request, 'inventory/index.html')
 
@@ -286,8 +288,8 @@ def search_category(request):
     # Return the results
     return JsonResponse(results)
 
-
-
+@login_required
+@require_POST
 def create_order(request):
     try:
         data = json.loads(request.body)
@@ -305,7 +307,9 @@ def create_order(request):
         new_order = Order.objects.create(
             content_type = product_model,
             object_id = product_id,
-            quantity = quantity,)
+            quantity = quantity,
+            ordered_by = request.user
+            )
         new_order.save()
         return JsonResponse({
             'status': 'success',
@@ -400,7 +404,7 @@ def change_order_status(request, order_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 # view to create a custom order, without a product
-
+@login_required
 @csrf_exempt  # Use this decorator to exempt CSRF for AJAX calls if needed
 def create_custom_order(request):
     if request.method == 'GET':

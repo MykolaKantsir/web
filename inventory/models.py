@@ -1,5 +1,6 @@
 from django.db import models
 from django.forms.models import model_to_dict
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from abc import abstractmethod
@@ -83,6 +84,13 @@ class Order(models.Model):
     order_date = models.DateField(auto_now_add=True)
     quantity = models.PositiveIntegerField(default=defaults.DefaultOrder.QUANTITY)
     status = models.CharField(max_length=50, choices=choices.OrderStatus.choices, default=defaults.DefaultOrder.STATUS)
+    
+    ordered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='inverrntory_orders'
+    )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)  # Call the real save() method

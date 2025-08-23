@@ -1,129 +1,89 @@
 /* order_snippet.css */
 
-#dynamicElementsGroup > .btn {
-    max-width: 160px;
-    min-width: 140px;
-}
+#dynamicElementsGroup > .btn { max-width: 160px; min-width: 140px; }
+#bulkStatusSelect { min-width: 200px; }
 
-#bulkStatusSelect{
-    min-width: 200px;
-}
-
-.bulk-status-change {
-    position: sticky;
-    top: 0;
-    z-index: 1000; /* to ensure it stays on top of other content */
-    padding: 10px 0; /* optional, for some spacing */
-}
-
-.bulk-status-change .dropdown-toggle {
-    min-width: 158px;
-}
+.bulk-status-change { position: sticky; top: 0; z-index: 1000; padding: 10px 0; }
+.bulk-status-change .dropdown-toggle { min-width: 158px; }
 
 /* Base styling for the order card */
-.order-card {
-    border-radius: 20px;
-    border: 2px solid #1a337e;
-    margin-bottom: 10px;
-    padding: 10px;
+.order-card { border-radius: 20px; border: 2px solid #1a337e; margin-bottom: 10px; padding: 10px; }
+
+.card-title-container { background-color: #1a337e; border-radius: 10px; padding: 10px; text-align: center; }
+.card-title-container a { color: white; text-decoration: none; }
+
+/* Long descriptions & links wrap */
+.order-description { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
+.order-description a { word-break: break-all; overflow-wrap: anywhere; }
+
+/* Status color schemes */
+.order-status-pending   { background-color: #FFD700; color: #000000; }
+.order-status-ordered   { background-color: #008080; color: #FFFFFF; }
+.order-status-recieved  { background-color: lightblue; color: #000000; }
+.order-status-cancelled { background-color: #8B0000; color: #FFFFFF; }
+.order-status-shipped   { background-color: #f5b184; color: #000000; }
+
+.order-card-img { border-radius: 20px; width: 100%; max-height: 160px; object-fit: contain; display: block; }
+
+/* Comments block visibility via class */
+.order-comments { display: none; margin-top: 8px; padding: 8px 10px; border-radius: 12px; }
+.order-comments.has-comments { display: block; }
+
+/* Comment items inherit card/status styling */
+.order-comments ul { list-style: disc inside; margin: 0; padding-left: 1rem; }
+.order-comments li.comment-text {
+  background: transparent; color: inherit;
+  border: 1px solid rgba(0,0,0,0.05); border-radius: 10px;
+  padding: 4px 8px; margin-bottom: 4px;
 }
 
-.card-title-container {
-    background-color: #1a337e;  /* Dark blue background */
-    border-radius: 10px;        /* Rounded corners */
-    padding: 10px;              /* Some padding around the text */
-    text-align: center;         /* Center the text */
+/* Keep long comment lines/links tidy */
+.comment-text { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.comment-text a { word-break: break-all; overflow-wrap: anywhere; }
+
+/* Make the "Add Comment" form blend with the order status background */
+.comment-form-container .card,
+.comment-form-container .card-body {
+  background: transparent !important; border: 1px solid rgba(0,0,0,0.1); box-shadow: none;
+}
+.comment-form-container textarea {
+  background: transparent; color: inherit; border: 1px solid rgba(0,0,0,0.25);
 }
 
-.card-title-container a {
-    color: white;               /* Black text color */
-    text-decoration: none;      /* Remove underline from the link */
+/* Username + flag */
+.country-flag, .flag { margin-left: .25rem; vertical-align: -0.1em; line-height: 1; display: inline-block; }
+.flag { width: 1.1em; height: 1.1em; background-size: cover; border-radius: 2px; }
+
+/* Inline-SVG flags (no external files needed) */
+/* Sweden */
+.flag-se {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10'%3E%3Crect width='16' height='10' fill='%23006AA7'/%3E%3Crect x='5' width='2' height='10' fill='%23FECC00'/%3E%3Crect y='4' width='16' height='2' fill='%23FECC00'/%3E%3C/svg%3E");
 }
 
-.order-status-pending {
-    background-color: #FFD700;
-    color : #000000;
+/* Ukraine */
+.flag-ua {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10'%3E%3Crect width='16' height='5' fill='%23005BBB'/%3E%3Crect y='5' width='16' height='5' fill='%23FFD500'/%3E%3C/svg%3E");
 }
 
-.order-status-ordered {
-    background-color: #008080;
-    color: #FFFFFF;
-}
+/* Fallback styling if an unknown 2-letter code is shown */
+.country-code { margin-left: .25rem; font-weight: 600; text-transform: uppercase; }
 
-.order-status-recieved {
-    background-color: lightblue;
-    color: #000000;
-}
+/* spacing helper used in template */
+.order-meta.gap-2 { gap: .5rem; }
 
-.order-status-cancelled {
-    background-color: #8B0000;
-    color: #FFFFFF;
-}
-
-.order-status-shipped {
-    background-color: #f5b184;
-    color: #000000;
-}
-
-.order-card-img {
-    border-radius: 20px;
-    width: 100%;
-    max-height: 160px; /* Adjust as needed */
-    object-fit: contain;
-    display: block; /* Ensure the image fills the container */
-}
-
-.image-container {
-    position: relative;
-}
-
+.image-container { position: relative; }
 .checkmark-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.5); /* Half transparent white background */
-    display: none; /* Initially hidden */
-    justify-content: center;
-    align-items: center;
+  position: absolute; inset: 0; background-color: rgba(255, 255, 255, 0.5);
+  display: none; justify-content: center; align-items: center;
 }
+.checkmark-overlay::before { content: '\2713'; font-size: 120px; color: #1a337e; }
+.checkmark-overlay.visible { display: flex; }
 
-.checkmark-overlay::before {
-    content: '\2713'; /* Checkmark symbol */
-    font-size: 120px; /* Adjust size as needed */
-    color: #1a337e; /* Checkmark color */
+.multi-panel, .week-container {
+  background-color: white; border-radius: 20px; border: 2px solid #1a337e;
+  margin-bottom: 10px; overflow: hidden;
 }
-
-.checkmark-overlay.visible {
-    display: flex; /* Show when class 'visible' is added */
-}
-
-.multi-panel,
-.week-container {
-    background-color: white;
-    border-radius: 20px;
-    border: 2px solid #1a337e;
-    margin-bottom: 10px;
-    overflow: hidden; /* Ensures rounded corners for inner elements */
-}
-
-.week-header {
-    padding: 10px;
-    background-color: #f8f9fa;
-    cursor: pointer;
-    border-bottom: 2px solid #1a337e;
-}
-
-.week-header h3 {
-    margin-bottom: 0;
-}
-
-.week-content {
-    padding: 10px;
-}
-
-.week-header:hover {
-    background-color: #e2e6ea;
-}
-
+.week-header { padding: 10px; background-color: #f8f9fa; cursor: pointer; border-bottom: 2px solid #1a337e; }
+.week-header h3 { margin-bottom: 0; }
+.week-content { padding: 10px; }
+.week-header:hover { background-color: #e2e6ea; }

@@ -108,9 +108,6 @@ function changeOrderStatus(orderId, newStatus) {
 
             // Add the new status class
             orderCard.classList.add(newStatusClass);
-            
-            // Add the new status class
-            orderCard.classList.add(newStatusClass);
 
             // Update the status dropdown to reflect the new status
             var statusSelect = document.getElementById('statusSelect' + orderId);
@@ -131,34 +128,44 @@ function changeOrderStatus(orderId, newStatus) {
 }
 
 // Select multiple orders
-document.getElementById('bulkStatusChangeButton').addEventListener('click', function() {
-    var selectedOrders = document.querySelectorAll('.order-checkbox:checked');
-    var newStatus = document.getElementById('bulkStatusSelect').value;
+const bulkBtn = document.getElementById('bulkStatusChangeButton');
+if (bulkBtn) {
+  bulkBtn.addEventListener('click', function () {
+    const selectedOrders = document.querySelectorAll('.order-checkbox:checked');
+    const selectEl = document.getElementById('bulkStatusSelect');
+    const newStatus = selectEl ? selectEl.value : null;
+    if (!newStatus) return; // nothing to do if control missing
 
-    selectedOrders.forEach(function(checkbox) {
-        var orderId = checkbox.dataset.orderId;
-        changeOrderStatus(orderId, newStatus);
+    selectedOrders.forEach(function (checkbox) {
+      const orderId = checkbox.dataset.orderId;
+      changeOrderStatus(orderId, newStatus);
     });
-});
+  });
+}
 
 // Clear selection
-document.getElementById('clearSelectionButton').addEventListener('click', function() {
-    var selectedOrders = document.querySelectorAll('.order-checkbox:checked');
-    selectedOrders.forEach(function(checkbox) {
-        checkbox.checked = false;
-        // Update the visibility of multiple status actions
-        updateBulkActionVisibility();
+const clearBtn = document.getElementById('clearSelectionButton');
+if (clearBtn) {
+  clearBtn.addEventListener('click', function () {
+    const selectedOrders = document.querySelectorAll('.order-checkbox:checked');
 
-        // Also hide the checkmark overlay
-        var parentDiv = checkbox.closest('.order-card');
-        if (parentDiv) {
-            var overlay = parentDiv.querySelector('.checkmark-overlay');
-            if (overlay) {
-                overlay.classList.remove('visible');
-            }
-        }
+    selectedOrders.forEach(function (checkbox) {
+      checkbox.checked = false;
+
+      // Also hide the checkmark overlay
+      const parentDiv = checkbox.closest('.order-card');
+      if (parentDiv) {
+        const overlay = parentDiv.querySelector('.checkmark-overlay');
+        if (overlay) overlay.classList.remove('visible');
+      }
     });
-});
+
+    // Update the visibility of multiple status actions once, after unchecking all
+    if (typeof updateBulkActionVisibility === 'function') {
+      updateBulkActionVisibility();
+    }
+  });
+}
 
 // Check/uncheck the checkbox when clicking on the image
 document.addEventListener('DOMContentLoaded', function() {
@@ -214,48 +221,56 @@ function sortByStatus() {
 }
 
 // Sort orders by status when clicking on the button
-document.getElementById('sortByStatus').addEventListener('click', function() {
-    // Iterate over each week container
-    document.querySelectorAll('.week-container').forEach(function(weekContainer) {
-        // Get all order cards within this week container
-        var orders = Array.from(weekContainer.querySelectorAll('.order-card'));
+const sortBtn = document.getElementById('sortByStatus');
+if (sortBtn) {
+  sortBtn.addEventListener('click', function () {
+    const weekContainers = document.querySelectorAll('.week-container');
+    if (!weekContainers.length) return;
 
-        // Sort the orders based on the data-status attribute
-        orders.sort(function(a, b) {
-            var statusA = a.getAttribute('data-status').toLowerCase();
-            var statusB = b.getAttribute('data-status').toLowerCase();
-            return statusA.localeCompare(statusB);
-        });
+    weekContainers.forEach(function (weekContainer) {
+      // collect cards
+      const orders = Array.from(weekContainer.querySelectorAll('.order-card'));
 
-        // Reorder the elements in the DOM based on the sorted array
-        orders.forEach(function(order) {
-            // This moves the element to the end of its parent container
-            order.parentNode.appendChild(order);
-        });
+      // sort by data-status (case-insensitive)
+      orders.sort(function (a, b) {
+        const statusA = (a.dataset.status || a.getAttribute('data-status') || '').toLowerCase();
+        const statusB = (b.dataset.status || b.getAttribute('data-status') || '').toLowerCase();
+        return statusA.localeCompare(statusB);
+      });
+
+      // re-append in new order
+      orders.forEach(function (order) {
+        if (order.parentNode) order.parentNode.appendChild(order);
+      });
     });
-});
+  });
+}
 
 // Sort orders by manufacturer when clicking on the button
-document.getElementById('sortByManufacturer').addEventListener('click', function() {
-    // Iterate over each week container
-    document.querySelectorAll('.week-container').forEach(function(weekContainer) {
-        // Get all order cards within this week container
-        var orders = Array.from(weekContainer.querySelectorAll('.order-card'));
+const sortManBtn = document.getElementById('sortByManufacturer');
+if (sortManBtn) {
+  sortManBtn.addEventListener('click', function () {
+    const weekContainers = document.querySelectorAll('.week-container');
+    if (!weekContainers.length) return;
 
-        // Sort the orders based on the data-manufacturer attribute
-        orders.sort(function(a, b) {
-            var manufacturerA = a.getAttribute('data-manufacturer').toLowerCase();
-            var manufacturerB = b.getAttribute('data-manufacturer').toLowerCase();
-            return manufacturerA.localeCompare(manufacturerB);
-        });
+    weekContainers.forEach(function (weekContainer) {
+      // collect cards
+      const orders = Array.from(weekContainer.querySelectorAll('.order-card'));
 
-        // Reorder the elements in the DOM based on the sorted array
-        orders.forEach(function(order) {
-            // This moves the element to the end of its parent container
-            order.parentNode.appendChild(order);
-        });
+      // sort by data-manufacturer
+      orders.sort(function (a, b) {
+        const manufacturerA = (a.dataset.manufacturer || a.getAttribute('data-manufacturer') || '').toLowerCase();
+        const manufacturerB = (b.dataset.manufacturer || b.getAttribute('data-manufacturer') || '').toLowerCase();
+        return manufacturerA.localeCompare(manufacturerB);
+      });
+
+      // re-append in new order
+      orders.forEach(function (order) {
+        if (order.parentNode) order.parentNode.appendChild(order);
+      });
     });
-});
+  });
+}
 
 // Comments section
 document.addEventListener('DOMContentLoaded', function() {
@@ -306,13 +321,30 @@ function updateCommentsUI(orderId, newComment) {
 
     // Create a new list item for the comment
     var newCommentElement = document.createElement('li');
-    newCommentElement.textContent = newComment.text; // Assuming the response includes the comment text
+    newCommentElement.className = 'comment-text';
+    newCommentElement.textContent = newComment.text; // plain text from server
 
     // Append the new comment
     commentsList.appendChild(newCommentElement);
+    commentsContainer.classList.add('has-comments');
+
+    // Make any anchors inside this new comment open in a new tab
+    retargetCommentLinks(newCommentElement);
 
     // If the comments container is hidden, show it
     if (commentsContainer.style.display === 'none') {
         commentsContainer.style.display = 'block';
     }
 }
+
+// --- Ensure comment links open in a new tab ---
+function retargetCommentLinks(scope) {
+  (scope || document).querySelectorAll('.order-comments a').forEach(function (a) {
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  retargetCommentLinks(document);
+});
