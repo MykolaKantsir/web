@@ -1,9 +1,9 @@
 *.pyc 
 __pycache__/ 
-venv/ 
+venv/
 database_backups/
 db.sqlite3 
-media/ 
+media/
 inventory/helper.py
 logs/
 inventory/management/
@@ -11,7 +11,7 @@ monitoring/management/
 to do.md
 django_db.sql
 temp/
-predicton_models/
+prediction_models/
 scraper.py
 dialogScript.js
 product_constructors.py
