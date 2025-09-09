@@ -429,6 +429,7 @@ def create_custom_order(request):
                 content_type=product_model,
                 object_id=blank_product.id,
                 quantity=quantity,
+                ordered_by = request.user
                 # Other fields as needed
             )
 
