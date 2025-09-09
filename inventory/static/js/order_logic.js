@@ -345,6 +345,27 @@ function retargetCommentLinks(scope) {
   });
 }
 
+// --- Update CSS variable for sticky offset under the navbar ---
+function updateStickyOffset() {
+  // Find the navbar element with sticky-top
+  const nav = document.querySelector('.navbar.sticky-top');
+  // Use its height if found, otherwise default to 56px (Bootstrap default)
+  const h = nav ? nav.offsetHeight : 56;
+  // Store the height in a CSS variable (--nav-h) so CSS can use it for "top" offsets
+  document.documentElement.style.setProperty('--nav-h', h + 'px');
+}
+
+// --- Initialize behavior on page load ---
 document.addEventListener('DOMContentLoaded', function () {
+  // Retarget all comment links to open in new tabs
   retargetCommentLinks(document);
+  // Set the initial navbar height variable
+  updateStickyOffset();
 });
+
+// --- Keep offset updated when window resizes ---
+window.addEventListener('resize', updateStickyOffset);
+
+// --- Keep offset updated when Bootstrap navbar collapses/expands ---
+document.addEventListener('shown.bs.collapse', updateStickyOffset, true);
+document.addEventListener('hidden.bs.collapse', updateStickyOffset, true);
