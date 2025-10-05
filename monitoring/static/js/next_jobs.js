@@ -77,3 +77,40 @@ function checkForUpdates() {
 
 // Run check every 120 seconds
 setInterval(checkForUpdates, 120000);
+
+/**
+ * Scale layout for Android TV / Kiosk devices.
+ * Keeps the 1920x1080 design ratio consistent on devices
+ * that report smaller CSS resolutions (e.g., 960x540).
+ */
+function scaleForKioskLayout() {
+    const DESIGN_WIDTH = 1920;
+    const DESIGN_HEIGHT = 1080;
+
+    // Detect Android/SmartTV devices only
+    const isKioskDevice = /Android|SmartTV|TV|AFTT|AFTM/i.test(navigator.userAgent);
+
+    if (!isKioskDevice) {
+        return; // Skip scaling on desktops and normal devices
+    }
+
+    function applyScale() {
+        const scaleW = window.innerWidth / DESIGN_WIDTH;
+        const scaleH = window.innerHeight / DESIGN_HEIGHT;
+        const scale = Math.min(scaleW, scaleH);
+
+        const body = document.body;
+        body.style.transformOrigin = "top left";
+        body.style.transform = `scale(${scale})`;
+        body.style.width = DESIGN_WIDTH + "px";
+        body.style.height = DESIGN_HEIGHT + "px";
+        body.style.overflow = "hidden";
+    }
+
+    window.addEventListener("resize", applyScale);
+    document.addEventListener("DOMContentLoaded", applyScale);
+    applyScale();
+}
+
+// Initialize kiosk scaling
+scaleForKioskLayout();
