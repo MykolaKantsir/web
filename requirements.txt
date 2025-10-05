@@ -16,12 +16,12 @@ gunicorn==21.2.0
 http-ece==1.2.1
 idna==3.10
 multidict==6.6.2
-numpy==1.26.0
+numpy==2.3.3
 packaging==23.2
-pandas==2.1.1
+pandas==2.3.2
 pillow==11.2.1
 propcache==0.3.2
-psycopg2==2.9.9
+psycopg2==2.9.10
 py-vapid==1.9.2
 pycparser==2.22
 python-dateutil==2.8.2
