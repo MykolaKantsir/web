@@ -3,7 +3,7 @@
 #dynamicElementsGroup > .btn { max-width: 160px; min-width: 140px; }
 #bulkStatusSelect { min-width: 200px; }
 
-.bulk-status-change { position: sticky; top: 0; z-index: 1000; padding: 10px 0; }
+/*.bulk-status-change { position: sticky; top: 0; z-index: 1000; padding: 10px 0; }*/
 .bulk-status-change .dropdown-toggle { min-width: 158px; }
 
 /* Base styling for the order card */
@@ -11,6 +11,23 @@
 
 .card-title-container { background-color: #1a337e; border-radius: 10px; padding: 10px; text-align: center; }
 .card-title-container a { color: white; text-decoration: none; }
+
+/* Make the whole bar sticky under the navbar, but visually transparent */
+.bulk-status-change {
+  position: sticky;
+  top: var(--nav-h, 56px);
+  z-index: 1035;           /* above content, below dropdown (1040) */
+  background: transparent; /* no full-width gray strip */
+  padding-top: 0;          /* keep it tight */
+  padding-bottom: 0;
+}
+
+/* Keep the button’s dropdown above content */
+.dropdown-menu { z-index: 1040; }
+
+/* Keep the navbar above the bar when needed */
+.navbar.sticky-top { z-index: 1030; }
+
 
 /* Long descriptions & links wrap */
 .order-description { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
