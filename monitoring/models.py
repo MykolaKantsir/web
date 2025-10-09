@@ -580,6 +580,7 @@ class Machine(models.Model):
     name = models.CharField(max_length=50)
     ip_address = models.GenericIPAddressField(default=defaults.default_IP)    
     is_test_machine = models.BooleanField(default=True) # For testing purposes
+    is_virtual_machine = models.BooleanField(default=True) # For machines (departments) that do not exist physically, but can be planned Deburring, Trumbling
     monitor_arp_id = models.IntegerField(default=0) # Id of the machine in the Monitor G5
     active_job = models.ForeignKey(
         Job,

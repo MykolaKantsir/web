@@ -44,7 +44,8 @@
             "program": "${workspaceFolder}\\manage.py",
             "args": [
                 "products_to_csv_EAN",
-                "D:\\Projects\\Gaston_V1_03\\temp\\products_EAN_V3.csv",
+                //"D:\\Projects\\Gaston_V1_03\\temp\\products_EAN_V3.csv",
+                "D:\\Projects\\Gaston web\\web\\prediction_models\\manufacturer_from_barcode\\products_EAN_V3.csv",
             ],
             "django": true,
             "justMyCode": true,

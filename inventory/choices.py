@@ -166,6 +166,41 @@ def normalize_tool_material(material: str) -> str:
         return None
         #return ToolMaterial.UNDEFINED
 
+
+class ThreadSeries:
+    UNDEFINED = [Strings.UNDEFINED]
+    M = ["M"]
+    MF = ["MF"]
+    UNC = ["UNC"]
+    UNF = ["UNF"]
+    EG = ["EG", "EG/STI M"]
+    PG = ["PG"]
+    BSP = ["BSP"]
+    BSPT = ["BSPT"]
+    NPT = ["NPT"]
+    G = ["G"]
+    R = ["R"]
+    Rc = ["Rc"]
+    NPS = ["NPS"]
+    W = ["W"]
+    Trapezoidal = ["Trapezoidal"]
+    ACME = ["ACME"]
+    BA = ["BA"]
+    Whitworth = ["Whitworth"]
+    Stub_ACME = ["Stub ACME"]
+    Stub_Trapezoidal = ["Stub Trapezoidal"]
+    Stub_Whitworth = ["Stub Whitworth"]
+
+
+def normalize_thread_series(series: str) -> str:
+    """Return the canonical series if found, otherwise UNDEFINED."""
+    s = (series or "").strip().upper()
+    for values in vars(ThreadSeries).values():
+        if isinstance(values, list):
+            if any(s == v.upper() for v in values):
+                return values[0]  # canonical is the first entry
+    return ThreadSeries.UNDEFINED[0]
+
 class ToolCoating(models.TextChoices):
     UNDEFINED = 'Undefined'
     BLANK = 'blank'
@@ -180,6 +215,7 @@ class ToolCoating(models.TextChoices):
     BK7710 = 'BK7710'
     BX310 = 'BX310'
     CARBO = 'Carbo'
+    CARBOPLUS = 'Carbo+'
     CCN20 = 'CCN20'
     CCN1525 = 'CCN1525'
     CCN2520 = 'CCN2520'

@@ -36,10 +36,6 @@ machines_data = {name: (machine, machine.current_state.id) for name, machine in 
 cache_lock = threading.Lock()
 
 
-# TEMP: store only the most recent subscription in memory
-# Replace with DB later
-last_subscription = {}
-
 def initialize_machine_states_cache():
     """
     Populate the machine_states_cache from machines_data with all information about the machine state.
