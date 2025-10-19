@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
 from django.db import transaction
-from django.db.models import Min, Max
+from django.db.models import Min, Max, Prefetch
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.models import PushSubscription, MachineSubscription
 from monitoring.defaults import machines_to_show
@@ -832,6 +832,37 @@ def next_jobs_view(request):
     }
 
     return render(request, 'monitoring/next_jobs.html', context)
+
+# View to display the current job for each machine
+def current_jobs_view(request):
+    machines = Machine.objects.filter(is_test_machine=False)
+
+    in_progress_qs = (
+        Monitor_operation.objects
+        .filter(is_in_progress=True)
+        .order_by('priority', 'planned_start_date', 'id')
+    )
+
+    # ✅ use the correct reverse name: monitor_operations
+    machines = machines.prefetch_related(
+        Prefetch('monitor_operations', queryset=in_progress_qs, to_attr='in_progress_ops')
+    )
+
+    for m in machines:
+        ops = getattr(m, 'in_progress_ops', []) or []
+        if not ops:
+            m.current_job = None
+            m.current_status = 'none'
+            m.current_warning = None
+        else:
+            m.current_job = ops[0]
+            m.current_status = 'ok'
+            m.current_warning = (
+                f"Multiple operations in progress ({len(ops)})"
+                if len(ops) > 1 else None
+            )
+
+    return render(request, 'monitoring/current_jobs.html', {'machines': machines})
 
 # View to check if the next jobs have changed
 def check_next_jobs(request):

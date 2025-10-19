@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Current Jobs</title>
+
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/next_jobs.css' %}" rel="stylesheet">
+  <link href="{% static 'css/next_job_card.css' %}" rel="stylesheet">
+  <link href="{% static 'css/large_next_job_card.css' %}" rel="stylesheet">
+</head>
+<body>
+  <div id="main-content-1" class="container-fluid">
+    <div class="custom-grid">
+      {% for machine in machines %}
+        {% include 'monitoring/current_job_card.html' with machine=machine %}
+      {% endfor %}
+    </div>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  </div>
+
+  <div id="loading" class="overlay hidden"><p>Loading...</p></div>
+  <div id="error" class="overlay hidden"><p>Error: Unable to connect to server. Please try again later.</p></div>
+
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+  <!-- Optional in Step 4:
+  <script src="{% static 'js/current_jobs.js' %}"></script>
+  -->
+</body>
+</html>

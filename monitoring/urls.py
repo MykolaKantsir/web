@@ -29,6 +29,8 @@ urlpatterns = [
     # --------------------
     path('next-jobs/', views.next_jobs_view, name='next_jobs'),
     path('check-next-jobs/', views.check_next_jobs, name='check_next_jobs'),
+    path("current-jobs/", views.current_jobs_view, name="current_jobs"),
+    # path("check-current-jobs/", views.check_current_jobs, name="check_current_jobs"),
 
     # --------------------
     # 🔄 Update APIs (called from machine scripts or automation)

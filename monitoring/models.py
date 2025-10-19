@@ -1036,6 +1036,7 @@ class Monitor_operation(models.Model):
     machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='monitor_operations', default=Machine.get_default_pk)  # Use default machine pk
     priority = models.IntegerField(default=0)  # Integer for priority lowest number is highest priority
     drawing_image_base64 = models.TextField(blank=True, null=True)
+    is_in_progress = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = ("Monitor operation")
