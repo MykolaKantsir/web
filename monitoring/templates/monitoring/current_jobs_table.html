@@ -1,0 +1,93 @@
+{# Airport-style table view for current jobs #}
+<div class="airport-board">
+  <div class="board-header">
+    <div class="header-cell machine-col">MACHINE</div>
+    <div class="header-cell job-col">JOB</div>
+    <div class="header-cell material-col">MATERIAL</div>
+    <div class="header-cell quantity-col">QTY</div>
+    <div class="header-cell location-col">LOCATION</div>
+    <div class="header-cell status-col">STATUS</div>
+  </div>
+
+  <div class="board-body">
+    {% for machine in machines %}
+    <div class="board-row {% if machine.current_warning %}row-warning{% endif %}"
+         data-machine-pk="{{ machine.pk }}"
+         data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}">
+
+      {# Machine Name #}
+      <div class="board-cell machine-col">
+        <div class="cell-content machine-name">
+          {{ machine.name }}
+        </div>
+      </div>
+
+      {# Job Name #}
+      <div class="board-cell job-col">
+        <div class="cell-content job-name">
+          {% if machine.current_status == 'none' %}
+            <span class="not-started">NOT STARTED</span>
+          {% else %}
+            {{ machine.current_job.name }}
+          {% endif %}
+        </div>
+      </div>
+
+      {# Material #}
+      <div class="board-cell material-col">
+        <div class="cell-content">
+          {% if machine.current_status == 'none' %}
+            <span class="empty-data">—</span>
+          {% else %}
+            {{ machine.current_job.material }}
+          {% endif %}
+        </div>
+      </div>
+
+      {# Quantity #}
+      <div class="board-cell quantity-col">
+        <div class="cell-content quantity-value">
+          {% if machine.current_status == 'none' %}
+            <span class="empty-data">—</span>
+          {% else %}
+            {{ machine.current_job.quantity }}
+          {% endif %}
+        </div>
+      </div>
+
+      {# Location #}
+      <div class="board-cell location-col">
+        <div class="cell-content">
+          {% if machine.current_status == 'none' %}
+            <span class="empty-data">—</span>
+          {% else %}
+            {{ machine.current_job.location }}
+          {% endif %}
+        </div>
+      </div>
+
+      {# Status #}
+      <div class="board-cell status-col">
+        <div class="cell-content">
+          {% if machine.current_warning %}
+            <div class="status-badge status-warning">
+              <span class="status-icon">⚠️</span>
+              <span class="status-text">{{ machine.current_warning }}</span>
+            </div>
+          {% elif machine.current_status == 'none' %}
+            <div class="status-badge status-idle">
+              <span class="status-icon">⏸</span>
+              <span class="status-text">IDLE</span>
+            </div>
+          {% else %}
+            <div class="status-badge status-running">
+              <span class="status-icon">▶</span>
+              <span class="status-text">IN PROGRESS</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,265 @@
+/**
+ * Airport-style table view for current jobs
+ * Mimics departure/arrival boards at airports
+ */
+
+.airport-board {
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* Header Row */
+.board-header {
+  display: flex;
+  background: #0f3460;
+  border: 2px solid #16558f;
+  border-bottom: 4px solid #e94560;
+  padding: 20px 15px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.header-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-cell:last-child {
+  border-right: none;
+}
+
+/* Column Widths */
+.machine-col {
+  flex: 0 0 15%;
+}
+
+.job-col {
+  flex: 0 0 25%;
+}
+
+.material-col {
+  flex: 0 0 15%;
+}
+
+.quantity-col {
+  flex: 0 0 10%;
+  justify-content: center;
+}
+
+.location-col {
+  flex: 0 0 15%;
+}
+
+.status-col {
+  flex: 0 0 20%;
+}
+
+/* Board Body */
+.board-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Board Row (each job) */
+.board-row {
+  display: flex;
+  background: #0f3460;
+  border: 2px solid #16558f;
+  padding: 25px 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.board-row:hover {
+  background: #14497d;
+  transform: translateX(5px);
+  box-shadow: 0 4px 16px rgba(233, 69, 96, 0.3);
+  border-color: #e94560;
+}
+
+/* Warning Row */
+.board-row.row-warning {
+  border: 3px solid #e94560;
+  background: linear-gradient(90deg, #0f3460 0%, #3d0814 100%);
+  animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(233, 69, 96, 0.9);
+  }
+}
+
+/* Board Cells */
+.board-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.cell-content {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Machine Name - Bold and prominent */
+.machine-name {
+  font-weight: 900;
+  font-size: 24px;
+  color: #00d9ff;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+/* Job Name - Yellow highlight */
+.job-name {
+  font-weight: 700;
+  font-size: 22px;
+  color: #ffd700;
+}
+
+/* Not Started State */
+.not-started {
+  color: #888;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Empty Data */
+.empty-data {
+  color: #555;
+  font-size: 24px;
+}
+
+/* Quantity - Centered and bold */
+.quantity-value {
+  text-align: center;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.status-icon {
+  font-size: 18px;
+}
+
+.status-text {
+  white-space: nowrap;
+}
+
+/* Status - Running */
+.status-running {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: #fff;
+  border: 2px solid #1e7e34;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+}
+
+/* Status - Idle */
+.status-idle {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: #fff;
+  border: 2px solid #495057;
+  box-shadow: 0 0 15px rgba(108, 117, 125, 0.3);
+}
+
+/* Status - Warning */
+.status-warning {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff;
+  border: 2px solid #bd2130;
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.7);
+  animation: warningBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes warningBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .board-header,
+  .board-row {
+    font-size: 16px;
+  }
+
+  .machine-name {
+    font-size: 20px;
+  }
+
+  .job-name {
+    font-size: 18px;
+  }
+
+  .quantity-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .board-header,
+  .board-row {
+    font-size: 14px;
+    padding: 20px 10px;
+  }
+
+  .machine-name {
+    font-size: 18px;
+  }
+
+  .job-name {
+    font-size: 16px;
+  }
+
+  .status-badge {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+}

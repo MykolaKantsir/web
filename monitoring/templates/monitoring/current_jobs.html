@@ -10,15 +10,24 @@
   <link href="{% static 'css/next_jobs.css' %}" rel="stylesheet">
   <link href="{% static 'css/next_job_card.css' %}" rel="stylesheet">
   <link href="{% static 'css/large_next_job_card.css' %}" rel="stylesheet">
+  <link href="{% static 'css/current_jobs_table.css' %}" rel="stylesheet">
 </head>
 <body>
-  <div id="main-content-1" class="container-fluid">
-    <div class="custom-grid">
-      {% for machine in machines %}
-        {% include 'monitoring/current_job_card.html' with machine=machine %}
-      {% endfor %}
+  <!-- Card View (Original) -->
+  <div id="card-view">
+    <div id="main-content-1" class="container-fluid">
+      <div class="custom-grid">
+        {% for machine in machines %}
+          {% include 'monitoring/current_job_card.html' with machine=machine %}
+        {% endfor %}
+      </div>
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
     </div>
-    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+  </div>
+
+  <!-- Table View (Airport-style) -->
+  <div id="table-view" style="display: none;">
+    {% include 'monitoring/current_jobs_table.html' %}
   </div>
 
   <div id="loading" class="overlay hidden"><p>Loading...</p></div>
@@ -26,8 +35,6 @@
 
   <script src="{% static 'js/jquery.min.js' %}"></script>
   <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-  <!-- Optional in Step 4:
   <script src="{% static 'js/current_jobs.js' %}"></script>
-  -->
 </body>
 </html>
