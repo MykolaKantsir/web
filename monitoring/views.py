@@ -834,6 +834,7 @@ def next_jobs_view(request):
     return render(request, 'monitoring/next_jobs.html', context)
 
 # View to display the current job for each machine
+# Supports both card view and table view (airport-style)
 def current_jobs_view(request):
     machines = Machine.objects.filter(is_test_machine=False)
 
