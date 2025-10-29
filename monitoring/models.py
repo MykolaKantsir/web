@@ -1027,7 +1027,8 @@ class Machine(models.Model):
 class Monitor_operation(models.Model):
     monitor_operation_id = models.CharField(max_length=50, default=strings.empty_string)
     name = models.CharField(max_length=50)
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=0) # to be produced quantity
+    currently_made_quantity = models.IntegerField(default=0) # currently made quantity
     material = models.CharField(max_length=50)
     report_number = models.CharField(max_length=50)
     planned_start_date = models.DateField(default=defaults.january_the_first)

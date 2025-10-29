@@ -3,28 +3,47 @@
  * Mimics departure/arrival boards at airports
  */
 
+/* Ensure html and body allow scrolling - override next_jobs.css constraints */
+html, body {
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the table view container allows overflow */
+#table-view {
+  height: auto !important;
+  overflow: visible !important;
+}
+
 .airport-board {
   width: 100%;
+  height: 100vh;  /* Full viewport height */
   padding: 20px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #505962 0%, #716F81 100%);  /* Iron to Kimberly gradient */
   font-family: 'Courier New', Courier, monospace;
   color: #fff;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;  /* Stack header and body vertically */
+  overflow: hidden;  /* Prevent scrolling on the container itself */
 }
 
 /* Header Row */
 .board-header {
   display: flex;
-  background: #0f3460;
-  border: 2px solid #16558f;
-  border-bottom: 4px solid #e94560;
-  padding: 20px 15px;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  border-bottom: 4px solid #5F9EA0;  /* Cadet Blue accent */
+  padding: 10px 15px;  /* Reduced from 20px to 10px - half the height */
   font-weight: 900;
   font-size: 18px;
   letter-spacing: 2px;
   text-transform: uppercase;
   margin-bottom: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;  /* Prevent header from shrinking */
+  z-index: 100;
 }
 
 .header-cell {
@@ -38,48 +57,58 @@
   border-right: none;
 }
 
-/* Column Widths */
+/* Column Widths - Optimized for FullHD landscape (1920x1080) */
 .machine-col {
-  flex: 0 0 15%;
+  flex: 0 0 25%;  /* Machine gets significant space */
 }
 
 .job-col {
-  flex: 0 0 25%;
+  flex: 0 0 35%;  /* Job gets the most space */
 }
 
-.material-col {
-  flex: 0 0 15%;
-}
-
-.quantity-col {
-  flex: 0 0 10%;
+.done-col {
+  flex: 0 0 8%;   /* 4-digit numbers, compact */
   justify-content: center;
 }
 
-.location-col {
-  flex: 0 0 15%;
+.total-col {
+  flex: 0 0 8%;   /* 4-digit numbers, compact */
+  justify-content: center;
 }
 
 .status-col {
-  flex: 0 0 20%;
+  flex: 0 0 24%;  /* Status badges with text */
 }
 
 /* Board Body */
 .board-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 15px;  /* Increased gap from 8px to 15px for more spacing */
+  padding-bottom: 50px;  /* Add padding at bottom so content extends beyond viewport */
+  flex: 1;  /* Take remaining space */
+  overflow-y: auto;  /* Enable vertical scrolling */
+  overflow-x: hidden;  /* Prevent horizontal scrolling */
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.board-body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Board Row (each job) */
 .board-row {
   display: flex;
-  background: #0f3460;
-  border: 2px solid #16558f;
-  padding: 25px 15px;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  padding: 40px 15px;  /* Increased from 25px to 40px for more height */
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.5s ease-out;
+  min-height: 100px;  /* Ensure rows have substantial height */
 }
 
 @keyframes slideIn {
@@ -94,25 +123,25 @@
 }
 
 .board-row:hover {
-  background: #14497d;
+  background: #2a4499;  /* Lighter Deep Koamaru */
   transform: translateX(5px);
-  box-shadow: 0 4px 16px rgba(233, 69, 96, 0.3);
-  border-color: #e94560;
+  box-shadow: 0 4px 16px rgba(95, 158, 160, 0.4);  /* Cadet Blue shadow */
+  border-color: #5F9EA0;  /* Cadet Blue */
 }
 
 /* Warning Row */
 .board-row.row-warning {
-  border: 3px solid #e94560;
-  background: linear-gradient(90deg, #0f3460 0%, #3d0814 100%);
+  border: 3px solid #dc3545;  /* Keep red for warnings */
+  background: linear-gradient(90deg, #1a337e 0%, #5a1a1a 100%);  /* Deep Koamaru to dark red */
   animation: warningPulse 2s ease-in-out infinite;
 }
 
 @keyframes warningPulse {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
   }
   50% {
-    box-shadow: 0 0 25px rgba(233, 69, 96, 0.9);
+    box-shadow: 0 0 25px rgba(220, 53, 69, 0.9);
   }
 }
 
@@ -136,15 +165,15 @@
 .machine-name {
   font-weight: 900;
   font-size: 24px;
-  color: #00d9ff;
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+  color: #ffffff;  /* White */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);  /* Subtle white glow */
 }
 
-/* Job Name - Yellow highlight */
+/* Job Name - White for visibility */
 .job-name {
   font-weight: 700;
   font-size: 22px;
-  color: #ffd700;
+  color: #ffffff;  /* White */
 }
 
 /* Not Started State */
@@ -191,18 +220,18 @@
 
 /* Status - Running */
 .status-running {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, #5F9EA0 0%, #4a8a8c 100%);  /* Cadet Blue gradient */
   color: #fff;
-  border: 2px solid #1e7e34;
-  box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+  border: 2px solid #3a6a6c;
+  box-shadow: 0 0 15px rgba(95, 158, 160, 0.5);
 }
 
 /* Status - Idle */
 .status-idle {
-  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  background: linear-gradient(135deg, #716F81 0%, #505962 100%);  /* Kimberly to Iron */
   color: #fff;
-  border: 2px solid #495057;
-  box-shadow: 0 0 15px rgba(108, 117, 125, 0.3);
+  border: 2px solid #505962;
+  box-shadow: 0 0 15px rgba(113, 111, 129, 0.3);
 }
 
 /* Status - Warning */

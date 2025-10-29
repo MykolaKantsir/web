@@ -3,9 +3,8 @@
   <div class="board-header">
     <div class="header-cell machine-col">MACHINE</div>
     <div class="header-cell job-col">JOB</div>
-    <div class="header-cell material-col">MATERIAL</div>
-    <div class="header-cell quantity-col">QTY</div>
-    <div class="header-cell location-col">LOCATION</div>
+    <div class="header-cell done-col">DONE</div>
+    <div class="header-cell total-col">TOTAL</div>
     <div class="header-cell status-col">STATUS</div>
   </div>
 
@@ -33,35 +32,24 @@
         </div>
       </div>
 
-      {# Material #}
-      <div class="board-cell material-col">
-        <div class="cell-content">
+      {# Done Quantity #}
+      <div class="board-cell done-col">
+        <div class="cell-content quantity-value">
           {% if machine.current_status == 'none' %}
             <span class="empty-data">—</span>
           {% else %}
-            {{ machine.current_job.material }}
+            {{ machine.current_job.currently_made_quantity }}
           {% endif %}
         </div>
       </div>
 
-      {# Quantity #}
-      <div class="board-cell quantity-col">
+      {# Total Quantity #}
+      <div class="board-cell total-col">
         <div class="cell-content quantity-value">
           {% if machine.current_status == 'none' %}
             <span class="empty-data">—</span>
           {% else %}
             {{ machine.current_job.quantity }}
-          {% endif %}
-        </div>
-      </div>
-
-      {# Location #}
-      <div class="board-cell location-col">
-        <div class="cell-content">
-          {% if machine.current_status == 'none' %}
-            <span class="empty-data">—</span>
-          {% else %}
-            {{ machine.current_job.location }}
           {% endif %}
         </div>
       </div>
