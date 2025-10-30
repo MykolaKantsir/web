@@ -43,7 +43,8 @@ urlpatterns = [
     path("unsubscribe_machine/", views.unsubscribe_machine, name="unsubscribe_machine"),
     path("my_subscriptions/", views.my_subscriptions, name="my_subscriptions"),
     path("api/subscriptions/<int:machine_id>/", views.get_machine_subscriptions, name="get_machine_subscriptions"),
-    path('update-monitor-operation/', views.update_monitor_operation, name='update_monitor_operation'),
+    path('update-next-monitor-operation/', views.update_next_monitor_operation, name='update_next_monitor_operation'),
+    path('update-current-monitor-operation/', views.update_current_monitor_operation, name='update_current_monitor_operation'),
     path('update-machine-status/', views.update_machine_status, name='update_machine_status'),
     
 

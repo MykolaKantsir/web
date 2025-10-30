@@ -892,10 +892,10 @@ def check_next_jobs(request):
     # If the request is not an AJAX request, redirect to the next jobs list
     return redirect('next_jobs')
 
-# View to update Monitor_operation
+# View to update next Monitor_operation (the operation planned to be next for this machine)
 @method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF protection for external apps, if needed
 @login_required  # Require user authentication
-def update_monitor_operation(request):
+def update_next_monitor_operation(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode('utf-8'))  # Parse JSON data from request body
@@ -906,8 +906,8 @@ def update_monitor_operation(request):
         if not machine_pk:
             return JsonResponse({'error': 'Machine PK is required'}, status=400)
 
-        # Get the first monitor operation by priority for the given machine
-        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk).order_by('priority').first()
+        # Get the next monitor operation (not in progress, lowest priority) for the given machine
+        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk, is_in_progress=False).order_by('priority').first()
 
         if not monitor_operation:
             return JsonResponse({'error': 'Monitor operation not found'}, status=404)
@@ -929,6 +929,62 @@ def update_monitor_operation(request):
         integer_fields = ['quantity', 'priority']
         date_filelds = ['planned_start_date', 'planned_finish_date']
         
+
+        # Loop over allowed fields and update only if present in the data
+        for field in allowed_fields:
+            if field in data:
+                if field in integer_fields:
+                    setattr(monitor_operation, field, int(data[field]))
+                elif field in date_filelds:
+                    posted_date = datetime.fromisoformat(data[field]).date()
+                    setattr(monitor_operation, field, posted_date)
+                else:
+                    setattr(monitor_operation, field, data[field])
+
+        # Save changes
+        monitor_operation.save()
+
+        return JsonResponse({'message': 'Monitor operation updated successfully'})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# View to update current Monitor_operation (the operation currently in progress for this machine)
+@method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF protection for external apps, if needed
+@login_required  # Require user authentication
+def update_current_monitor_operation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))  # Parse JSON data from request body
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+        machine_pk = data.get('machine_pk')
+        if not machine_pk:
+            return JsonResponse({'error': 'Machine PK is required'}, status=400)
+
+        # Get the current monitor operation (in progress) for the given machine
+        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk, is_in_progress=True).first()
+
+        if not monitor_operation:
+            return JsonResponse({'error': 'Monitor operation not found'}, status=404)
+
+        # List of allowed fields to update
+        allowed_fields = [
+            'monitor_operation_id',
+            'name',
+            'quantity',
+            'material',
+            'report_number',
+            'planned_start_date',
+            'planned_finish_date',
+            'location',
+            'priority',
+            'drawing_image_base64',
+            ]
+
+        integer_fields = ['quantity', 'priority']
+        date_filelds = ['planned_start_date', 'planned_finish_date']
+
 
         # Loop over allowed fields and update only if present in the data
         for field in allowed_fields:

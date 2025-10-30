@@ -1037,14 +1037,15 @@ class Monitor_operation(models.Model):
     machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='monitor_operations', default=Machine.get_default_pk)  # Use default machine pk
     priority = models.IntegerField(default=0)  # Integer for priority lowest number is highest priority
     drawing_image_base64 = models.TextField(blank=True, null=True)
-    is_in_progress = models.BooleanField(default=False)
+    is_in_progress = models.BooleanField(default=False) # In progress - current, not in progress - planned (next)
 
     class Meta:
         verbose_name = ("Monitor operation")
         verbose_name_plural = ("Monitor operations")
 
     def __str__(self):
-        return f"{self.name} - {self.quantity} pcs"
+        status = "Current" if self.is_in_progress else "Next"
+        return f"{self.machine.name} | {status} | {self.name} - {self.quantity} pcs"
        
 # Machine offline xml state
 class Machine_Ofline_XML(models.Model):
