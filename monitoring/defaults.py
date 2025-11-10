@@ -25,6 +25,14 @@ machines_to_show = {
     "UMC750SS" : 6,
     "DMX600" : 9,
     "DMX800" : 14,
+    "DMU40" : 15,
+}
+
+# Machines to hide from the dashboard
+machines_to_hide = {
+    "Test Machine" : 2,
+    "Unknown": 1,
+    "VF4SS" : 4,
 }
 
 # state default

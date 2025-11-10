@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Min, Max, Prefetch
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.models import PushSubscription, MachineSubscription
-from monitoring.defaults import machines_to_show
+from monitoring.defaults import machines_to_show, machines_to_hide
 from monitoring.utils.utils import is_ajax, machine_current_database_state
 from monitoring.utils.utils import convert_time_django_javascript, convert_to_local_time
 from monitoring.utils.utils import timedelta_to_HHMMSS, parse_isoformat
@@ -674,7 +674,7 @@ def get_job_productivity(request, pk):
     
     # If the request is not AJAX, handle it as needed
     return JsonResponse({'error': 'Invalid request'}, status=400)
-
+ 
 def cycle_timeline(request, job_id):
     job = get_object_or_404(Job, id=job_id)
 
@@ -836,7 +836,7 @@ def next_jobs_view(request):
 # View to display the current job for each machine
 # Supports both card view and table view (airport-style)
 def current_jobs_view(request):
-    machines = Machine.objects.filter(is_test_machine=False)
+    machines = Machine.objects.filter(is_test_machine=False).exclude(pk__in=machines_to_hide.values())
 
     in_progress_qs = (
         Monitor_operation.objects
@@ -851,17 +851,28 @@ def current_jobs_view(request):
 
     for m in machines:
         ops = getattr(m, 'in_progress_ops', []) or []
-        if not ops:
+
+        # Filter out "No operation" placeholder operations
+        real_ops = [op for op in ops if op.name != "No operation"]
+
+        if not real_ops:
+            # No real operations, machine is IDLE
             m.current_job = None
             m.current_status = 'none'
             m.current_warning = None
+            m.progress_percent = 0
         else:
-            m.current_job = ops[0]
+            m.current_job = real_ops[0]
             m.current_status = 'ok'
             m.current_warning = (
-                f"Multiple operations in progress ({len(ops)})"
-                if len(ops) > 1 else None
+                f"Multiple operations in progress ({len(real_ops)})"
+                if len(real_ops) > 1 else None
             )
+            # Calculate progress percentage for in-progress operations
+            if m.current_job.quantity > 0:
+                m.progress_percent = (m.current_job.currently_made_quantity / m.current_job.quantity) * 100
+            else:
+                m.progress_percent = 0
 
     return render(request, 'monitoring/current_jobs.html', {'machines': machines})
 
@@ -925,11 +936,14 @@ def update_next_monitor_operation(request):
             'location',
             'priority',
             'drawing_image_base64',
+            'is_setup',
+            'currently_made_quantity',
             ]
-        
-        integer_fields = ['quantity', 'priority']
+
+        integer_fields = ['quantity', 'priority', 'currently_made_quantity']
         date_filelds = ['planned_start_date', 'planned_finish_date']
-        
+        boolean_fields = ['is_setup']
+
 
         # Loop over allowed fields and update only if present in the data
         for field in allowed_fields:
@@ -939,6 +953,8 @@ def update_next_monitor_operation(request):
                 elif field in date_filelds:
                     posted_date = datetime.fromisoformat(data[field]).date()
                     setattr(monitor_operation, field, posted_date)
+                elif field in boolean_fields:
+                    setattr(monitor_operation, field, bool(data[field]))
                 else:
                     setattr(monitor_operation, field, data[field])
 
@@ -981,10 +997,13 @@ def update_current_monitor_operation(request):
             'location',
             'priority',
             'drawing_image_base64',
+            'is_setup',
+            'currently_made_quantity',
             ]
 
-        integer_fields = ['quantity', 'priority']
+        integer_fields = ['quantity', 'priority', 'currently_made_quantity']
         date_filelds = ['planned_start_date', 'planned_finish_date']
+        boolean_fields = ['is_setup']
 
 
         # Loop over allowed fields and update only if present in the data
@@ -995,6 +1014,8 @@ def update_current_monitor_operation(request):
                 elif field in date_filelds:
                     posted_date = datetime.fromisoformat(data[field]).date()
                     setattr(monitor_operation, field, posted_date)
+                elif field in boolean_fields:
+                    setattr(monitor_operation, field, bool(data[field]))
                 else:
                     setattr(monitor_operation, field, data[field])
 

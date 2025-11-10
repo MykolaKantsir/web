@@ -14,7 +14,7 @@
 </head>
 <body>
   <!-- Card View (Original) -->
-  <div id="card-view">
+  <div id="card-view" style="display: none;">
     <div id="main-content-1" class="container-fluid">
       <div class="custom-grid">
         {% for machine in machines %}
@@ -26,7 +26,7 @@
   </div>
 
   <!-- Table View (Airport-style) -->
-  <div id="table-view" style="display: none;">
+  <div id="table-view">
     {% include 'monitoring/current_jobs_table.html' %}
   </div>
 

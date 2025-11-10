@@ -10,9 +10,10 @@
 
   <div class="board-body">
     {% for machine in machines %}
-    <div class="board-row {% if machine.current_warning %}row-warning{% endif %}"
+    <div class="board-row {% if machine.current_warning %}row-warning{% elif machine.current_status == 'none' %}row-idle{% elif machine.current_job.is_setup %}row-setup{% elif machine.current_status == 'ok' %}row-in-progress{% endif %}"
          data-machine-pk="{{ machine.pk }}"
-         data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}">
+         data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}"
+         {% if machine.current_status == 'ok' and not machine.current_job.is_setup and not machine.current_warning %}style="background: linear-gradient(90deg, #2d5a3f 0%, #2d5a3f {{ machine.progress_percent|floatformat:1 }}%, #1a337e {{ machine.progress_percent|floatformat:1 }}%, #1a337e 100%);"{% endif %}>
 
       {# Machine Name #}
       <div class="board-cell machine-col">
@@ -66,6 +67,11 @@
             <div class="status-badge status-idle">
               <span class="status-icon">⏸</span>
               <span class="status-text">IDLE</span>
+            </div>
+          {% elif machine.current_job.is_setup %}
+            <div class="status-badge status-setup">
+              <span class="status-icon">🔧</span>
+              <span class="status-text">SETUP</span>
             </div>
           {% else %}
             <div class="status-badge status-running">

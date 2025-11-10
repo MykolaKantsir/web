@@ -145,6 +145,30 @@ html, body {
   }
 }
 
+/* Setup Row - Dark blue with subtle orange tint */
+.board-row.row-setup {
+  background: linear-gradient(90deg, #1a337e 0%, #3a4a5e 50%, #4a3a2e 100%);  /* Deep Koamaru to subtle brownish-orange */
+  border-color: #CC7000;  /* Orange border */
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.3);  /* Subtle orange glow */
+}
+
+.board-row.row-setup:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #4a5a6e 50%, #5a4a3e 100%);
+  box-shadow: 0 0 12px rgba(255, 165, 0, 0.5);  /* Stronger orange glow on hover */
+}
+
+/* Idle Row - Darker gray background */
+.board-row.row-idle {
+  background: linear-gradient(90deg, #1a1e2e 0%, #2a2e3e 100%);  /* Very dark blue-gray */
+  border-color: #505962;  /* Gray border */
+  opacity: 0.85;  /* Slightly transparent */
+}
+
+.board-row.row-idle:hover {
+  background: linear-gradient(90deg, #2a2e3e 0%, #3a3e4e 100%);
+  opacity: 1;
+}
+
 /* Board Cells */
 .board-cell {
   padding: 0 10px;
@@ -201,6 +225,7 @@ html, body {
 .status-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 8px 16px;
   border-radius: 6px;
@@ -208,6 +233,7 @@ html, body {
   font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
+  min-width: 180px;  /* Fixed width for consistency */
 }
 
 .status-icon {
@@ -232,6 +258,14 @@ html, body {
   color: #fff;
   border: 2px solid #505962;
   box-shadow: 0 0 15px rgba(113, 111, 129, 0.3);
+}
+
+/* Status - Setup */
+.status-setup {
+  background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);  /* Orange to Dark Orange */
+  color: #fff;
+  border: 2px solid #CC7000;
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
 }
 
 /* Status - Warning */

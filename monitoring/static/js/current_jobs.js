@@ -171,6 +171,11 @@
 
         // Add keyboard event listener
         document.addEventListener('keydown', handleKeyPress);
+
+        // Auto-reload page every 3 seconds
+        setInterval(function() {
+            location.reload();
+        }, 3000);
     }
 
     // Initialize when DOM is ready

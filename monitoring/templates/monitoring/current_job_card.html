@@ -34,6 +34,8 @@
           <h5>
             {% if machine.current_status == 'none' %}
               Not started
+            {% elif machine.current_job.is_setup %}
+              🔧 {{ machine.current_job.name }}
             {% else %}
               {{ machine.current_job.name }}
             {% endif %}

@@ -1038,6 +1038,7 @@ class Monitor_operation(models.Model):
     priority = models.IntegerField(default=0)  # Integer for priority lowest number is highest priority
     drawing_image_base64 = models.TextField(blank=True, null=True)
     is_in_progress = models.BooleanField(default=False) # In progress - current, not in progress - planned (next)
+    is_setup = models.BooleanField(default=False) # True when machine is being set up (no production reports yet)
 
     class Meta:
         verbose_name = ("Monitor operation")
