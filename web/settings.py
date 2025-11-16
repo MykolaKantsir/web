@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'measuring',
     'accounts.apps.AccountsConfig',
     'django_extensions',
+    'rest_framework',
+    'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -72,6 +74,17 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# REST Framework Configuration - supports both Token (for Android) and Session (for Python scripts) authentication
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # For Android app - no CSRF needed
+        'rest_framework.authentication.SessionAuthentication',  # For existing Python scripts - CSRF still works
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use PostgreSQL to store session data
