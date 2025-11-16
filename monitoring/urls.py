@@ -37,6 +37,11 @@ urlpatterns = [
     # --------------------
     path('api/login/', views.api_login_view, name='api_login'),
     path("api/logout/", views.api_logout_view, name="api_logout"),
+
+    # --------------------
+    # 📱 Mobile API Endpoints
+    # --------------------
+    path('api/mobile/dashboard/', views.mobile_dashboard, name='mobile_dashboard'),
     path("save_subscription/", views.save_subscription, name="save_subscription"),
     path("unsubscribe/", views.unsubscribe, name="unsubscribe"),
     path("subscribe_machine/", views.subscribe_machine, name="subscribe_machine"),

@@ -28,10 +28,12 @@ SECRET_KEY = 'django-insecure-z658x@s630t*f$vfx+d0%vpr(%1x+vjuhh%c-$_ru+qtf*1)j7
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost', 
-    '127.0.0.1', 
+    'localhost',
+    '127.0.0.1',
+    '10.0.2.2',  # Android emulator localhost
+    '0.0.0.0',   # Allow all interfaces (for 0.0.0.0:8000 binding)
     '192.168.112.145',
-    'gastoninternal.azurewebsites.net', 
+    'gastoninternal.azurewebsites.net',
     'https://gastoninternal.azurewebsites.net',
     'http://gastoninternal.azurewebsites.net',
     '169.254.129.5',

@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
 from django.db import transaction
 from django.db.models import Min, Max, Prefetch
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation
 from monitoring.models import PushSubscription, MachineSubscription
 from monitoring.defaults import machines_to_show, machines_to_hide
@@ -1053,6 +1055,80 @@ def send_to_subscription(request):
         return JsonResponse(result, status=200 if result["status"] == "success" else 500)
 
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON format"}, status=400) 
+        return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
+# =============================================================
+
+# Mobile API Views
+# =============================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mobile_dashboard(request):
+    """
+    📱 Mobile dashboard API endpoint.
+    Returns simplified machine status data optimized for mobile devices.
+    Uses the cached machine states for fast response without database queries.
+
+    GET /monitoring/api/mobile/dashboard/
+
+    Authentication: Token required (Authorization: Token <token>)
+
+    Response Format:
+    {
+        "machines": [
+            {
+                "id": 1,
+                "name": "Machine_A",
+                "status": "Running",
+                "active_program": "O12345",
+                "current_tool": "T05"
+            },
+            ...
+        ],
+        "timestamp": "2025-01-16T10:30:00Z"
+    }
+
+    Query Parameters:
+    - exclude_virtual: true/false (default: false) - exclude virtual machines
+    - exclude_test: true/false (default: true) - exclude test machines
+    """
+    # Get query parameters
+    exclude_virtual = request.GET.get('exclude_virtual', 'false').lower() == 'true'
+    exclude_test = request.GET.get('exclude_test', 'true').lower() == 'true'
+
+    # Build response data from cached machine states
+    machines_list = []
+
+    with cache_lock:
+        # Iterate through machines_data which contains (machine, state_id) tuples
+        for machine_name, (machine, state_id) in machines_data.items():
+            # Skip machines based on filters
+            if exclude_test and machine.is_test_machine:
+                continue
+            if exclude_virtual and machine.is_virtual_machine:
+                continue
+
+            # Get cached state for this machine
+            cached_state = machine_states_cache.get(machine_name, {})
+
+            # Build machine info from cache with fallbacks
+            machine_info = {
+                "id": machine.id,
+                "name": machine_name,
+                "status": cached_state.get("status", "Unknown"),
+                "active_program": cached_state.get("active_nc_program", None),
+                "current_tool": cached_state.get("current_tool", None),
+            }
+
+            machines_list.append(machine_info)
+
+    # Return response with timestamp
+    response_data = {
+        "machines": machines_list,
+        "timestamp": now().isoformat()
+    }
+
+    return JsonResponse(response_data, status=200)
 
 # =============================================================
