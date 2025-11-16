@@ -17,7 +17,7 @@ gunicorn==21.2.0
 http_ece==1.2.1
 idna==3.10
 multidict==6.6.2
-numpy==2.3.3
+numpy==2.0.2
 packaging==23.2
 pandas==2.3.2
 pillow==11.2.1
