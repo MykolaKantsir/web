@@ -38,6 +38,18 @@
             //"python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe",
         },
         {
+            "name": "Android gaston",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "runserver",
+                "0.0.0.0:8000",
+            ],
+            "django": true,
+            "justMyCode": true,
+        },
+        {
             "name": "products_to_csv_EAN",
             "type": "python",
             "request": "launch",
