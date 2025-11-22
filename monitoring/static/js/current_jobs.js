@@ -17,14 +17,18 @@
 
     // Auto-scroll configuration
     const SCROLL_SPEED = 1; // pixels per frame (lower = slower, smoother)
-    const PAUSE_DURATION = 3000; // milliseconds to pause at top/bottom
+    const PAUSE_DURATION = 3000; // milliseconds to pause at top/bottom (changed from 3000 to 4000)
     const SCROLL_FPS = 60; // frames per second for smooth scrolling
+    const RELOAD_INTERVAL = 12000; // milliseconds between reload checks
 
     // Auto-scroll state
     let autoScrollInterval = null;
     let autoScrollTimeout = null;
     let scrollDirection = 'down'; // 'down' or 'up'
     let isPaused = false;
+    let reloadCheckInterval = null;
+    let reloadPending = false; // Flag to indicate reload is waiting for top position
+    let hasScrolledDown = false; // Track if we've scrolled down at least once since page load
 
     /**
      * Stop auto-scroll
@@ -65,6 +69,10 @@
 
         if (scrollDirection === 'down') {
             // Scrolling down
+            if (currentScroll > 10) {
+                hasScrolledDown = true; // Mark that we've scrolled down
+            }
+
             if (currentScroll >= maxScroll - 5) { // -5 for slight tolerance
                 // Reached bottom, pause then reverse
                 stopAutoScroll();
@@ -76,9 +84,19 @@
         } else {
             // Scrolling up
             if (currentScroll <= 5) { // 5 for slight tolerance
-                // Reached top, pause then reverse
+                // Reached top - check if reload is needed
+                if (reloadPending && hasScrolledDown) {
+                    // Reset flags BEFORE reload to prevent infinite loop
+                    hasScrolledDown = false;
+                    reloadPending = false;
+                    location.reload();
+                    return;
+                }
+
+                // Otherwise, pause then reverse
                 stopAutoScroll();
                 scrollDirection = 'down';
+                hasScrolledDown = false; // Reset for next cycle
                 startAutoScrollAfterPause(PAUSE_DURATION);
             } else {
                 boardBody.scrollTop -= SCROLL_SPEED;
@@ -124,6 +142,10 @@
                     boardBody.scrollTop = 0;
                     scrollDirection = 'down';
 
+                    // Reset reload protection on fresh page load
+                    reloadPending = false;
+                    hasScrolledDown = false; // Must scroll down before reload can happen
+
                     // Start auto-scroll
                     startAutoScrollAfterPause(PAUSE_DURATION);
                 }
@@ -163,6 +185,20 @@
     }
 
     /**
+     * Mark that reload is needed (will execute when scroll reaches top)
+     */
+    function scheduleReload() {
+        if (!reloadPending) {
+            reloadPending = true;
+            // Stop scheduling more reloads until this one completes
+            if (reloadCheckInterval) {
+                clearInterval(reloadCheckInterval);
+                reloadCheckInterval = null;
+            }
+        }
+    }
+
+    /**
      * Initialize the view switcher
      */
     function init() {
@@ -172,10 +208,8 @@
         // Add keyboard event listener
         document.addEventListener('keydown', handleKeyPress);
 
-        // Auto-reload page every 3 seconds
-        setInterval(function() {
-            location.reload();
-        }, 3000);
+        // Schedule reload - will execute when scroll reaches top
+        reloadCheckInterval = setInterval(scheduleReload, RELOAD_INTERVAL);
     }
 
     // Initialize when DOM is ready
