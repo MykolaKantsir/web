@@ -239,16 +239,23 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
+  padding: 16px 48px;  /* Taller and wider padding */
   border-radius: 6px;
   font-weight: 700;
   font-size: 22px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  min-width: 200px;
+  min-width: 400px;  /* Twice as wide */
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: #fff;
+}
+
+/* Center the status badge in its column */
+.status-col .cell-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .status-text {

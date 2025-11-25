@@ -227,13 +227,20 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 12px 32px;  /* Taller and wider padding */
   border-radius: 6px;
   font-weight: 700;
   font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  min-width: 180px;  /* Fixed width for consistency */
+  min-width: 360px;  /* Twice as wide */
+}
+
+/* Center the status badge in its column */
+.status-col .cell-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .status-icon {
