@@ -1,0 +1,290 @@
+/**
+ * Airport-style table view for dashboard
+ * Mimics departure/arrival boards at airports
+ * Shows machine status in real-time with color-coded rows
+ */
+
+/* Ensure html and body allow scrolling */
+html, body {
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the table view container allows overflow */
+#table-view {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.airport-board {
+  width: 100%;
+  height: 100vh;  /* Full viewport height */
+  padding: 20px;
+  background: linear-gradient(135deg, #505962 0%, #716F81 100%);  /* Iron to Kimberly gradient */
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+  display: flex;
+  flex-direction: column;  /* Stack header and body vertically */
+  overflow: hidden;  /* Prevent scrolling on the container itself */
+}
+
+/* Header Row */
+.board-header {
+  display: flex;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  border-bottom: 4px solid #5F9EA0;  /* Cadet Blue accent */
+  padding: 10px 15px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;  /* Prevent header from shrinking */
+  z-index: 100;
+}
+
+.header-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-cell:last-child {
+  border-right: none;
+}
+
+/* Column Widths - Two columns equal split */
+.machine-col {
+  flex: 0 0 50%;  /* Machine name - 50% */
+}
+
+.status-col {
+  flex: 0 0 50%;  /* Status - 50% */
+  justify-content: center;
+}
+
+/* Board Body */
+.board-body {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;  /* Spacing between rows */
+  padding-bottom: 50px;  /* Add padding at bottom */
+  flex: 1;  /* Take remaining space */
+  overflow-y: auto;  /* Enable vertical scrolling */
+  overflow-x: hidden;  /* Prevent horizontal scrolling */
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.board-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Board Row (each machine) - Default styling */
+.board-row {
+  display: flex;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  padding: 40px 15px;  /* Substantial height */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease-out;
+  min-height: 100px;  /* Ensure rows have substantial height */
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.board-row:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 16px rgba(95, 158, 160, 0.4);  /* Cadet Blue shadow */
+}
+
+/* STATUS-BASED ROW STYLING */
+
+/* ACTIVE Status - Green gradient */
+.board-row.row-active {
+  background: linear-gradient(90deg, #2d5a3f 0%, #1a337e 100%);  /* Green to Deep Koamaru */
+  border-color: #28a745;  /* Green border */
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.4);  /* Green glow */
+}
+
+.board-row.row-active:hover {
+  background: linear-gradient(90deg, #3d6a4f 0%, #2a4399 100%);
+  box-shadow: 0 4px 16px rgba(40, 167, 69, 0.6);
+}
+
+/* STOPPED Status - Orange gradient */
+.board-row.row-stopped {
+  background: linear-gradient(90deg, #1a337e 0%, #8a4a1a 100%);  /* Deep Koamaru to orange-brown */
+  border-color: #FFA500;  /* Orange border */
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.4);  /* Orange glow */
+}
+
+.board-row.row-stopped:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #9a5a2a 100%);
+  box-shadow: 0 4px 16px rgba(255, 165, 0, 0.6);
+}
+
+/* FEED-HOLD Status - Blue gradient */
+.board-row.row-feed-hold {
+  background: linear-gradient(90deg, #1a337e 0%, #2a4a7e 100%);  /* Deep Koamaru to lighter blue */
+  border-color: #007bff;  /* Blue border */
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.4);  /* Blue glow */
+}
+
+.board-row.row-feed-hold:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #3a5a8e 100%);
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.6);
+}
+
+/* ALARM Status - Red gradient with pulse */
+.board-row.row-alarm {
+  background: linear-gradient(90deg, #1a337e 0%, #5a1a1a 100%);  /* Deep Koamaru to dark red */
+  border: 3px solid #dc3545;  /* Red border */
+  animation: alarmPulse 2s ease-in-out infinite;
+}
+
+.board-row.row-alarm:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #6a2a2a 100%);
+  box-shadow: 0 4px 16px rgba(220, 53, 69, 0.6);
+}
+
+@keyframes alarmPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(220, 53, 69, 0.9);
+  }
+}
+
+/* INTERRUPTED Status - Dark gray/blue */
+.board-row.row-interrupted {
+  background: linear-gradient(90deg, #1a1e2e 0%, #2a2e3e 100%);  /* Very dark blue-gray */
+  border-color: #505962;  /* Gray border */
+  opacity: 0.85;
+}
+
+.board-row.row-interrupted:hover {
+  background: linear-gradient(90deg, #2a2e3e 0%, #3a3e4e 100%);
+  opacity: 1;
+}
+
+/* SEMI_AUTOMATIC Status - Amber/yellow gradient */
+.board-row.row-semi-automatic {
+  background: linear-gradient(90deg, #1a337e 0%, #7a6a1a 100%);  /* Deep Koamaru to amber */
+  border-color: #FFD700;  /* Gold/amber border */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.board-row.row-semi-automatic:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #8a7a2a 100%);
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
+}
+
+/* OFFLINE/Unknown/Default Status - Dark gray with reduced opacity */
+.board-row.row-offline {
+  background: linear-gradient(90deg, #1a1e2e 0%, #2a2e3e 100%);  /* Very dark blue-gray */
+  border-color: #3a3a3a;  /* Dark gray border */
+  opacity: 0.7;
+}
+
+.board-row.row-offline:hover {
+  background: linear-gradient(90deg, #2a2e3e 0%, #3a3e4e 100%);
+  opacity: 0.85;
+}
+
+/* Board Cells */
+.board-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.cell-content {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Machine Name - Bold and prominent */
+.machine-name {
+  font-weight: 900;
+  font-size: 24px;
+  color: #ffffff;  /* White */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);  /* Subtle white glow */
+}
+
+/* Status Badge - Text only, no icons */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.status-text {
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .board-header,
+  .board-row {
+    font-size: 16px;
+  }
+
+  .machine-name {
+    font-size: 20px;
+  }
+
+  .status-badge {
+    font-size: 18px;
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .board-header,
+  .board-row {
+    font-size: 14px;
+    padding: 20px 10px;
+  }
+
+  .machine-name {
+    font-size: 18px;
+  }
+
+  .status-badge {
+    font-size: 16px;
+    min-width: 160px;
+  }
+}

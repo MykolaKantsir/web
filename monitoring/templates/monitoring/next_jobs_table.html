@@ -1,0 +1,72 @@
+{# Airport-style table view for next jobs #}
+<div class="airport-board">
+  <div class="board-header">
+    <div class="header-cell machine-col">MACHINE</div>
+    <div class="header-cell job-col">JOB</div>
+    <div class="header-cell material-col">MATERIAL</div>
+    <div class="header-cell quantity-col">QUANTITY</div>
+    <div class="header-cell location-col">LOCATION</div>
+  </div>
+
+  <div class="board-body">
+    {% for machine in machines %}
+    <div class="board-row"
+         data-machine-pk="{{ machine.pk }}"
+         data-job-monitor-operation-id="{% if machine.next_job %}{{ machine.next_job.monitor_operation_id }}{% endif %}"
+         data-job-name="{% if machine.next_job %}{{ machine.next_job.name }}{% endif %}">
+
+      {# Machine Name #}
+      <div class="board-cell machine-col">
+        <div class="cell-content machine-name">
+          {{ machine.name }}
+        </div>
+      </div>
+
+      {# Job Name #}
+      <div class="board-cell job-col">
+        <div class="cell-content job-name">
+          {% if machine.next_job %}
+            {{ machine.next_job.name }}
+          {% else %}
+            <span class="not-started">NO JOB SCHEDULED</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Material #}
+      <div class="board-cell material-col">
+        <div class="cell-content">
+          {% if machine.next_job %}
+            {{ machine.next_job.material }}
+          {% else %}
+            <span class="empty-data">—</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Quantity #}
+      <div class="board-cell quantity-col">
+        <div class="cell-content quantity-value">
+          {% if machine.next_job %}
+            {{ machine.next_job.quantity }}
+          {% else %}
+            <span class="empty-data">—</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Location #}
+      <div class="board-cell location-col">
+        <div class="cell-content">
+          {% if machine.next_job %}
+            {{ machine.next_job.location }}
+          {% else %}
+            <span class="empty-data">—</span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>

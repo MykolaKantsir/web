@@ -1,0 +1,260 @@
+/**
+ * Airport-style table view for next jobs
+ * Mimics departure/arrival boards at airports
+ */
+
+/* Ensure html and body allow scrolling */
+html, body {
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the table view container allows overflow */
+#table-view {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.airport-board {
+  width: 100%;
+  height: 100vh;  /* Full viewport height */
+  padding: 20px;
+  background: linear-gradient(135deg, #505962 0%, #716F81 100%);  /* Iron to Kimberly gradient */
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+  display: flex;
+  flex-direction: column;  /* Stack header and body vertically */
+  overflow: hidden;  /* Prevent scrolling on the container itself */
+}
+
+/* Header Row */
+.board-header {
+  display: flex;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  border-bottom: 4px solid #5F9EA0;  /* Cadet Blue accent */
+  padding: 10px 15px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;  /* Prevent header from shrinking */
+  z-index: 100;
+}
+
+.header-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-cell:last-child {
+  border-right: none;
+}
+
+/* Column Widths - Optimized for FullHD landscape (1920x1080) */
+.machine-col {
+  flex: 0 0 20%;  /* Machine name */
+}
+
+.job-col {
+  flex: 0 0 25%;  /* Job name */
+}
+
+.material-col {
+  flex: 0 0 20%;  /* Material type */
+}
+
+.quantity-col {
+  flex: 0 0 15%;  /* Quantity */
+  justify-content: center;
+}
+
+.location-col {
+  flex: 0 0 20%;  /* Location */
+}
+
+/* Board Body */
+.board-body {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;  /* Spacing between rows */
+  padding-bottom: 50px;  /* Add padding at bottom */
+  flex: 1;  /* Take remaining space */
+  overflow-y: auto;  /* Enable vertical scrolling */
+  overflow-x: hidden;  /* Prevent horizontal scrolling */
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.board-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Board Row (each job) */
+.board-row {
+  display: flex;
+  background: #1a337e;  /* Deep Koamaru */
+  border: 2px solid #5F9EA0;  /* Cadet Blue */
+  padding: 40px 15px;  /* Substantial height */
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease-out;
+  min-height: 100px;  /* Ensure rows have substantial height */
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.board-row:hover {
+  background: #2a4399;  /* Lighter Deep Koamaru */
+  transform: translateX(5px);
+  box-shadow: 0 4px 16px rgba(95, 158, 160, 0.4);  /* Cadet Blue shadow */
+  border-color: #5F9EA0;  /* Cadet Blue */
+}
+
+/* No Operation Row - Red warning for missing jobs */
+.board-row.row-no-operation {
+  border: 3px solid #dc3545;  /* Red border */
+  background: linear-gradient(90deg, #1a337e 0%, #5a1a1a 100%);  /* Deep Koamaru to dark red */
+  animation: noOpPulse 2s ease-in-out infinite;
+}
+
+.board-row.row-no-operation:hover {
+  background: linear-gradient(90deg, #2a4399 0%, #6a2a2a 100%);
+  box-shadow: 0 4px 16px rgba(220, 53, 69, 0.6);  /* Red shadow */
+}
+
+@keyframes noOpPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(220, 53, 69, 0.9);
+  }
+}
+
+/* Board Cells */
+.board-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.cell-content {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Machine Name - Bold and prominent */
+.machine-name {
+  font-weight: 900;
+  font-size: 24px;
+  color: #ffffff;  /* White */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);  /* Subtle white glow */
+}
+
+/* Job Name - White for visibility */
+.job-name {
+  font-weight: 700;
+  font-size: 22px;
+  color: #ffffff;  /* White */
+}
+
+/* Not Started / No Job State */
+.not-started {
+  color: #888;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Empty Data */
+.empty-data {
+  color: #555;
+  font-size: 24px;
+}
+
+/* Quantity - Centered and bold */
+.quantity-value {
+  text-align: center;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+}
+
+/* Material and Location - Standard styling */
+.material-col .cell-content,
+.location-col .cell-content {
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .board-header,
+  .board-row {
+    font-size: 16px;
+  }
+
+  .machine-name {
+    font-size: 20px;
+  }
+
+  .job-name {
+    font-size: 18px;
+  }
+
+  .quantity-value {
+    font-size: 18px;
+  }
+
+  .material-col .cell-content,
+  .location-col .cell-content {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .board-header,
+  .board-row {
+    font-size: 14px;
+    padding: 20px 10px;
+  }
+
+  .machine-name {
+    font-size: 18px;
+  }
+
+  .job-name {
+    font-size: 16px;
+  }
+
+  .quantity-value {
+    font-size: 16px;
+  }
+
+  .material-col .cell-content,
+  .location-col .cell-content {
+    font-size: 16px;
+  }
+}

@@ -11,16 +11,24 @@
     <link href="{% static 'css/next_jobs.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
     <link href="{% static 'css/next_job_card.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
     <link href="{% static 'css/large_next_job_card.css' %}" rel="stylesheet"> <!-- External CSS for styling -->
+    <link href="{% static 'css/next_jobs_table.css' %}" rel="stylesheet"> <!-- Airport-style table view -->
 </head>
 <body>
-    <!-- Full-Screen Grid Layout for Machines -->
-    <div id="main-content-1" class="container-fluid">
-        <div class="custom-grid">
-            {% for machine in machines %}
-                {% include 'monitoring/next_job_card.html' with machine=machine %}
-            {% endfor %}
+    <!-- Card View (Original) -->
+    <div id="card-view" style="display: none;">
+        <div id="main-content-1" class="container-fluid">
+            <div class="custom-grid">
+                {% for machine in machines %}
+                    {% include 'monitoring/next_job_card.html' with machine=machine %}
+                {% endfor %}
+            </div>
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         </div>
-        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    </div>
+
+    <!-- Table View (Airport-style) -->
+    <div id="table-view">
+        {% include 'monitoring/next_jobs_table.html' %}
     </div>
     
     <!-- Loading Spinner Container -->

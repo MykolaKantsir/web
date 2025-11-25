@@ -1,0 +1,33 @@
+{# Airport-style table view for dashboard #}
+<div class="airport-board">
+  <div class="board-header">
+    <div class="header-cell machine-col">MACHINE</div>
+    <div class="header-cell status-col">STATUS</div>
+  </div>
+
+  <div class="board-body">
+    {% for machine_name in machines %}
+    <div class="board-row"
+         data-machine-name="{{ machine_name }}"
+         data-status="">
+
+      {# Machine Name #}
+      <div class="board-cell machine-col">
+        <div class="cell-content machine-name">
+          {{ machine_name }}
+        </div>
+      </div>
+
+      {# Status Badge #}
+      <div class="board-cell status-col">
+        <div class="cell-content">
+          <div class="status-badge">
+            <span class="status-text">LOADING...</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>

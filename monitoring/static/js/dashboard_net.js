@@ -1,3 +1,195 @@
+/**
+ * Dashboard View Switcher with Auto-Scroll
+ * Toggles between card view and table (airport-style) view using arrow keys
+ * Auto-scrolls in table view with pause at top and bottom
+ * Real-time AJAX updates for machine status
+ */
+
+(function() {
+    'use strict';
+
+    // View switching state
+    let currentView = 'table';
+    const cardView = document.getElementById('card-view');
+    const tableView = document.getElementById('table-view');
+    let boardBody = null;
+
+    // Auto-scroll configuration
+    const SCROLL_SPEED = 1;
+    const PAUSE_DURATION = 3000;
+    const SCROLL_FPS = 60;
+
+    // Auto-scroll state
+    let autoScrollInterval = null;
+    let autoScrollTimeout = null;
+    let scrollDirection = 'down';
+    let isPaused = false;
+
+    /**
+     * Stop auto-scroll
+     */
+    function stopAutoScroll() {
+        if (autoScrollInterval) {
+            clearInterval(autoScrollInterval);
+            autoScrollInterval = null;
+        }
+        if (autoScrollTimeout) {
+            clearTimeout(autoScrollTimeout);
+            autoScrollTimeout = null;
+        }
+        isPaused = false;
+    }
+
+    /**
+     * Start auto-scroll after a pause
+     */
+    function startAutoScrollAfterPause(delay) {
+        isPaused = true;
+        autoScrollTimeout = setTimeout(() => {
+            isPaused = false;
+            startAutoScroll();
+        }, delay);
+    }
+
+    /**
+     * Perform the scrolling animation
+     */
+    function performScroll() {
+        if (isPaused || currentView !== 'table' || !boardBody) {
+            return;
+        }
+
+        const currentScroll = boardBody.scrollTop;
+        const maxScroll = boardBody.scrollHeight - boardBody.clientHeight;
+
+        if (scrollDirection === 'down') {
+            if (currentScroll >= maxScroll - 5) {
+                stopAutoScroll();
+                scrollDirection = 'up';
+                startAutoScrollAfterPause(PAUSE_DURATION);
+            } else {
+                boardBody.scrollTop += SCROLL_SPEED;
+            }
+        } else {
+            if (currentScroll <= 5) {
+                stopAutoScroll();
+                scrollDirection = 'down';
+                startAutoScrollAfterPause(PAUSE_DURATION);
+            } else {
+                boardBody.scrollTop -= SCROLL_SPEED;
+            }
+        }
+    }
+
+    /**
+     * Start auto-scroll
+     */
+    function startAutoScroll() {
+        stopAutoScroll();
+        const intervalDelay = 1000 / SCROLL_FPS;
+        autoScrollInterval = setInterval(performScroll, intervalDelay);
+    }
+
+    /**
+     * Switch to card view
+     */
+    function showCardView() {
+        if (cardView && tableView) {
+            stopAutoScroll();
+            cardView.style.display = 'block';
+            tableView.style.display = 'none';
+            currentView = 'card';
+        }
+    }
+
+    /**
+     * Switch to table view
+     */
+    function showTableView() {
+        if (cardView && tableView) {
+            cardView.style.display = 'none';
+            tableView.style.display = 'block';
+            currentView = 'table';
+
+            setTimeout(() => {
+                boardBody = document.querySelector('.board-body');
+                if (boardBody) {
+                    boardBody.scrollTop = 0;
+                    scrollDirection = 'down';
+                    startAutoScrollAfterPause(PAUSE_DURATION);
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Handle keyboard navigation
+     */
+    function handleKeyPress(e) {
+        if (e.keyCode === 39 || e.key === 'ArrowRight') {
+            if (currentView === 'card') {
+                showTableView();
+            }
+            e.preventDefault();
+        } else if (e.keyCode === 37 || e.key === 'ArrowLeft') {
+            if (currentView === 'table') {
+                showCardView();
+            }
+            e.preventDefault();
+        }
+    }
+
+    /**
+     * Map status to CSS class name
+     */
+    function getStatusClass(status) {
+        if (!status || status === 'loading' || status === 'Loading...') {
+            return 'row-offline';
+        }
+
+        const statusUpper = status.toUpperCase().trim();
+
+        if (statusUpper === 'ACTIVE') return 'row-active';
+        if (statusUpper === 'STOPPED') return 'row-stopped';
+        if (statusUpper === 'FEED-HOLD' || statusUpper === 'FEED_HOLD') return 'row-feed-hold';
+        if (statusUpper === 'ALARM') return 'row-alarm';
+        if (statusUpper === 'INTERRUPTED') return 'row-interrupted';
+        if (statusUpper === 'SEMI_AUTOMATIC' || statusUpper === 'SEMI-AUTOMATIC') return 'row-semi-automatic';
+
+        return 'row-offline';
+    }
+
+    /**
+     * Update table view with machine status
+     */
+    function updateTableView(machines) {
+        if (currentView !== 'table') return;
+
+        for (const [machineName, state] of Object.entries(machines)) {
+            const row = document.querySelector(`[data-machine-name="${machineName}"]`);
+            if (row) {
+                const status = state.status || 'OFFLINE';
+
+                // Update status text
+                const statusText = row.querySelector('.status-text');
+                if (statusText) {
+                    statusText.textContent = status;
+                }
+
+                // Update data attribute
+                row.setAttribute('data-status', status);
+
+                // Remove all status classes
+                row.classList.remove('row-active', 'row-stopped', 'row-feed-hold',
+                                   'row-alarm', 'row-interrupted', 'row-semi-automatic', 'row-offline');
+
+                // Add appropriate status class
+                const statusClass = getStatusClass(status);
+                row.classList.add(statusClass);
+            }
+        }
+    }
+
 // Function to format ISO 8601 duration (P0DT00H00M00S) to HH:MM:SS format
 function formatDuration(duration) {
     const matches = duration.match(/P(?:\d+D)?T(\d+H)?(\d+M)?(\d+S)?/);
@@ -50,6 +242,7 @@ function fetchMachineStates() {
 
 // Function to update the content of each machine card
 function updateMachineCards(machines) {
+    // Update card view
     for (const [machineName, state] of Object.entries(machines)) {
         const card = document.getElementById(`machine_${machineName}`);
         if (card) {
@@ -72,6 +265,9 @@ function updateMachineCards(machines) {
 
     // Update card background colors based on status
     update_visual();
+
+    // Update table view
+    updateTableView(machines);
 }
 
 // Function to update the card background color based on machine status
@@ -113,5 +309,25 @@ function startFetching() {
     setInterval(fetchMachineStates, 2000);  // Fetch every 2 seconds
 }
 
-// Start fetching machine states once the page has fully loaded
-document.addEventListener('DOMContentLoaded', startFetching);
+    /**
+     * Initialize the dashboard view
+     */
+    function init() {
+        // Set initial view (table view)
+        showTableView();
+
+        // Add keyboard event listener
+        document.addEventListener('keydown', handleKeyPress);
+
+        // Start AJAX polling
+        startFetching();
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})();
