@@ -27,7 +27,6 @@
     const logoScreen = document.getElementById('logo-screen');
     const drawingScreen = document.getElementById('drawing-screen');
     const drawingImage = document.getElementById('drawing-image');
-    const operationName = document.getElementById('operation-name');
     const noDrawingMsg = document.getElementById('no-drawing');
 
     /**
@@ -121,17 +120,13 @@
     }
 
     /**
-     * Show drawing screen with operation details
+     * Show drawing screen with operation image
      * Looks up drawing from preloaded cache for instant display
      * @param {Object} data - Drawing data from WebSocket (operation_id, operation_name)
      */
     function showDrawing(data) {
         const opId = String(data.operation_id);
         const cached = drawingsCache[opId];
-
-        // Use cached name if available, fallback to WebSocket data
-        const displayName = cached?.name || data.operation_name || 'Operation';
-        operationName.textContent = displayName;
 
         // Get drawing from cache
         const drawingBase64 = cached?.drawing_base64;
@@ -142,7 +137,7 @@
             noDrawingMsg.style.display = 'none';
         } else {
             drawingImage.style.display = 'none';
-            noDrawingMsg.style.display = 'block';
+            noDrawingMsg.style.display = 'flex';
             console.warn(`No cached drawing for operation ${opId}`);
         }
 

@@ -33,10 +33,36 @@ import time
 # Cache for machine states
 machine_states_cache = {}
 
-# Initialize machine data with `current_state.id` for each machine
-machines_data = {name: (machine, machine.current_state.id) for name, machine in {name: Machine.objects.get(id=id) for name, id in machines_to_show.items()}.items() if machine.current_state}
+# Machine data - initialized lazily to avoid database queries at module import time
+# This is required for Daphne/ASGI compatibility
+machines_data = None
+_machines_data_initialized = False
 
 cache_lock = threading.Lock()
+
+
+def get_machines_data():
+    """
+    Lazily initialize and return machines_data.
+    This avoids database queries at module import time, which is required for Daphne/ASGI.
+    """
+    global machines_data, _machines_data_initialized
+
+    if not _machines_data_initialized:
+        with cache_lock:
+            # Double-check inside lock
+            if not _machines_data_initialized:
+                machines_data = {
+                    name: (machine, machine.current_state.id)
+                    for name, machine in {
+                        name: Machine.objects.get(id=id)
+                        for name, id in machines_to_show.items()
+                    }.items()
+                    if machine.current_state
+                }
+                _machines_data_initialized = True
+
+    return machines_data
 
 
 def initialize_machine_states_cache():
@@ -45,9 +71,11 @@ def initialize_machine_states_cache():
     """
     global machine_states_cache
 
+    data = get_machines_data()
+
     with cache_lock:  # Ensure thread-safe initialization
         # Iterate over machines_data and populate the cache
-        for machine_name, (machine, state_id) in machines_data.items():
+        for machine_name, (machine, state_id) in data.items():
             if machine.current_state:  # Ensure the machine has a current state
                 machine_states_cache[machine_name] = {
                     "status": machine.current_state.status,
@@ -59,8 +87,8 @@ def initialize_machine_states_cache():
                     "current_machine_time": machine.current_state.current_machine_time,
                 }
 
-# Initialize the cache at startup
-initialize_machine_states_cache()
+# NOTE: Cache is initialized lazily on first request, not at module import
+# This is required for Daphne/ASGI compatibility
 
 
 def home(request):
@@ -502,7 +530,7 @@ def save_states_to_database():
             # Collect machines with updated states
             machines_to_update = []
             for machine_name, state in machine_states_cache.items():
-                machine, _ = machines_data.get(machine_name, (None, None))
+                machine, _ = get_machines_data().get(machine_name, (None, None))
                 if machine:
                     machine.current_state.status = state["status"]
                     machines_to_update.append(machine.current_state)
@@ -519,11 +547,15 @@ def dashboard(request):
     """
     Serve cached machine states to clients.
     """
+    # Lazy initialization: populate cache on first request if empty
+    if not machine_states_cache:
+        initialize_machine_states_cache()
+
     if is_ajax(request):
         with cache_lock:
             return JsonResponse({"machines": machine_states_cache}, status=200)
 
-    context = {"machines": machines_data.keys()}
+    context = {"machines": get_machines_data().keys()}
     return render(request, "monitoring/dashboard.html", context)
 
 @csrf_exempt
@@ -1112,12 +1144,16 @@ def mobile_dashboard(request):
     exclude_virtual = request.GET.get('exclude_virtual', 'false').lower() == 'true'
     exclude_test = request.GET.get('exclude_test', 'true').lower() == 'true'
 
+    # Lazy initialization: populate cache on first request if empty
+    if not machine_states_cache:
+        initialize_machine_states_cache()
+
     # Build response data from cached machine states
     machines_list = []
 
     with cache_lock:
         # Iterate through machines_data which contains (machine, state_id) tuples
-        for machine_name, (machine, state_id) in machines_data.items():
+        for machine_name, (machine, state_id) in get_machines_data().items():
             # Skip machines based on filters
             if exclude_test and machine.is_test_machine:
                 continue
@@ -1755,6 +1791,23 @@ def drawing_monitor(request):
     GET /monitoring/drawing-monitor/
     """
     return render(request, 'monitoring/drawing_monitor.html')
+
+
+@login_required
+def cursor_test(request):
+    """
+    Test page for cursor control.
+    Use PgUp/PgDown to move cursor through operations.
+
+    GET /monitoring/cursor-test/
+    """
+    operations = Monitor_operation.objects.filter(
+        drawing_image_base64__isnull=False
+    ).exclude(drawing_image_base64='').order_by('id')
+
+    return render(request, 'monitoring/cursor_test.html', {
+        'operations': operations
+    })
 
 
 # =============================================================

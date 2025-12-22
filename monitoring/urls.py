@@ -70,6 +70,7 @@ urlpatterns = [
     # 🖼️ Drawing Monitor Display
     # --------------------
     path('drawing-monitor/', views.drawing_monitor, name='drawing_monitor'),
+    path('cursor-test/', views.cursor_test, name='cursor_test'),
 
     path("save_subscription/", views.save_subscription, name="save_subscription"),
     path("unsubscribe/", views.unsubscribe, name="unsubscribe"),

@@ -1,0 +1,236 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Test Controller</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 { margin-bottom: 20px; color: #5F9EA0; }
+        .controls {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .status.active { color: #4ade80; }
+        .status.inactive { color: #f87171; }
+        .keys {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .key {
+            background: #0f3460;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            border: 2px solid #5F9EA0;
+        }
+        .operations-list {
+            background: #16213e;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .operation {
+            padding: 12px 20px;
+            border-bottom: 1px solid #0f3460;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .operation:hover { background: #0f3460; }
+        .operation.current {
+            background: #5F9EA0;
+            color: #1a1a2e;
+        }
+        .operation .id { opacity: 0.6; font-size: 12px; }
+        .btn {
+            background: #5F9EA0;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .btn:hover { background: #4a8a8c; }
+        .btn.danger { background: #f87171; }
+        .btn.danger:hover { background: #dc2626; }
+        .info { color: #888; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Cursor Test Controller</h1>
+
+    <div class="controls">
+        <div class="status inactive" id="status">Cursor: INACTIVE</div>
+        <div class="keys">
+            <div class="key">PgUp - Previous</div>
+            <div class="key">PgDn - Next</div>
+            <div class="key">Esc - Deactivate</div>
+        </div>
+        <button class="btn" onclick="activateFirst()">Activate First</button>
+        <button class="btn danger" onclick="deactivate()">Deactivate Cursor</button>
+        <p class="info">Open <a href="{% url 'drawing_monitor' %}" target="_blank" style="color: #5F9EA0;">/monitoring/drawing-monitor/</a> in another tab to see the display</p>
+    </div>
+
+    <div class="operations-list" id="operations-list">
+        {% for op in operations %}
+        <div class="operation" data-id="{{ op.id }}" onclick="setCursor({{ op.id }})">
+            <span>{{ op.name }}</span>
+            <span class="id">ID: {{ op.id }}</span>
+        </div>
+        {% empty %}
+        <div class="operation">No operations with drawings found</div>
+        {% endfor %}
+    </div>
+
+    <script>
+        const operationIds = [{% for op in operations %}{{ op.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+        let currentIndex = -1;
+        let pendingOperationId = null;
+        let debounceTimer = null;
+        const DEBOUNCE_DELAY = 300; // ms - only send request after cursor stays 300ms
+
+        function getCSRFToken() {
+            return document.cookie.split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1] || '';
+        }
+
+        // Actually send the cursor update to server
+        async function sendCursorUpdate(operationId) {
+            try {
+                const response = await fetch('/monitoring/api/drawing/set-cursor/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ operation_id: operationId })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    console.error('Failed to set cursor');
+                }
+            } catch (error) {
+                console.error('Failed to set cursor:', error);
+            }
+        }
+
+        // Debounced cursor update - visual update is instant, API call is delayed
+        function setCursor(operationId) {
+            // Immediately update UI for responsive feel
+            currentIndex = operationIds.indexOf(operationId);
+            updateUI(operationId);
+
+            // Cancel any pending API call
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+
+            // Schedule API call after debounce delay
+            pendingOperationId = operationId;
+            debounceTimer = setTimeout(() => {
+                sendCursorUpdate(pendingOperationId);
+                debounceTimer = null;
+            }, DEBOUNCE_DELAY);
+        }
+
+        async function deactivate() {
+            // Cancel any pending update
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+                debounceTimer = null;
+            }
+
+            try {
+                const response = await fetch('/monitoring/api/drawing/set-cursor/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ operation_id: null })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    currentIndex = -1;
+                    updateUI(null);
+                }
+            } catch (error) {
+                console.error('Failed to deactivate:', error);
+            }
+        }
+
+        function activateFirst() {
+            if (operationIds.length > 0) {
+                setCursor(operationIds[0]);
+            }
+        }
+
+        function updateUI(activeId) {
+            const status = document.getElementById('status');
+            if (activeId) {
+                status.textContent = `Cursor: ACTIVE (ID: ${activeId})`;
+                status.className = 'status active';
+            } else {
+                status.textContent = 'Cursor: INACTIVE';
+                status.className = 'status inactive';
+            }
+
+            document.querySelectorAll('.operation').forEach(el => {
+                el.classList.remove('current');
+                if (el.dataset.id == activeId) {
+                    el.classList.add('current');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                if (operationIds.length === 0) return;
+                currentIndex = Math.min(currentIndex + 1, operationIds.length - 1);
+                setCursor(operationIds[currentIndex]);
+            } else if (e.key === 'PageUp') {
+                e.preventDefault();
+                if (operationIds.length === 0) return;
+                if (currentIndex < 0) currentIndex = 0;
+                else currentIndex = Math.max(currentIndex - 1, 0);
+                setCursor(operationIds[currentIndex]);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                deactivate();
+            }
+        });
+
+        // Check initial status
+        fetch('/monitoring/api/drawing/cursor-status/')
+            .then(r => r.json())
+            .then(data => {
+                if (data.is_active && data.operation_id) {
+                    currentIndex = operationIds.indexOf(data.operation_id);
+                    updateUI(data.operation_id);
+                }
+            });
+    </script>
+</body>
+</html>
