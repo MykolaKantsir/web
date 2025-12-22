@@ -1,0 +1,182 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ machine.name }} - Planning</title>
+
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/planning.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="planning-container">
+        <header class="planning-header">
+            <a href="{% url 'planning_grid' %}" class="back-button">&larr; Back</a>
+            <h1>{{ machine.name }}</h1>
+            <p class="subtitle">Assign operations to this machine</p>
+        </header>
+
+        <div class="planning-form">
+            <!-- Current Operations Section -->
+            <section class="operation-section">
+                <h2>Current Operations</h2>
+                <p class="section-hint">Up to 3 operations that are currently in progress</p>
+
+                <!-- Current Operation 1 (Monitor-controlled) -->
+                <div class="operation-slot" data-slot="current_1"
+                     {% if assignment and assignment.current_operation_1 %}
+                     data-operation-id="{{ assignment.current_operation_1.pk }}"
+                     data-is-setup="{{ assignment.current_operation_1.is_setup|lower }}"
+                     data-source="{{ assignment.current_1_source }}"
+                     {% endif %}>
+                    <label>
+                        Current 1
+                        {% if assignment and assignment.current_1_source == 'monitor' %}
+                        <span class="source-badge monitor">Monitor</span>
+                        {% elif assignment and assignment.current_operation_1 %}
+                        <span class="source-badge manual">Manual</span>
+                        {% endif %}
+                    </label>
+                    <div class="operation-selector">
+                        <input type="text"
+                               class="operation-search"
+                               placeholder="Search operations..."
+                               data-slot="current_1"
+                               value="{% if assignment and assignment.current_operation_1 %}{{ assignment.current_operation_1.name }}{% endif %}">
+                        <input type="hidden"
+                               class="operation-id"
+                               name="current_1"
+                               value="{% if assignment and assignment.current_operation_1 %}{{ assignment.current_operation_1.pk }}{% endif %}">
+                        <button type="button" class="clear-btn" data-slot="current_1">&times;</button>
+                        <div class="search-results" data-slot="current_1"></div>
+                    </div>
+                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
+                    <div class="status-toggle-container" style="display: none;">
+                        <button type="button" class="status-btn setup-btn" data-status="setup">
+                            🔧 Setup
+                        </button>
+                        <button type="button" class="status-btn progress-btn" data-status="progress">
+                            ▶️ In Progress
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Operation 2 -->
+                <div class="operation-slot" data-slot="current_2"
+                     {% if assignment and assignment.current_operation_2 %}
+                     data-operation-id="{{ assignment.current_operation_2.pk }}"
+                     data-is-setup="{{ assignment.current_operation_2.is_setup|lower }}"
+                     data-source="manual"
+                     {% endif %}>
+                    <label>Current 2</label>
+                    <div class="operation-selector">
+                        <input type="text"
+                               class="operation-search"
+                               placeholder="Search operations..."
+                               data-slot="current_2"
+                               value="{% if assignment and assignment.current_operation_2 %}{{ assignment.current_operation_2.name }}{% endif %}">
+                        <input type="hidden"
+                               class="operation-id"
+                               name="current_2"
+                               value="{% if assignment and assignment.current_operation_2 %}{{ assignment.current_operation_2.pk }}{% endif %}">
+                        <button type="button" class="clear-btn" data-slot="current_2">&times;</button>
+                        <div class="search-results" data-slot="current_2"></div>
+                    </div>
+                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
+                    <div class="status-toggle-container" style="display: none;">
+                        <button type="button" class="status-btn setup-btn" data-status="setup">
+                            🔧 Setup
+                        </button>
+                        <button type="button" class="status-btn progress-btn" data-status="progress">
+                            ▶️ In Progress
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Operation 3 -->
+                <div class="operation-slot" data-slot="current_3"
+                     {% if assignment and assignment.current_operation_3 %}
+                     data-operation-id="{{ assignment.current_operation_3.pk }}"
+                     data-is-setup="{{ assignment.current_operation_3.is_setup|lower }}"
+                     data-source="manual"
+                     {% endif %}>
+                    <label>Current 3</label>
+                    <div class="operation-selector">
+                        <input type="text"
+                               class="operation-search"
+                               placeholder="Search operations..."
+                               data-slot="current_3"
+                               value="{% if assignment and assignment.current_operation_3 %}{{ assignment.current_operation_3.name }}{% endif %}">
+                        <input type="hidden"
+                               class="operation-id"
+                               name="current_3"
+                               value="{% if assignment and assignment.current_operation_3 %}{{ assignment.current_operation_3.pk }}{% endif %}">
+                        <button type="button" class="clear-btn" data-slot="current_3">&times;</button>
+                        <div class="search-results" data-slot="current_3"></div>
+                    </div>
+                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
+                    <div class="status-toggle-container" style="display: none;">
+                        <button type="button" class="status-btn setup-btn" data-status="setup">
+                            🔧 Setup
+                        </button>
+                        <button type="button" class="status-btn progress-btn" data-status="progress">
+                            ▶️ In Progress
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Next Operation Section -->
+            <section class="operation-section">
+                <h2>Next Operation</h2>
+                <p class="section-hint">The operation that will be performed after current operations complete</p>
+
+                <div class="operation-slot" data-slot="next">
+                    <label>Next Operation</label>
+                    <div class="operation-selector">
+                        <input type="text"
+                               class="operation-search"
+                               placeholder="Search operations..."
+                               data-slot="next"
+                               value="{% if assignment and assignment.next_operation %}{{ assignment.next_operation.name }}{% endif %}">
+                        <input type="hidden"
+                               class="operation-id"
+                               name="next"
+                               value="{% if assignment and assignment.next_operation %}{{ assignment.next_operation.pk }}{% endif %}">
+                        <button type="button" class="clear-btn" data-slot="next">&times;</button>
+                        <div class="search-results" data-slot="next"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assignment Info -->
+            {% if assignment and assignment.is_manually_overridden %}
+            <div class="override-info">
+                <p>Manual override active since {{ assignment.manual_override_at|date:"M d, Y H:i" }}</p>
+                {% if assignment.manual_override_by %}
+                <p>by {{ assignment.manual_override_by.username }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="status-message hidden"></div>
+    </div>
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        const MACHINE_PK = {{ machine.pk }};
+        const CSRF_TOKEN = '{{ csrf_token }}';
+        const API_URLS = {
+            availableOperations: '{% url "get_available_operations" %}',
+            manualAssign: '{% url "manual_assign_operation" %}',
+            machineAssignments: '{% url "get_machine_assignments" machine.pk %}',
+            toggleStatus: '{% url "toggle_operation_status" %}'
+        };
+    </script>
+    <script src="{% static 'js/planning.js' %}"></script>
+</body>
+</html>

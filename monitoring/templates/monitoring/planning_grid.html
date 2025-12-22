@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Machine Planning</title>
+
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/planning.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="planning-container">
+        <header class="planning-header">
+            <h1>Machine Planning</h1>
+            <p class="subtitle">Select a machine to assign operations</p>
+        </header>
+
+        <div class="machine-grid">
+            {% for machine in machines %}
+            <a href="{% url 'planning_detail' machine.pk %}" class="machine-button {% if machine.has_assignment %}has-assignment{% endif %}">
+                <span class="machine-name">{{ machine.name }}</span>
+                {% if machine.current_op_count > 0 %}
+                <span class="badge current-badge">{{ machine.current_op_count }} current</span>
+                {% endif %}
+                {% if machine.has_next_op %}
+                <span class="badge next-badge">next</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="no-machines">No machines available</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

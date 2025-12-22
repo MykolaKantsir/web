@@ -15,14 +15,15 @@
             "name": "Python: Django",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}\\manage.py",
+            "module": "daphne",
             "args": [
-                "runserver",
-                "localhost:8000",
+                "-b", "0.0.0.0",
+                "-p", "8000",
+                "web.asgi:application"
             ],
             "django": true,
             "justMyCode": true,
-            //"python": "D:\\Projects\\Gaston_V1_03\\venv\\Scripts\\python.exe",
+            "console": "integratedTerminal"
         },
         {
             "name": "Django network",

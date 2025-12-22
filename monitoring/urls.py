@@ -37,6 +37,40 @@ urlpatterns = [
     # --------------------
     path('api/login/', views.api_login_view, name='api_login'),
     path("api/logout/", views.api_logout_view, name="api_logout"),
+
+    # --------------------
+    # 📱 Mobile API Endpoints
+    # --------------------
+    path('api/mobile/dashboard/', views.mobile_dashboard, name='mobile_dashboard'),
+
+    # --------------------
+    # 🔧 Machine Operation Assignment API
+    # --------------------
+    path('api/sync-operation-pool/', views.sync_operation_pool, name='sync_operation_pool'),
+    path('api/monitor-assign-operation/', views.monitor_assign_operation, name='monitor_assign_operation'),
+    path('api/manual-assign-operation/', views.manual_assign_operation, name='manual_assign_operation'),
+    path('api/toggle-operation-status/', views.toggle_operation_status, name='toggle_operation_status'),
+    path('api/available-operations/', views.get_available_operations, name='get_available_operations'),
+    path('api/machine-assignments/<int:machine_id>/', views.get_machine_assignments, name='get_machine_assignments'),
+
+    # --------------------
+    # 🖼️ Drawing Monitor API
+    # --------------------
+    path('api/drawing/set-cursor/', views.set_drawing_cursor, name='set_drawing_cursor'),
+    path('api/drawing/cursor-status/', views.get_cursor_status, name='get_cursor_status'),
+    path('api/drawing/all/', views.get_all_drawings, name='get_all_drawings'),
+
+    # --------------------
+    # 📋 Planning Interface (Admin)
+    # --------------------
+    path('planning/', views.planning_grid, name='planning_grid'),
+    path('planning/<int:machine_id>/', views.planning_detail, name='planning_detail'),
+
+    # --------------------
+    # 🖼️ Drawing Monitor Display
+    # --------------------
+    path('drawing-monitor/', views.drawing_monitor, name='drawing_monitor'),
+
     path("save_subscription/", views.save_subscription, name="save_subscription"),
     path("unsubscribe/", views.unsubscribe, name="unsubscribe"),
     path("subscribe_machine/", views.subscribe_machine, name="subscribe_machine"),

@@ -1039,6 +1039,7 @@ class Monitor_operation(models.Model):
     drawing_image_base64 = models.TextField(blank=True, null=True)
     is_in_progress = models.BooleanField(default=False) # In progress - current, not in progress - planned (next)
     is_setup = models.BooleanField(default=False) # True when machine is being set up (no production reports yet)
+    is_in_pool = models.BooleanField(default=True) # True if operation is available for assignment in the pool
 
     class Meta:
         verbose_name = ("Monitor operation")
@@ -1047,7 +1048,99 @@ class Monitor_operation(models.Model):
     def __str__(self):
         status = "Current" if self.is_in_progress else "Next"
         return f"{self.machine.name} | {status} | {self.name} - {self.quantity} pcs"
-       
+
+
+# Model for tracking machine-operation assignments with manual override support
+class MachineOperationAssignment(models.Model):
+    """
+    Tracks which operations are assigned to which machines.
+    Separates assignment logic from operation data.
+    Monitor controls current_operation_1, admin can override or add current_2, current_3, next.
+    """
+    machine = models.OneToOneField(
+        Machine,
+        on_delete=models.CASCADE,
+        related_name='operation_assignment'
+    )
+
+    # Current operations (up to 3)
+    current_operation_1 = models.ForeignKey(
+        'Monitor_operation',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_as_current_1'
+    )
+    current_operation_2 = models.ForeignKey(
+        'Monitor_operation',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_as_current_2'
+    )
+    current_operation_3 = models.ForeignKey(
+        'Monitor_operation',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_as_current_3'
+    )
+
+    # Next operation (one only)
+    next_operation = models.ForeignKey(
+        'Monitor_operation',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_as_next'
+    )
+
+    # Track what Monitor last assigned (to detect changes)
+    monitor_assigned_operation = models.ForeignKey(
+        'Monitor_operation',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='+'  # No reverse relation needed
+    )
+    monitor_last_updated = models.DateTimeField(null=True, blank=True)
+
+    # Override tracking (one flag per machine)
+    is_manually_overridden = models.BooleanField(default=False)
+    manual_override_at = models.DateTimeField(null=True, blank=True)
+    manual_override_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True
+    )
+
+    # Source tracking for current_operation_1
+    SOURCE_CHOICES = [
+        ('monitor', 'Monitor'),
+        ('manual', 'Manual'),
+    ]
+    current_1_source = models.CharField(
+        max_length=10,
+        choices=SOURCE_CHOICES,
+        default='monitor'
+    )
+
+    class Meta:
+        verbose_name = "Machine Operation Assignment"
+        verbose_name_plural = "Machine Operation Assignments"
+
+    def __str__(self):
+        return f"{self.machine.name} assignments"
+
+    @property
+    def effective_current_1(self):
+        """Returns the operation that should be displayed as current_1.
+        If Monitor changed its assignment, use Monitor's assignment."""
+        if self.monitor_assigned_operation and self.monitor_assigned_operation != self.current_operation_1:
+            return self.monitor_assigned_operation
+        return self.current_operation_1
+
+    def get_all_current_operations(self):
+        """Returns list of all non-null current operations."""
+        ops = [self.effective_current_1, self.current_operation_2, self.current_operation_3]
+        return [op for op in ops if op is not None]
+
+
 # Machine offline xml state
 class Machine_Ofline_XML(models.Model):
     machine = models.ForeignKey(Machine, on_delete=models.SET_DEFAULT, default=Machine.get_default_pk)

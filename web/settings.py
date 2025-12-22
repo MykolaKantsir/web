@@ -50,6 +50,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Must be BEFORE django.contrib.staticfiles for WebSocket support
     'inventory',
     'monitoring',
     'measuring',
@@ -63,6 +64,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -116,6 +118,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
+# ASGI Application for WebSocket support
+ASGI_APPLICATION = 'web.asgi.application'
+
+# Channel Layers configuration (for drawing monitor WebSocket)
+CHANNEL_LAYERS = {
+    'default': {
+        # In-memory channel layer (perfect for 1-2 monitors)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+
+        # For production with multiple workers (optional):
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
