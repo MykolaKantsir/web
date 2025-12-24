@@ -1034,7 +1034,7 @@ class Monitor_operation(models.Model):
     planned_start_date = models.DateField(default=defaults.january_the_first)
     planned_finish_date = models.DateField(default=defaults.january_the_first)
     location = models.CharField(max_length=50, blank=True, default=strings.empty_string)
-    machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='monitor_operations', default=Machine.get_default_pk)  # Use default machine pk
+    machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='monitor_operations', null=True, blank=True)  # Null for pool-only operations
     priority = models.IntegerField(default=0)  # Integer for priority lowest number is highest priority
     drawing_image_base64 = models.TextField(blank=True, null=True)
     is_in_progress = models.BooleanField(default=False) # In progress - current, not in progress - planned (next)
@@ -1050,12 +1050,18 @@ class Monitor_operation(models.Model):
         return f"{self.machine.name} | {status} | {self.name} - {self.quantity} pcs"
 
 
-# Model for tracking machine-operation assignments with manual override support
+# Model for tracking manual operation overrides
 class MachineOperationAssignment(models.Model):
     """
-    Tracks which operations are assigned to which machines.
-    Separates assignment logic from operation data.
-    Monitor controls current_operation_1, admin can override or add current_2, current_3, next.
+    Tracks manual operation overrides for machines.
+
+    How it works:
+    - Monitor script updates Monitor_operation records directly (is_in_progress=True/False)
+    - Admin can manually override which operation to display via this model
+    - When monitor changes its operation (different monitor_operation_id), manual override is cleared
+
+    The saved_monitor_*_op_id fields store the monitor_operation_id at the time of manual override.
+    If the current Monitor_operation.monitor_operation_id differs, the override is invalidated.
     """
     machine = models.OneToOneField(
         Machine,
@@ -1063,61 +1069,56 @@ class MachineOperationAssignment(models.Model):
         related_name='operation_assignment'
     )
 
-    # Current operations (up to 3)
-    current_operation_1 = models.ForeignKey(
-        'Monitor_operation',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='assigned_as_current_1'
+    # Track monitor's last operation IDs (to detect when monitor changes)
+    # These are saved when admin creates a manual override
+    saved_monitor_current_op_id = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="monitor_operation_id at time of manual override (current)"
     )
-    current_operation_2 = models.ForeignKey(
-        'Monitor_operation',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='assigned_as_current_2'
-    )
-    current_operation_3 = models.ForeignKey(
-        'Monitor_operation',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='assigned_as_current_3'
+    saved_monitor_next_op_id = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="monitor_operation_id at time of manual override (next)"
     )
 
-    # Next operation (one only)
-    next_operation = models.ForeignKey(
+    # Manual overrides (if admin selected different operations)
+    manual_current_operation = models.ForeignKey(
         'Monitor_operation',
         on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='assigned_as_next'
+        null=True,
+        blank=True,
+        related_name='manual_current_assignments',
+        help_text="Admin's override for current operation"
     )
-
-    # Track what Monitor last assigned (to detect changes)
-    monitor_assigned_operation = models.ForeignKey(
+    manual_next_operation = models.ForeignKey(
         'Monitor_operation',
         on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='+'  # No reverse relation needed
+        null=True,
+        blank=True,
+        related_name='manual_next_assignments',
+        help_text="Admin's override for next operation"
     )
-    monitor_last_updated = models.DateTimeField(null=True, blank=True)
 
-    # Override tracking (one flag per machine)
-    is_manually_overridden = models.BooleanField(default=False)
+    # Idle overrides (when admin marks slot as "no operation")
+    manual_current_is_idle = models.BooleanField(
+        default=False,
+        help_text="True if admin marked current slot as idle (no operation)"
+    )
+    manual_next_is_idle = models.BooleanField(
+        default=False,
+        help_text="True if admin marked next slot as idle (no operation)"
+    )
+
+    # Override metadata
     manual_override_at = models.DateTimeField(null=True, blank=True)
     manual_override_by = models.ForeignKey(
         'auth.User',
         on_delete=models.SET_NULL,
-        null=True, blank=True
-    )
-
-    # Source tracking for current_operation_1
-    SOURCE_CHOICES = [
-        ('monitor', 'Monitor'),
-        ('manual', 'Manual'),
-    ]
-    current_1_source = models.CharField(
-        max_length=10,
-        choices=SOURCE_CHOICES,
-        default='monitor'
+        null=True,
+        blank=True
     )
 
     class Meta:
@@ -1125,20 +1126,7 @@ class MachineOperationAssignment(models.Model):
         verbose_name_plural = "Machine Operation Assignments"
 
     def __str__(self):
-        return f"{self.machine.name} assignments"
-
-    @property
-    def effective_current_1(self):
-        """Returns the operation that should be displayed as current_1.
-        If Monitor changed its assignment, use Monitor's assignment."""
-        if self.monitor_assigned_operation and self.monitor_assigned_operation != self.current_operation_1:
-            return self.monitor_assigned_operation
-        return self.current_operation_1
-
-    def get_all_current_operations(self):
-        """Returns list of all non-null current operations."""
-        ops = [self.effective_current_1, self.current_operation_2, self.current_operation_3]
-        return [op for op in ops if op is not None]
+        return f"{self.machine.name} - manual overrides"
 
 
 # Machine offline xml state

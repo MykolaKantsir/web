@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Machine, Job, Cycle, Machine_state, Day_activity_log, Archived_cycle
-from .models import Monitor_operation, PushSubscription, MachineSubscription
+from .models import Monitor_operation, PushSubscription, MachineSubscription, MachineOperationAssignment
 
 # ModelAdmin for Cycle with search_fields defined
 @admin.register(Cycle)
@@ -24,3 +24,25 @@ admin.site.register(Archived_cycle)
 admin.site.register(Monitor_operation)
 admin.site.register(PushSubscription)
 admin.site.register(MachineSubscription)
+
+
+@admin.register(MachineOperationAssignment)
+class MachineOperationAssignmentAdmin(admin.ModelAdmin):
+    list_display = [
+        'machine',
+        'manual_current_operation',
+        'manual_current_is_idle',
+        'manual_next_operation',
+        'manual_next_is_idle',
+        'manual_override_at',
+    ]
+    search_fields = ['machine__name']
+    raw_id_fields = [
+        'manual_current_operation',
+        'manual_next_operation',
+    ]
+    readonly_fields = [
+        'saved_monitor_current_op_id',
+        'saved_monitor_next_op_id',
+        'manual_override_at',
+    ]

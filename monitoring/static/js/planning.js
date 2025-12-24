@@ -126,15 +126,10 @@
     function initStatusToggle(container) {
         const operationId = container.dataset.operationId;
         const isSetup = container.dataset.isSetup === 'true';
-        const source = container.dataset.source;
         const slot = container.dataset.slot;
 
-        // Only show for current slots with manual assignment
-        const isCurrent = slot.startsWith('current_');
-        const isManual = (slot === 'current_1' && source === 'manual') ||
-                         (slot === 'current_2' || slot === 'current_3');
-
-        if (!operationId || !isCurrent || !isManual) {
+        // Only show for 'current' slot with an operation assigned
+        if (!operationId || slot !== 'current') {
             return;
         }
 
@@ -255,8 +250,7 @@
             if (success) {
                 // Update container data attributes
                 container.dataset.operationId = op.id;
-                container.dataset.isSetup = 'false';  // Default to in progress
-                container.dataset.source = 'manual';
+                container.dataset.isSetup = op.is_setup ? 'true' : 'false';
 
                 // Reinitialize status toggle for this slot
                 initStatusToggle(container);
@@ -331,9 +325,15 @@
                     // Remove data attributes and hide toggle
                     delete container.dataset.operationId;
                     delete container.dataset.isSetup;
+                    delete container.dataset.isIdle;
                     const toggleContainer = container.querySelector('.status-toggle-container');
                     if (toggleContainer) {
                         toggleContainer.style.display = 'none';
+                    }
+                    // Remove active state from idle button
+                    const idleBtn = container.querySelector('.idle-btn');
+                    if (idleBtn) {
+                        idleBtn.classList.remove('active');
                     }
                 }
             }
@@ -347,14 +347,117 @@
         });
     }
 
+    // Initialize "Mark as Idle" buttons
+    function initIdleButtons() {
+        document.querySelectorAll('.idle-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const slot = btn.dataset.slot;
+                const container = btn.closest('.operation-slot');
+                const searchInput = container.querySelector('.operation-search');
+                const hiddenInput = container.querySelector('.operation-id');
+
+                // Assign special "idle" value - we use operation_id = 'idle'
+                const success = await assignIdleOperation(slot);
+
+                if (success) {
+                    searchInput.value = '(Idle - No Operation)';
+                    hiddenInput.value = 'idle';
+                    container.dataset.isIdle = 'true';
+                    delete container.dataset.operationId;
+
+                    // Add active state to idle button
+                    btn.classList.add('active');
+
+                    // Hide status toggle
+                    const toggleContainer = container.querySelector('.status-toggle-container');
+                    if (toggleContainer) {
+                        toggleContainer.style.display = 'none';
+                    }
+                }
+            });
+        });
+    }
+
+    // Assign idle (no operation) to slot
+    async function assignIdleOperation(slot) {
+        try {
+            const response = await fetch(API_URLS.manualAssign, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    machine_pk: MACHINE_PK,
+                    slot: slot,
+                    operation_id: 'idle'  // Special value for "no operation"
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to mark as idle');
+            }
+
+            showStatus('Marked as idle (no operation)', 'success');
+            return true;
+        } catch (error) {
+            console.error('Idle assignment error:', error);
+            showStatus(error.message || 'Failed to mark as idle', 'error');
+            return false;
+        }
+    }
+
+    // Initialize status toggles for monitor's operations
+    function initMonitorStatusToggles() {
+        document.querySelectorAll('.operation-display[data-monitor-slot]').forEach(container => {
+            const operationId = container.dataset.operationId;
+            if (!operationId) return;
+
+            const toggleContainer = container.querySelector('.monitor-status-toggle');
+            if (!toggleContainer) return;
+
+            const setupBtn = toggleContainer.querySelector('.setup-btn');
+            const progressBtn = toggleContainer.querySelector('.progress-btn');
+
+            if (!setupBtn || !progressBtn) return;
+
+            // Setup button click
+            setupBtn.addEventListener('click', async () => {
+                const success = await toggleOperationStatus(operationId, true);
+                if (success) {
+                    setupBtn.classList.add('active');
+                    progressBtn.classList.remove('active');
+                }
+            });
+
+            // Progress button click
+            progressBtn.addEventListener('click', async () => {
+                const success = await toggleOperationStatus(operationId, false);
+                if (success) {
+                    setupBtn.classList.remove('active');
+                    progressBtn.classList.add('active');
+                }
+            });
+        });
+    }
+
     // Initialize all search inputs and status toggles on page load
     document.addEventListener('DOMContentLoaded', () => {
         const searchInputs = document.querySelectorAll('.operation-search');
         searchInputs.forEach(initSearchInput);
 
-        // Initialize status toggles
+        // Initialize status toggles for manual overrides
         const operationSlots = document.querySelectorAll('.operation-slot');
         operationSlots.forEach(initStatusToggle);
+
+        // Initialize "Mark as Idle" buttons
+        initIdleButtons();
+
+        // Initialize status toggles for monitor's operations
+        initMonitorStatusToggles();
     });
 
 })();

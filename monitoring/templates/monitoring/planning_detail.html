@@ -14,114 +14,81 @@
         <header class="planning-header">
             <a href="{% url 'planning_grid' %}" class="back-button">&larr; Back</a>
             <h1>{{ machine.name }}</h1>
-            <p class="subtitle">Assign operations to this machine</p>
+            <p class="subtitle">View and override operations</p>
         </header>
 
         <div class="planning-form">
-            <!-- Current Operations Section -->
+            <!-- Current Operation Section -->
             <section class="operation-section">
-                <h2>Current Operations</h2>
-                <p class="section-hint">Up to 3 operations that are currently in progress</p>
+                <h2>Current Operation</h2>
+                <p class="section-hint">The operation currently running on this machine</p>
 
-                <!-- Current Operation 1 (Monitor-controlled) -->
-                <div class="operation-slot" data-slot="current_1"
-                     {% if assignment and assignment.current_operation_1 %}
-                     data-operation-id="{{ assignment.current_operation_1.pk }}"
-                     data-is-setup="{{ assignment.current_operation_1.is_setup|lower }}"
-                     data-source="{{ assignment.current_1_source }}"
+                <!-- Monitor's Current Operation -->
+                <div class="operation-display" data-monitor-slot="current"
+                     {% if monitor_current %}data-operation-id="{{ monitor_current.pk }}"{% endif %}>
+                    <label>
+                        Monitor Assignment
+                        <span class="source-badge monitor">From Monitor</span>
+                    </label>
+                    <div class="operation-info">
+                        {% if monitor_current %}
+                        <span class="operation-name">{{ monitor_current.name }}</span>
+                        <span class="operation-details">{{ monitor_current.quantity }} pcs | {{ monitor_current.material }}</span>
+                        <!-- Status Toggle for Monitor's Operation -->
+                        <div class="status-toggle-container monitor-status-toggle">
+                            <button type="button" class="status-btn setup-btn {% if monitor_current.is_setup %}active{% endif %}" data-status="setup">
+                                Setup
+                            </button>
+                            <button type="button" class="status-btn progress-btn {% if not monitor_current.is_setup %}active{% endif %}" data-status="progress">
+                                In Progress
+                            </button>
+                        </div>
+                        {% else %}
+                        <span class="operation-name empty">No operation from monitor</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Manual Override for Current -->
+                <div class="operation-slot" data-slot="current"
+                     {% if manual_current %}
+                     data-operation-id="{{ manual_current.pk }}"
+                     data-is-setup="{{ manual_current.is_setup|lower }}"
+                     {% elif has_current_idle %}
+                     data-is-idle="true"
                      {% endif %}>
                     <label>
-                        Current 1
-                        {% if assignment and assignment.current_1_source == 'monitor' %}
-                        <span class="source-badge monitor">Monitor</span>
-                        {% elif assignment and assignment.current_operation_1 %}
-                        <span class="source-badge manual">Manual</span>
+                        Manual Override
+                        {% if has_current_override %}
+                        <span class="source-badge manual">Active</span>
                         {% endif %}
                     </label>
                     <div class="operation-selector">
                         <input type="text"
                                class="operation-search"
-                               placeholder="Search operations..."
-                               data-slot="current_1"
-                               value="{% if assignment and assignment.current_operation_1 %}{{ assignment.current_operation_1.name }}{% endif %}">
+                               placeholder="Search to override..."
+                               data-slot="current"
+                               value="{% if manual_current %}{{ manual_current.name }}{% elif has_current_idle %}(Idle - No Operation){% endif %}">
                         <input type="hidden"
                                class="operation-id"
-                               name="current_1"
-                               value="{% if assignment and assignment.current_operation_1 %}{{ assignment.current_operation_1.pk }}{% endif %}">
-                        <button type="button" class="clear-btn" data-slot="current_1">&times;</button>
-                        <div class="search-results" data-slot="current_1"></div>
+                               name="current"
+                               value="{% if manual_current %}{{ manual_current.pk }}{% elif has_current_idle %}idle{% endif %}">
+                        <button type="button" class="clear-btn" data-slot="current">&times;</button>
+                        <div class="search-results" data-slot="current"></div>
                     </div>
-                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
-                    <div class="status-toggle-container" style="display: none;">
-                        <button type="button" class="status-btn setup-btn" data-status="setup">
-                            🔧 Setup
-                        </button>
-                        <button type="button" class="status-btn progress-btn" data-status="progress">
-                            ▶️ In Progress
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button type="button" class="idle-btn {% if has_current_idle %}active{% endif %}" data-slot="current">
+                            Mark as Idle (No Operation)
                         </button>
                     </div>
-                </div>
-
-                <!-- Current Operation 2 -->
-                <div class="operation-slot" data-slot="current_2"
-                     {% if assignment and assignment.current_operation_2 %}
-                     data-operation-id="{{ assignment.current_operation_2.pk }}"
-                     data-is-setup="{{ assignment.current_operation_2.is_setup|lower }}"
-                     data-source="manual"
-                     {% endif %}>
-                    <label>Current 2</label>
-                    <div class="operation-selector">
-                        <input type="text"
-                               class="operation-search"
-                               placeholder="Search operations..."
-                               data-slot="current_2"
-                               value="{% if assignment and assignment.current_operation_2 %}{{ assignment.current_operation_2.name }}{% endif %}">
-                        <input type="hidden"
-                               class="operation-id"
-                               name="current_2"
-                               value="{% if assignment and assignment.current_operation_2 %}{{ assignment.current_operation_2.pk }}{% endif %}">
-                        <button type="button" class="clear-btn" data-slot="current_2">&times;</button>
-                        <div class="search-results" data-slot="current_2"></div>
-                    </div>
-                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
-                    <div class="status-toggle-container" style="display: none;">
-                        <button type="button" class="status-btn setup-btn" data-status="setup">
-                            🔧 Setup
+                    <!-- Status Toggle Buttons -->
+                    <div class="status-toggle-container" {% if not manual_current %}style="display: none;"{% endif %}>
+                        <button type="button" class="status-btn setup-btn {% if manual_current and manual_current.is_setup %}active{% endif %}" data-status="setup">
+                            Setup
                         </button>
-                        <button type="button" class="status-btn progress-btn" data-status="progress">
-                            ▶️ In Progress
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Current Operation 3 -->
-                <div class="operation-slot" data-slot="current_3"
-                     {% if assignment and assignment.current_operation_3 %}
-                     data-operation-id="{{ assignment.current_operation_3.pk }}"
-                     data-is-setup="{{ assignment.current_operation_3.is_setup|lower }}"
-                     data-source="manual"
-                     {% endif %}>
-                    <label>Current 3</label>
-                    <div class="operation-selector">
-                        <input type="text"
-                               class="operation-search"
-                               placeholder="Search operations..."
-                               data-slot="current_3"
-                               value="{% if assignment and assignment.current_operation_3 %}{{ assignment.current_operation_3.name }}{% endif %}">
-                        <input type="hidden"
-                               class="operation-id"
-                               name="current_3"
-                               value="{% if assignment and assignment.current_operation_3 %}{{ assignment.current_operation_3.pk }}{% endif %}">
-                        <button type="button" class="clear-btn" data-slot="current_3">&times;</button>
-                        <div class="search-results" data-slot="current_3"></div>
-                    </div>
-                    <!-- Status Toggle Buttons (shown only for manual assignments) -->
-                    <div class="status-toggle-container" style="display: none;">
-                        <button type="button" class="status-btn setup-btn" data-status="setup">
-                            🔧 Setup
-                        </button>
-                        <button type="button" class="status-btn progress-btn" data-status="progress">
-                            ▶️ In Progress
+                        <button type="button" class="status-btn progress-btn {% if manual_current and not manual_current.is_setup %}active{% endif %}" data-status="progress">
+                            In Progress
                         </button>
                     </div>
                 </div>
@@ -130,30 +97,63 @@
             <!-- Next Operation Section -->
             <section class="operation-section">
                 <h2>Next Operation</h2>
-                <p class="section-hint">The operation that will be performed after current operations complete</p>
+                <p class="section-hint">The operation queued to run next</p>
 
-                <div class="operation-slot" data-slot="next">
-                    <label>Next Operation</label>
+                <!-- Monitor's Next Operation (read-only display) -->
+                <div class="operation-display">
+                    <label>
+                        Monitor Assignment
+                        <span class="source-badge monitor">From Monitor</span>
+                    </label>
+                    <div class="operation-info">
+                        {% if monitor_next %}
+                        <span class="operation-name">{{ monitor_next.name }}</span>
+                        <span class="operation-details">{{ monitor_next.quantity }} pcs | {{ monitor_next.material }}</span>
+                        {% else %}
+                        <span class="operation-name empty">No next operation from monitor</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Manual Override for Next -->
+                <div class="operation-slot" data-slot="next"
+                     {% if manual_next %}
+                     data-operation-id="{{ manual_next.pk }}"
+                     {% elif has_next_idle %}
+                     data-is-idle="true"
+                     {% endif %}>
+                    <label>
+                        Manual Override
+                        {% if has_next_override %}
+                        <span class="source-badge manual">Active</span>
+                        {% endif %}
+                    </label>
                     <div class="operation-selector">
                         <input type="text"
                                class="operation-search"
-                               placeholder="Search operations..."
+                               placeholder="Search to override..."
                                data-slot="next"
-                               value="{% if assignment and assignment.next_operation %}{{ assignment.next_operation.name }}{% endif %}">
+                               value="{% if manual_next %}{{ manual_next.name }}{% elif has_next_idle %}(Idle - No Operation){% endif %}">
                         <input type="hidden"
                                class="operation-id"
                                name="next"
-                               value="{% if assignment and assignment.next_operation %}{{ assignment.next_operation.pk }}{% endif %}">
+                               value="{% if manual_next %}{{ manual_next.pk }}{% elif has_next_idle %}idle{% endif %}">
                         <button type="button" class="clear-btn" data-slot="next">&times;</button>
                         <div class="search-results" data-slot="next"></div>
+                    </div>
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button type="button" class="idle-btn {% if has_next_idle %}active{% endif %}" data-slot="next">
+                            Mark as Idle (No Operation)
+                        </button>
                     </div>
                 </div>
             </section>
 
-            <!-- Assignment Info -->
-            {% if assignment and assignment.is_manually_overridden %}
+            <!-- Override Info -->
+            {% if assignment and assignment.manual_override_at %}
             <div class="override-info">
-                <p>Manual override active since {{ assignment.manual_override_at|date:"M d, Y H:i" }}</p>
+                <p>Last override: {{ assignment.manual_override_at|date:"M d, Y H:i" }}</p>
                 {% if assignment.manual_override_by %}
                 <p>by {{ assignment.manual_override_by.username }}</p>
                 {% endif %}

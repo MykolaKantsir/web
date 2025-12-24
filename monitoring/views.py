@@ -11,12 +11,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
 from django.db import transaction
-from django.db.models import Min, Max
+from django.db.models import Min, Max, Prefetch, Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation, MachineOperationAssignment
 from monitoring.models import PushSubscription, MachineSubscription
-from django.db.models import Q
 from monitoring.defaults import machines_to_show, machines_to_hide
 from monitoring.utils.utils import is_ajax, machine_current_database_state
 from monitoring.utils.utils import convert_time_django_javascript, convert_to_local_time
@@ -846,78 +845,199 @@ def get_machine_job_data(machine):
     return job_data
 
 # View to display the next job for each machine
-# Uses MachineOperationAssignment model for assigned operations
+#
+# Data sources:
+# 1. Monitor_operation with is_in_progress=False - what monitor script marked as next
+# 2. MachineOperationAssignment.manual_next_operation - admin's override (if any)
+#
+# Logic:
+# - If manual override exists AND monitor hasn't changed operation -> show manual override
+# - Otherwise show monitor's operation
 def next_jobs_view(request):
-    # Step 1: Filter machines that are not test machines and prefetch assignments
-    machines = Machine.objects.filter(is_test_machine=False)\
-        .exclude(pk__in=machines_to_hide.values())\
-        .select_related(
-            'operation_assignment',
-            'operation_assignment__next_operation',
-        )
+    # Step 1: Get all non-test machines with their monitor operations
+    # Only prefetch operations assigned to machines (not pool-only operations)
+    machine_operations_prefetch = Prefetch(
+        'monitor_operations',
+        queryset=Monitor_operation.objects.filter(machine__isnull=False)
+    )
+    machines = Machine.objects.filter(
+        is_test_machine=False
+    ).exclude(
+        pk__in=machines_to_hide.values()
+    ).prefetch_related(
+        machine_operations_prefetch
+    ).order_by('name')
 
-    # Step 2: Assign the next operation from assignment to each machine
-    for machine in machines:
-        assignment = getattr(machine, 'operation_assignment', None)
+    # Step 2: Build dict of manual overrides keyed by machine_pk
+    manual_overrides = {}
+    for assignment in MachineOperationAssignment.objects.select_related(
+        'manual_next_operation',
+    ):
+        manual_overrides[assignment.machine_id] = assignment
 
-        if assignment and assignment.next_operation:
-            # Use the assigned next operation
-            machine.next_job = assignment.next_operation
+    # Step 3: For each machine, determine what operation to show
+    for m in machines:
+        # Get monitor's next operation (is_in_progress=False, lowest priority)
+        next_ops = [op for op in m.monitor_operations.all() if not op.is_in_progress]
+        monitor_op = min(next_ops, key=lambda x: x.priority) if next_ops else None
+
+        # Get manual override (if any)
+        assignment = manual_overrides.get(m.pk)
+
+        # Determine which operation to display
+        display_op = None
+        is_idle_override = False
+
+        if assignment:
+            monitor_op_id = monitor_op.monitor_operation_id if monitor_op else ''
+
+            # Check if there's an idle override (mark as "no operation")
+            if assignment.manual_next_is_idle:
+                if monitor_op_id == assignment.saved_monitor_next_op_id:
+                    # Monitor hasn't changed - slot is idle
+                    is_idle_override = True
+                    display_op = None
+                else:
+                    # Monitor changed - clear the idle override
+                    assignment.manual_next_is_idle = False
+                    assignment.saved_monitor_next_op_id = ''
+                    assignment.save(update_fields=['manual_next_is_idle', 'saved_monitor_next_op_id'])
+                    display_op = monitor_op
+            elif assignment.manual_next_operation:
+                # There's a manual override - check if it's still valid
+                if monitor_op_id == assignment.saved_monitor_next_op_id:
+                    # Monitor hasn't changed - use manual override
+                    display_op = assignment.manual_next_operation
+                else:
+                    # Monitor changed - clear the override and use monitor's operation
+                    assignment.manual_next_operation = None
+                    assignment.saved_monitor_next_op_id = ''
+                    assignment.save(update_fields=['manual_next_operation', 'saved_monitor_next_op_id'])
+                    display_op = monitor_op
+            else:
+                # No manual override - use monitor's operation
+                display_op = monitor_op
         else:
-            # No assignment, machine has no next job
-            machine.next_job = None
+            # No assignment record - use monitor's operation
+            display_op = monitor_op
 
-    # Step 3: Return the context with machines and their assigned jobs
-    context = {
-        'machines': machines,
-    }
+        # Filter out placeholder "No operation"
+        if display_op and display_op.name == "No operation":
+            display_op = None
 
-    return render(request, 'monitoring/next_jobs.html', context)
+        m.next_job = display_op
+        m.is_idle_override = is_idle_override
+
+    return render(request, 'monitoring/next_jobs.html', {'machines': machines})
 
 # View to display the current job for each machine
 # Supports both card view and table view (airport-style)
-# Uses MachineOperationAssignment model for assigned operations
+#
+# Data sources:
+# 1. Monitor_operation with is_in_progress=True - what monitor script marked as running
+# 2. MachineOperationAssignment.manual_current_operation - admin's override (if any)
+#
+# Logic:
+# - If manual override exists AND monitor hasn't changed operation -> show manual override
+# - Otherwise show monitor's operation
 def current_jobs_view(request):
-    machines = Machine.objects.filter(is_test_machine=False)\
-        .exclude(pk__in=machines_to_hide.values())\
-        .select_related(
-            'operation_assignment',
-            'operation_assignment__current_operation_1',
-            'operation_assignment__current_operation_2',
-            'operation_assignment__current_operation_3',
-            'operation_assignment__monitor_assigned_operation',
+    # Step 1: Get all non-test machines with their monitor operations
+    # Only prefetch operations assigned to machines (not pool-only operations)
+    machine_operations_prefetch = Prefetch(
+        'monitor_operations',
+        queryset=Monitor_operation.objects.filter(machine__isnull=False)
+    )
+    machines = Machine.objects.filter(
+        is_test_machine=False
+    ).exclude(
+        pk__in=machines_to_hide.values()
+    ).prefetch_related(
+        machine_operations_prefetch
+    ).order_by('name')
+
+    # Step 2: Build dict of manual overrides keyed by machine_pk
+    manual_overrides = {}
+    for assignment in MachineOperationAssignment.objects.select_related(
+        'manual_current_operation',
+    ):
+        manual_overrides[assignment.machine_id] = assignment
+
+    # Step 3: For each machine, determine what operation to show
+    for m in machines:
+        # Get monitor's current operation (is_in_progress=True)
+        monitor_op = next(
+            (op for op in m.monitor_operations.all() if op.is_in_progress),
+            None
         )
 
-    for m in machines:
-        assignment = getattr(m, 'operation_assignment', None)
+        # Get manual override (if any)
+        assignment = manual_overrides.get(m.pk)
+
+        # Determine which operation to display
+        display_op = None
+        is_idle_override = False
 
         if assignment:
-            # Get all current operations from the assignment
-            current_ops = assignment.get_all_current_operations()
+            monitor_op_id = monitor_op.monitor_operation_id if monitor_op else ''
 
-            # Filter out "No operation" placeholder operations
-            real_ops = [op for op in current_ops if op.name != "No operation"]
+            # Check if there's an idle override (mark as "no operation")
+            if assignment.manual_current_is_idle:
+                if monitor_op_id == assignment.saved_monitor_current_op_id:
+                    # Monitor hasn't changed - slot is idle
+                    is_idle_override = True
+                    display_op = None
+                else:
+                    # Monitor changed - clear the idle override
+                    assignment.manual_current_is_idle = False
+                    assignment.saved_monitor_current_op_id = ''
+                    assignment.save(update_fields=['manual_current_is_idle', 'saved_monitor_current_op_id'])
+                    display_op = monitor_op
+            elif assignment.manual_current_operation:
+                # There's a manual override - check if it's still valid
+                # (valid if monitor's operation ID matches saved ID)
+                if monitor_op_id == assignment.saved_monitor_current_op_id:
+                    # Monitor hasn't changed - use manual override
+                    display_op = assignment.manual_current_operation
+                else:
+                    # Monitor changed - clear the override and use monitor's operation
+                    assignment.manual_current_operation = None
+                    assignment.saved_monitor_current_op_id = ''
+                    assignment.save(update_fields=['manual_current_operation', 'saved_monitor_current_op_id'])
+                    display_op = monitor_op
+            else:
+                # No manual override - use monitor's operation
+                display_op = monitor_op
         else:
-            real_ops = []
+            # No assignment record - use monitor's operation
+            display_op = monitor_op
 
-        if not real_ops:
-            # No real operations, machine is IDLE
+        # Filter out placeholder "No operation"
+        if display_op and display_op.name == "No operation":
+            display_op = None
+
+        # Set machine attributes for template
+        if is_idle_override:
+            # Explicit idle override - show as "Idle"
+            m.current_job = None
+            m.current_jobs = []
+            m.current_status = 'idle'
+            m.current_warning = None
+            m.progress_percent = 0
+            m.is_idle_override = True
+        elif not display_op:
             m.current_job = None
             m.current_jobs = []
             m.current_status = 'none'
             m.current_warning = None
             m.progress_percent = 0
+            m.is_idle_override = False
         else:
-            # Primary current job (for backward compatibility)
-            m.current_job = real_ops[0]
-            # All current jobs (for new views supporting multiple operations)
-            m.current_jobs = real_ops
+            m.current_job = display_op
+            m.current_jobs = [display_op]
             m.current_status = 'ok'
-            m.current_warning = (
-                f"Multiple operations in progress ({len(real_ops)})"
-                if len(real_ops) > 1 else None
-            )
-            # Calculate progress percentage for primary operation
+            m.current_warning = None
+            m.is_idle_override = False
+            # Calculate progress: (currently_made_quantity / quantity) * 100
             if m.current_job.quantity > 0:
                 m.progress_percent = (m.current_job.currently_made_quantity / m.current_job.quantity) * 100
             else:
@@ -1210,9 +1330,14 @@ def sync_operation_pool(request):
     }
 
     Logic:
-    1. Create/update operations in the pool
-    2. Delete operations NOT in the new pool, EXCEPT those currently assigned
-    3. Mark all received operations as is_in_pool=True
+    1. Pool operations have machine=NULL (not assigned to a specific machine)
+    2. Clean duplicates from payload (keep first occurrence)
+    3. Fetch all existing pool operations in ONE query
+    4. Compare with received data - create new ones in bulk, skip existing
+    5. Mark operations NOT in the new list as is_in_pool=False
+
+    Note: We don't update existing operations because pool data is minimal.
+    The full operation data comes from update_current/next_monitor_operation endpoints.
     """
     try:
         data = json.loads(request.body)
@@ -1221,65 +1346,79 @@ def sync_operation_pool(request):
         if not operations_data:
             return JsonResponse({'error': 'No operations provided'}, status=400)
 
-        # Get IDs of operations that are currently assigned (should not be deleted)
-        assigned_operation_ids = set()
-        for assignment in MachineOperationAssignment.objects.all():
-            if assignment.current_operation_1:
-                assigned_operation_ids.add(assignment.current_operation_1.pk)
-            if assignment.current_operation_2:
-                assigned_operation_ids.add(assignment.current_operation_2.pk)
-            if assignment.current_operation_3:
-                assigned_operation_ids.add(assignment.current_operation_3.pk)
-            if assignment.next_operation:
-                assigned_operation_ids.add(assignment.next_operation.pk)
-            if assignment.monitor_assigned_operation:
-                assigned_operation_ids.add(assignment.monitor_assigned_operation.pk)
-
-        # Track which monitor_operation_ids we received
-        received_monitor_ids = set()
-        created_count = 0
-        updated_count = 0
-
+        # Step 1: Build a dict of received operations keyed by monitor_operation_id
+        # This also removes duplicates from the payload (keeps first occurrence)
+        received_ops = {}
+        duplicates_in_payload = []
         for op_data in operations_data:
             monitor_op_id = op_data.get('monitor_operation_id')
-            if not monitor_op_id:
-                continue
+            if monitor_op_id:
+                str_id = str(monitor_op_id)
+                if str_id in received_ops:
+                    duplicates_in_payload.append(str_id)
+                else:
+                    received_ops[str_id] = op_data
 
-            received_monitor_ids.add(monitor_op_id)
+        received_monitor_ids = set(received_ops.keys())
 
-            # Create or update operation
-            operation, created = Monitor_operation.objects.update_or_create(
-                monitor_operation_id=monitor_op_id,
-                defaults={
-                    'name': op_data.get('part_name', ''),
-                    'report_number': op_data.get('report_id', ''),
-                    'quantity': op_data.get('quantity', 0),
-                    'is_in_pool': True,
-                }
-            )
-
-            if created:
-                created_count += 1
-            else:
-                updated_count += 1
-
-        # Mark operations not in pool (but don't delete if assigned)
-        operations_to_remove = Monitor_operation.objects.filter(
+        # Step 2: Get all existing pool operations in ONE query
+        # Pool operations are those with machine=NULL
+        existing_pool_ops = Monitor_operation.objects.filter(
+            machine__isnull=True,
             is_in_pool=True
-        ).exclude(
-            monitor_operation_id__in=received_monitor_ids
-        ).exclude(
-            pk__in=assigned_operation_ids
-        )
+        ).values_list('monitor_operation_id', flat=True)
+        existing_pool_ids = set(str(id) for id in existing_pool_ops)
 
-        # Mark as not in pool instead of deleting
-        removed_count = operations_to_remove.update(is_in_pool=False)
+        # Step 3: Determine which operations to create (new ones)
+        ids_to_create = received_monitor_ids - existing_pool_ids
+        ids_already_exist = received_monitor_ids & existing_pool_ids
+
+        # Step 4: Bulk create new operations
+        created_count = 0
+        if ids_to_create:
+            new_operations = []
+            for monitor_op_id in ids_to_create:
+                op_data = received_ops[monitor_op_id]
+                new_operations.append(Monitor_operation(
+                    monitor_operation_id=monitor_op_id,
+                    name=op_data.get('part_name', ''),
+                    report_number=op_data.get('report_id', ''),
+                    quantity=op_data.get('quantity', 0),
+                    is_in_pool=True,
+                    machine=None,  # Pool operations have no machine
+                ))
+            Monitor_operation.objects.bulk_create(new_operations)
+            created_count = len(new_operations)
+
+        # Step 5: Mark operations that are no longer in the pool
+        # But protect operations that are assigned as manual overrides
+        assigned_operation_ids = set()
+        for assignment in MachineOperationAssignment.objects.all():
+            if assignment.manual_current_operation:
+                assigned_operation_ids.add(assignment.manual_current_operation.pk)
+            if assignment.manual_next_operation:
+                assigned_operation_ids.add(assignment.manual_next_operation.pk)
+
+        # Find pool operations not in the received list
+        ids_to_remove = existing_pool_ids - received_monitor_ids
+
+        removed_count = 0
+        if ids_to_remove:
+            removed_count = Monitor_operation.objects.filter(
+                monitor_operation_id__in=ids_to_remove,
+                machine__isnull=True,
+                is_in_pool=True
+            ).exclude(
+                pk__in=assigned_operation_ids
+            ).update(is_in_pool=False)
 
         return JsonResponse({
             'success': True,
             'created': created_count,
-            'updated': updated_count,
-            'removed_from_pool': removed_count
+            'already_in_pool': len(ids_already_exist),
+            'removed_from_pool': removed_count,
+            'total_in_pool': len(received_monitor_ids),
+            'duplicates_in_payload': len(duplicates_in_payload)
         })
 
     except json.JSONDecodeError:
@@ -1288,101 +1427,45 @@ def sync_operation_pool(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
-@require_POST
-def monitor_assign_operation(request):
-    """
-    Monitor assigns operation to machine (current_operation_1 only).
-    When Monitor changes its assignment, it overrides any manual override.
-
-    POST /monitoring/api/monitor-assign-operation/
-
-    Request Body:
-    {
-        "machine_pk": 1,
-        "monitor_operation_id": "OP-001"
-    }
-    """
-    try:
-        data = json.loads(request.body)
-        machine_pk = data.get('machine_pk')
-        monitor_operation_id = data.get('monitor_operation_id')
-
-        if not machine_pk:
-            return JsonResponse({'error': 'machine_pk is required'}, status=400)
-
-        # Get the machine
-        try:
-            machine = Machine.objects.get(pk=machine_pk)
-        except Machine.DoesNotExist:
-            return JsonResponse({'error': 'Machine not found'}, status=404)
-
-        # Get the operation (if provided)
-        operation = None
-        if monitor_operation_id:
-            try:
-                operation = Monitor_operation.objects.get(monitor_operation_id=monitor_operation_id)
-            except Monitor_operation.DoesNotExist:
-                return JsonResponse({'error': 'Operation not found'}, status=404)
-
-        # Get or create assignment
-        assignment, created = MachineOperationAssignment.objects.get_or_create(
-            machine=machine
-        )
-
-        # Check if Monitor assignment changed
-        monitor_changed = (assignment.monitor_assigned_operation != operation)
-
-        if monitor_changed:
-            # Monitor changed - update current_operation_1 and clear manual override flag
-            assignment.current_operation_1 = operation
-            assignment.is_manually_overridden = False
-            assignment.current_1_source = 'monitor'
-
-        # Always update what Monitor assigned
-        assignment.monitor_assigned_operation = operation
-        assignment.monitor_last_updated = now()
-        assignment.save()
-
-        return JsonResponse({
-            'success': True,
-            'machine': machine.name,
-            'operation': operation.name if operation else None,
-            'monitor_changed': monitor_changed
-        })
-
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+# NOTE: monitor_assign_operation was removed - the monitor script updates
+# Monitor_operation records directly via update_current_monitor_operation
+# and update_next_monitor_operation endpoints.
 
 
 @login_required
 @require_POST
 def manual_assign_operation(request):
     """
-    Admin manually assigns operations to any slot.
+    Admin manually assigns operation override for current or next slot.
 
     POST /monitoring/api/manual-assign-operation/
 
     Request Body:
     {
         "machine_pk": 1,
-        "slot": "current_1",  // or "current_2", "current_3", "next"
-        "operation_id": 123   // Monitor_operation PK, or null to clear
+        "slot": "current",  // or "next"
+        "operation_id": 123   // Monitor_operation PK, null to clear, or "idle" to mark as idle
     }
+
+    When setting a manual override:
+    1. Save the current monitor_operation_id to detect future changes
+    2. Set the manual_current/next_operation FK
+    3. Record when and who made the override
+
+    Special value "idle": Creates an override that shows "Idle - No Operation"
+    without requiring a Monitor_operation record.
     """
     try:
         data = json.loads(request.body)
         machine_pk = data.get('machine_pk')
         slot = data.get('slot')
-        operation_id = data.get('operation_id')  # Can be null to clear
+        operation_id = data.get('operation_id')  # Can be null to clear, int for operation, or "idle"
 
         if not machine_pk:
             return JsonResponse({'error': 'machine_pk is required'}, status=400)
 
-        if slot not in ['current_1', 'current_2', 'current_3', 'next']:
-            return JsonResponse({'error': 'Invalid slot. Use: current_1, current_2, current_3, or next'}, status=400)
+        if slot not in ['current', 'next']:
+            return JsonResponse({'error': 'Invalid slot. Use: current or next'}, status=400)
 
         # Get the machine
         try:
@@ -1390,9 +1473,12 @@ def manual_assign_operation(request):
         except Machine.DoesNotExist:
             return JsonResponse({'error': 'Machine not found'}, status=404)
 
-        # Get the operation (if provided)
+        # Check if this is an "idle" override (special value)
+        is_idle = operation_id == 'idle'
+
+        # Get the operation (if provided and not "idle")
         operation = None
-        if operation_id:
+        if operation_id and not is_idle:
             try:
                 operation = Monitor_operation.objects.get(pk=operation_id)
             except Monitor_operation.DoesNotExist:
@@ -1403,30 +1489,60 @@ def manual_assign_operation(request):
             machine=machine
         )
 
-        # Update the appropriate slot
-        slot_field_map = {
-            'current_1': 'current_operation_1',
-            'current_2': 'current_operation_2',
-            'current_3': 'current_operation_3',
-            'next': 'next_operation',
-        }
+        # Get the current monitor operation for this machine to save its ID
+        if slot == 'current':
+            monitor_op = Monitor_operation.objects.filter(
+                machine=machine,
+                is_in_progress=True
+            ).first()
+            monitor_op_id = monitor_op.monitor_operation_id if monitor_op else ''
 
-        setattr(assignment, slot_field_map[slot], operation)
+            assignment.manual_current_operation = operation
+            # For idle, we still save the monitor_op_id to track when monitor changes
+            if is_idle:
+                assignment.saved_monitor_current_op_id = monitor_op_id
+                assignment.manual_current_is_idle = True
+            elif operation:
+                assignment.saved_monitor_current_op_id = monitor_op_id
+                assignment.manual_current_is_idle = False
+            else:
+                # Clearing the override
+                assignment.saved_monitor_current_op_id = ''
+                assignment.manual_current_is_idle = False
+        else:  # slot == 'next'
+            monitor_op = Monitor_operation.objects.filter(
+                machine=machine,
+                is_in_progress=False
+            ).order_by('priority').first()
+            monitor_op_id = monitor_op.monitor_operation_id if monitor_op else ''
 
-        # Track manual override
-        if slot == 'current_1':
-            assignment.current_1_source = 'manual'
-            assignment.is_manually_overridden = True
+            assignment.manual_next_operation = operation
+            # For idle, we still save the monitor_op_id to track when monitor changes
+            if is_idle:
+                assignment.saved_monitor_next_op_id = monitor_op_id
+                assignment.manual_next_is_idle = True
+            elif operation:
+                assignment.saved_monitor_next_op_id = monitor_op_id
+                assignment.manual_next_is_idle = False
+            else:
+                # Clearing the override
+                assignment.saved_monitor_next_op_id = ''
+                assignment.manual_next_is_idle = False
 
-        assignment.manual_override_at = now()
-        assignment.manual_override_by = request.user
+        # Record override metadata
+        if operation or is_idle:
+            assignment.manual_override_at = now()
+            assignment.manual_override_by = request.user
+
         assignment.save()
 
         return JsonResponse({
             'success': True,
             'machine': machine.name,
             'slot': slot,
-            'operation': operation.name if operation else None
+            'operation': operation.name if operation else ('(Idle - No Operation)' if is_idle else None),
+            'is_idle': is_idle,
+            'saved_monitor_op_id': monitor_op_id if (operation or is_idle) else ''
         })
 
     except json.JSONDecodeError:
@@ -1662,39 +1778,25 @@ def get_available_operations(request):
 @login_required
 def get_machine_assignments(request, machine_id):
     """
-    Get current assignments for a machine.
+    Get current and next operations for a machine (monitor + manual override).
 
     GET /monitoring/api/machine-assignments/<machine_id>/
 
     Response:
     {
         "machine": "VF2SSYT",
-        "current_1": {...operation data...},
-        "current_2": {...operation data...},
-        "current_3": null,
-        "next": {...operation data...},
-        "is_manually_overridden": false,
-        "current_1_source": "monitor"
+        "monitor_current": {...operation data...},  // What monitor assigned (is_in_progress=True)
+        "monitor_next": {...operation data...},     // What monitor assigned (is_in_progress=False)
+        "manual_current": {...operation data...},   // Admin's override for current
+        "manual_next": {...operation data...},      // Admin's override for next
+        "has_current_override": true,               // Is manual_current active?
+        "has_next_override": false                  // Is manual_next active?
     }
     """
     try:
         machine = Machine.objects.get(pk=machine_id)
     except Machine.DoesNotExist:
         return JsonResponse({'error': 'Machine not found'}, status=404)
-
-    try:
-        assignment = machine.operation_assignment
-    except MachineOperationAssignment.DoesNotExist:
-        # No assignment exists yet
-        return JsonResponse({
-            'machine': machine.name,
-            'current_1': None,
-            'current_2': None,
-            'current_3': None,
-            'next': None,
-            'is_manually_overridden': False,
-            'current_1_source': 'monitor'
-        })
 
     def operation_to_dict(op):
         if op is None:
@@ -1707,16 +1809,54 @@ def get_machine_assignments(request, machine_id):
             'quantity': op.quantity,
             'currently_made_quantity': op.currently_made_quantity,
             'material': op.material,
+            'is_setup': op.is_setup,
         }
+
+    # Get monitor's operations (from Monitor_operation records)
+    monitor_current = Monitor_operation.objects.filter(
+        machine=machine,
+        is_in_progress=True
+    ).first()
+
+    monitor_next = Monitor_operation.objects.filter(
+        machine=machine,
+        is_in_progress=False
+    ).order_by('priority').first()
+
+    # Get manual overrides (if any)
+    try:
+        assignment = machine.operation_assignment
+        manual_current = assignment.manual_current_operation
+        manual_next = assignment.manual_next_operation
+        saved_current_id = assignment.saved_monitor_current_op_id
+        saved_next_id = assignment.saved_monitor_next_op_id
+    except MachineOperationAssignment.DoesNotExist:
+        manual_current = None
+        manual_next = None
+        saved_current_id = ''
+        saved_next_id = ''
+
+    # Check if overrides are still valid (monitor hasn't changed)
+    monitor_current_id = monitor_current.monitor_operation_id if monitor_current else ''
+    monitor_next_id = monitor_next.monitor_operation_id if monitor_next else ''
+
+    has_current_override = (
+        manual_current is not None and
+        saved_current_id == monitor_current_id
+    )
+    has_next_override = (
+        manual_next is not None and
+        saved_next_id == monitor_next_id
+    )
 
     return JsonResponse({
         'machine': machine.name,
-        'current_1': operation_to_dict(assignment.effective_current_1),
-        'current_2': operation_to_dict(assignment.current_operation_2),
-        'current_3': operation_to_dict(assignment.current_operation_3),
-        'next': operation_to_dict(assignment.next_operation),
-        'is_manually_overridden': assignment.is_manually_overridden,
-        'current_1_source': assignment.current_1_source
+        'monitor_current': operation_to_dict(monitor_current),
+        'monitor_next': operation_to_dict(monitor_next),
+        'manual_current': operation_to_dict(manual_current) if has_current_override else None,
+        'manual_next': operation_to_dict(manual_next) if has_next_override else None,
+        'has_current_override': has_current_override,
+        'has_next_override': has_next_override,
     })
 
 # =============================================================
@@ -1732,34 +1872,58 @@ def planning_grid(request):
 
     GET /monitoring/planning/
     """
+    # Only prefetch operations assigned to machines (not pool-only operations)
+    machine_operations_prefetch = Prefetch(
+        'monitor_operations',
+        queryset=Monitor_operation.objects.filter(machine__isnull=False)
+    )
     machines = Machine.objects.filter(is_test_machine=False)\
         .exclude(pk__in=machines_to_hide.values())\
-        .select_related(
-            'operation_assignment',
-            'operation_assignment__current_operation_1',
-            'operation_assignment__current_operation_2',
-            'operation_assignment__current_operation_3',
-            'operation_assignment__next_operation',
-        )\
+        .prefetch_related(machine_operations_prefetch)\
         .order_by('name')
 
-    # Add assignment info to each machine for display
+    # Build dict of manual overrides
+    manual_overrides = {}
+    for assignment in MachineOperationAssignment.objects.select_related(
+        'manual_current_operation',
+        'manual_next_operation',
+    ):
+        manual_overrides[assignment.machine_id] = assignment
+
+    # Add operation info to each machine for display
     for machine in machines:
-        assignment = getattr(machine, 'operation_assignment', None)
+        # Get monitor operations
+        monitor_current = next(
+            (op for op in machine.monitor_operations.all() if op.is_in_progress),
+            None
+        )
+        monitor_next = next(
+            (op for op in machine.monitor_operations.all() if not op.is_in_progress),
+            None
+        )
+
+        # Check for manual overrides
+        assignment = manual_overrides.get(machine.pk)
+        has_current_override = False
+        has_next_override = False
+
         if assignment:
-            machine.has_assignment = True
-            # Count non-null current operations
-            current_ops = [
-                assignment.effective_current_1,
-                assignment.current_operation_2,
-                assignment.current_operation_3
-            ]
-            machine.current_op_count = sum(1 for op in current_ops if op is not None)
-            machine.has_next_op = assignment.next_operation is not None
-        else:
-            machine.has_assignment = False
-            machine.current_op_count = 0
-            machine.has_next_op = False
+            monitor_current_id = monitor_current.monitor_operation_id if monitor_current else ''
+            monitor_next_id = monitor_next.monitor_operation_id if monitor_next else ''
+
+            has_current_override = (
+                assignment.manual_current_operation is not None and
+                assignment.saved_monitor_current_op_id == monitor_current_id
+            )
+            has_next_override = (
+                assignment.manual_next_operation is not None and
+                assignment.saved_monitor_next_op_id == monitor_next_id
+            )
+
+        machine.has_current_op = monitor_current is not None or has_current_override
+        machine.has_next_op = monitor_next is not None or has_next_override
+        machine.has_current_override = has_current_override
+        machine.has_next_override = has_next_override
 
     return render(request, 'monitoring/planning_grid.html', {'machines': machines})
 
@@ -1768,18 +1932,64 @@ def planning_grid(request):
 def planning_detail(request, machine_id):
     """
     Display planning detail page for a specific machine.
-    Allows assigning operations to current and next slots.
+    Shows monitor's current/next operations and allows manual override.
 
     GET /monitoring/planning/<machine_id>/
     """
     machine = get_object_or_404(Machine, pk=machine_id)
 
-    # Get or create assignment for this machine
+    # Get monitor's operations
+    monitor_current = Monitor_operation.objects.filter(
+        machine=machine,
+        is_in_progress=True
+    ).first()
+
+    monitor_next = Monitor_operation.objects.filter(
+        machine=machine,
+        is_in_progress=False
+    ).order_by('priority').first()
+
+    # Get manual override assignment (if exists)
     assignment = getattr(machine, 'operation_assignment', None)
+
+    # Determine if overrides are active
+    has_current_override = False
+    has_next_override = False
+    has_current_idle = False
+    has_next_idle = False
+    manual_current = None
+    manual_next = None
+
+    if assignment:
+        monitor_current_id = monitor_current.monitor_operation_id if monitor_current else ''
+        monitor_next_id = monitor_next.monitor_operation_id if monitor_next else ''
+
+        # Check for idle overrides
+        if assignment.manual_current_is_idle and assignment.saved_monitor_current_op_id == monitor_current_id:
+            has_current_idle = True
+            has_current_override = True
+        elif assignment.manual_current_operation and assignment.saved_monitor_current_op_id == monitor_current_id:
+            has_current_override = True
+            manual_current = assignment.manual_current_operation
+
+        if assignment.manual_next_is_idle and assignment.saved_monitor_next_op_id == monitor_next_id:
+            has_next_idle = True
+            has_next_override = True
+        elif assignment.manual_next_operation and assignment.saved_monitor_next_op_id == monitor_next_id:
+            has_next_override = True
+            manual_next = assignment.manual_next_operation
 
     return render(request, 'monitoring/planning_detail.html', {
         'machine': machine,
-        'assignment': assignment
+        'monitor_current': monitor_current,
+        'monitor_next': monitor_next,
+        'manual_current': manual_current,
+        'manual_next': manual_next,
+        'has_current_override': has_current_override,
+        'has_next_override': has_next_override,
+        'has_current_idle': has_current_idle,
+        'has_next_idle': has_next_idle,
+        'assignment': assignment,
     })
 
 
