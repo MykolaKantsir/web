@@ -1084,11 +1084,24 @@ def update_next_monitor_operation(request):
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
 
         machine_pk = data.get('machine_pk')
+        monitor_operation_id = data.get('monitor_operation_id')
+
         if not machine_pk:
             return JsonResponse({'error': 'Machine PK is required'}, status=400)
 
-        # Get the next monitor operation (not in progress, lowest priority) for the given machine
-        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk, is_in_progress=False).order_by('priority').first()
+        # Try to find operation by monitor_operation_id first (for manual assignments)
+        # Fall back to finding by machine + is_in_progress (for regular operations)
+        if monitor_operation_id:
+            # Manual assignment: look up by monitor_operation_id
+            monitor_operation = Monitor_operation.objects.filter(
+                monitor_operation_id=monitor_operation_id
+            ).first()
+        else:
+            # Regular operation: look up by machine and is_in_progress
+            monitor_operation = Monitor_operation.objects.filter(
+                machine_id=machine_pk,
+                is_in_progress=False
+            ).order_by('priority').first()
 
         if not monitor_operation:
             return JsonResponse({'error': 'Monitor operation not found'}, status=404)
@@ -1145,11 +1158,24 @@ def update_current_monitor_operation(request):
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
 
         machine_pk = data.get('machine_pk')
+        monitor_operation_id = data.get('monitor_operation_id')
+
         if not machine_pk:
             return JsonResponse({'error': 'Machine PK is required'}, status=400)
 
-        # Get the current monitor operation (in progress) for the given machine
-        monitor_operation = Monitor_operation.objects.filter(machine_id=machine_pk, is_in_progress=True).first()
+        # Try to find operation by monitor_operation_id first (for manual assignments)
+        # Fall back to finding by machine + is_in_progress (for regular operations)
+        if monitor_operation_id:
+            # Manual assignment: look up by monitor_operation_id
+            monitor_operation = Monitor_operation.objects.filter(
+                monitor_operation_id=monitor_operation_id
+            ).first()
+        else:
+            # Regular operation: look up by machine and is_in_progress
+            monitor_operation = Monitor_operation.objects.filter(
+                machine_id=machine_pk,
+                is_in_progress=True
+            ).first()
 
         if not monitor_operation:
             return JsonResponse({'error': 'Monitor operation not found'}, status=404)
@@ -1425,6 +1451,55 @@ def sync_operation_pool(request):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_GET
+def get_manual_assignments(request):
+    """
+    Returns list of manually assigned operations for tracking reporting progress.
+
+    The Monitor G5 script calls this endpoint every 2 minutes to get the list of
+    operations that admins manually assigned to machines. The script then tracks
+    reporting progress (quantity updates) for these operations.
+
+    GET /monitoring/api/manual-assignments/
+
+    Response format:
+    {
+        "assignments": [
+            {
+                "machine_pk": 5,
+                "monitor_operation_id": "1372462048115913939",
+                "operation_type": "current"  // or "next"
+            }
+        ]
+    }
+    """
+    assignments = []
+
+    # Query all MachineOperationAssignment records with manual overrides
+    for assignment in MachineOperationAssignment.objects.select_related(
+        'machine', 'manual_current_operation', 'manual_next_operation'
+    ).all():
+
+        # Check for manual current operation assignment
+        if assignment.manual_current_operation:
+            assignments.append({
+                'machine_pk': assignment.machine.pk,
+                'monitor_operation_id': assignment.manual_current_operation.monitor_operation_id,
+                'operation_type': 'current'
+            })
+
+        # Check for manual next operation assignment
+        if assignment.manual_next_operation:
+            assignments.append({
+                'machine_pk': assignment.machine.pk,
+                'monitor_operation_id': assignment.manual_next_operation.monitor_operation_id,
+                'operation_type': 'next'
+            })
+
+    return JsonResponse({'assignments': assignments})
 
 
 # NOTE: monitor_assign_operation was removed - the monitor script updates

@@ -47,6 +47,7 @@ urlpatterns = [
     # 🔧 Machine Operation Assignment API
     # --------------------
     path('api/sync-operation-pool/', views.sync_operation_pool, name='sync_operation_pool'),
+    path('api/manual-assignments/', views.get_manual_assignments, name='get_manual_assignments'),
     # NOTE: monitor_assign_operation removed - monitor script uses update_current/next_monitor_operation
     path('api/manual-assign-operation/', views.manual_assign_operation, name='manual_assign_operation'),
     path('api/toggle-operation-status/', views.toggle_operation_status, name='toggle_operation_status'),
