@@ -56,6 +56,10 @@ function addRow(content, cropBoxData, isDimensionVertical, toleranceLevel = "M")
     // ✅ Attach event listener for Enter key on value input field
     newRow.querySelector(".value-input").addEventListener("keydown", handleValueChange);
 
+    // ✅ Attach event listeners for Enter key on min/max input fields
+    newRow.querySelector(".min-input").addEventListener("keydown", handleMinMaxChange);
+    newRow.querySelector(".max-input").addEventListener("keydown", handleMinMaxChange);
+
     // ✅ Attach event listeners for preview
     newRow.addEventListener("mouseenter", renderPreview);
     newRow.querySelectorAll("input").forEach((input) => {
@@ -167,6 +171,26 @@ function handleValueChange(event) {
         row.querySelector(".max-input").value = max;
 
         saveDimension(row); // ✅ Save the dimension data
+    }
+}
+
+// ✅ Function to handle min/max changes — save without recalculating tolerances
+function handleMinMaxChange(event) {
+    if (event.key === "Enter") {
+        const inputField = event.target;
+        const row = inputField.closest("tr");
+
+        if (!row || row.id === "row-template") {
+            return;
+        }
+
+        const value = parseFloat(inputField.value.replace(",", ".").trim());
+        if (isNaN(value)) {
+            alert("Invalid number entered.");
+            return;
+        }
+
+        saveDimension(row);
     }
 }
 

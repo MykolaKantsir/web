@@ -185,12 +185,29 @@ html, body {
   white-space: nowrap;
 }
 
+/* Machine Name Container - allow vertical stacking */
+.machine-name-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  white-space: normal;  /* Override parent to allow wrapping */
+}
+
 /* Machine Name - Bold and prominent */
 .machine-name {
   font-weight: 900;
   font-size: 24px;
   color: #ffffff;  /* White */
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);  /* Subtle white glow */
+}
+
+/* Employee Names - Smaller, subtle text below machine name */
+.employee-names {
+  font-weight: 400;
+  font-size: 16px;
+  color: #B0C4DE;  /* Light steel blue - softer than white */
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 0.5px;
 }
 
 /* Job Name - White for visibility */

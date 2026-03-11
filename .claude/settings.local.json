@@ -4,7 +4,9 @@
       "Bash(dir:*)",
       "Bash(./venv/Scripts/python.exe -m pip install:*)",
       "Bash(./venv/Scripts/python.exe -m pip:*)",
-      "Bash(python -m pip:*)"
+      "Bash(python -m pip:*)",
+      "Read(//c/Users/Gaston/Pictures/gaston web related/**)",
+      "Bash(git checkout:*)"
     ]
   }
 }

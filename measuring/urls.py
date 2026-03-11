@@ -16,6 +16,7 @@ urlpatterns = [
     path("api/find_drawing/", views.find_drawing, name="find_drawing"),
     path("api/save_measurement/", views.save_measurement, name="save_measurement"),
     path("api/download_protocol/", views.download_protocol, name="download_protocol"),
+    path("api/download_template/", views.download_template, name="download_template"),
     path("api/empty_protocol_form/", views.empty_protocol_form, name="empty_protocol_form"),
     path("api/check_unfinished_protocols/", views.check_unfinished_protocols, name="check_unfinished_protocols"),
     path("api/get_protocol_data/", views.get_protocol_data, name="get_protocol_data"),

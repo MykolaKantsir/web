@@ -1041,6 +1041,23 @@ class Monitor_operation(models.Model):
     is_setup = models.BooleanField(default=False) # True when machine is being set up (no production reports yet)
     is_in_pool = models.BooleanField(default=True) # True if operation is available for assignment in the pool
 
+    # Person tracking fields (added for employee assignment tracking)
+    employee_ids = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="List of Monitor G5 Employee IDs working on this operation"
+    )
+    employee_names = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="List of deduplicated display names (e.g., ['Andriy Z', 'Fredrik F'])"
+    )
+    employee_django_user_ids = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="List of Django User IDs mapped from Monitor Employee IDs"
+    )
+
     class Meta:
         verbose_name = ("Monitor operation")
         verbose_name_plural = ("Monitor operations")

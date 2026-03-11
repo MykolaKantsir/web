@@ -69,14 +69,15 @@
               </label>
             </div>
 
-            <div class="dropdown flex-fill">
-              <button class="btn btn-primary dropdown-toggle w-100" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                Dropdown
+            <div class="btn-group flex-fill">
+              <button type="button" class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                Download
               </button>
-              <ul class="dropdown-menu w-100" aria-labelledby="dropdownMenuButton">
-                <li><a class="dropdown-item" href="#">Option 1</a></li>
-                <li><a class="dropdown-item" href="#">Option 2</a></li>
-                <li><a class="dropdown-item" href="#">Option 3</a></li>
+              <ul class="dropdown-menu w-100 text-center">
+                <li><button class="dropdown-item" id="download-template-json">JSON</button></li>
+                <li><button class="dropdown-item" id="download-template-csv">CSV</button></li>
+                <li><button class="dropdown-item" id="download-template-empty-form">Empty Form</button></li>
+                <li><button class="dropdown-item" id="download-template-overlay-pdf">Overlay PDF</button></li>
               </ul>
             </div>
 
@@ -189,6 +190,9 @@
   <script src="{% static 'js/text_recognition.js' %}"></script>
   <script src="{% static 'js/testing_script.js' %}"></script>
   <script src="{% static 'js/django_communicator.js' %}"></script>
+  <script src="{% static 'js/jspdf.umd.min.js' %}"></script>
+  <script src="{% static 'js/drawingOverlayRenderer.js' %}"></script>
+  <script src="{% static 'js/templateDownloadManager.js' %}"></script>
 
   <script src="{% static 'js/new_template.js' %}"></script>
 {% endblock %}

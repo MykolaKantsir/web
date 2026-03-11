@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 from io import BytesIO
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -16,12 +17,12 @@ def index(request):
     return render(request, 'measuring/index_content.html')
 
 # Add new template view
-#@login_required
+@login_required
 def new_template(request):
     return render(request, 'measuring/new_template.html')
 
 # Measure view
-#@login_required
+@login_required
 def measure_view(request, drawing_id=None):
     """
     Renders the measurement page. If a drawing_id is provided, the frontend
@@ -376,7 +377,9 @@ def download_protocol(request):
         })
 
     if format_type == "json":
-        return JsonResponse({"protocols": compiled_protocols})
+        response = JsonResponse({"protocols": compiled_protocols})
+        response["Content-Disposition"] = 'attachment; filename="protocols.json"'
+        return response
 
     elif format_type == "csv":
         response = HttpResponse(content_type="text/csv")
@@ -487,7 +490,78 @@ def download_protocol(request):
 
         return JsonResponse({"protocols": overlay_data})
 
-# @login_required    
+# @login_required
+def download_template(request):
+    drawing_id = request.GET.get("drawing_id")
+    format_type = request.GET.get("format")
+
+    if not drawing_id:
+        return JsonResponse({"error": "Missing drawing_id"}, status=400)
+    if not format_type or format_type not in ["json", "csv"]:
+        return JsonResponse({"error": "Invalid or missing format parameter. Use 'json' or 'csv'."}, status=400)
+
+    try:
+        drawing = Drawing.objects.get(id=drawing_id)
+    except Drawing.DoesNotExist:
+        return JsonResponse({"error": "Drawing not found"}, status=404)
+
+    dimensions = drawing.dimensions.all().order_by("id")
+
+    compiled_dimensions = []
+    for idx, dim in enumerate(dimensions, start=1):
+        compiled_dimensions.append({
+            "dimension_number": idx,
+            "nominal_value": dim.value,
+            "min_value": dim.min_value,
+            "max_value": dim.max_value,
+            "type_selection": dim.type_selection,
+            "x": dim.x,
+            "y": dim.y,
+            "width": dim.width,
+            "height": dim.height,
+            "is_vertical": dim.is_vertical,
+            "page": dim.page,
+        })
+
+    base_name = os.path.splitext(drawing.filename)[0]
+
+    if format_type == "json":
+        response = JsonResponse({
+            "drawing": drawing.filename,
+            "drawing_id": drawing.id,
+            "dimensions": compiled_dimensions,
+        })
+        response["Content-Disposition"] = f'attachment; filename="template_{base_name}.json"'
+        return response
+
+    elif format_type == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="template_{base_name}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["Drawing", "Drawing ID", "Dimension Number", "Nominal Value", "Min", "Max",
+                         "Type", "X", "Y", "Width", "Height", "Is Vertical", "Page"])
+
+        for d in compiled_dimensions:
+            writer.writerow([
+                drawing.filename,
+                drawing.id,
+                d["dimension_number"],
+                d["nominal_value"],
+                d["min_value"],
+                d["max_value"],
+                d["type_selection"],
+                d["x"],
+                d["y"],
+                d["width"],
+                d["height"],
+                d["is_vertical"],
+                d["page"],
+            ])
+        return response
+
+
+# @login_required
 @csrf_exempt
 def empty_protocol_form(request):
     drawing_id = request.GET.get("drawing_id")

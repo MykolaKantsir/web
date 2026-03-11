@@ -17,8 +17,15 @@
 
       {# Machine Name #}
       <div class="board-cell machine-col">
-        <div class="cell-content machine-name">
-          {{ machine.name }}
+        <div class="cell-content machine-name-container">
+          <div class="machine-name">
+            {{ machine.name }}
+          </div>
+          {% if machine.current_job and machine.current_job.employee_names %}
+            <div class="employee-names">
+              {{ machine.current_job.employee_names|join:", " }}
+            </div>
+          {% endif %}
         </div>
       </div>
 

@@ -1194,11 +1194,16 @@ def update_current_monitor_operation(request):
             'drawing_image_base64',
             'is_setup',
             'currently_made_quantity',
+            # Person tracking fields
+            'employee_ids',
+            'employee_names',
+            'employee_django_user_ids',
             ]
 
         integer_fields = ['quantity', 'priority', 'currently_made_quantity']
         date_filelds = ['planned_start_date', 'planned_finish_date']
         boolean_fields = ['is_setup']
+        list_fields = ['employee_ids', 'employee_names', 'employee_django_user_ids']
 
 
         # Loop over allowed fields and update only if present in the data
@@ -1211,6 +1216,9 @@ def update_current_monitor_operation(request):
                     setattr(monitor_operation, field, posted_date)
                 elif field in boolean_fields:
                     setattr(monitor_operation, field, bool(data[field]))
+                elif field in list_fields:
+                    # JSONField handles lists natively - no conversion needed
+                    setattr(monitor_operation, field, data[field])
                 else:
                     setattr(monitor_operation, field, data[field])
 
