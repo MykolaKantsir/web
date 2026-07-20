@@ -23,8 +23,15 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    padding: 0 5vw;
     color: white;
     transition: opacity 0.5s;
+}
+
+#logo-screen svg {
+    max-width: 100%;
+    height: auto;
 }
 
 /* Drawing Screen - Shown when cursor active */
