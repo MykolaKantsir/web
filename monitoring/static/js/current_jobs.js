@@ -202,6 +202,10 @@
      * Initialize the view switcher
      */
     function init() {
+        if (/Android|SmartTV|TV|AFTT|AFTM/i.test(navigator.userAgent)) {
+            document.body.classList.add('kiosk-device');
+        }
+
         // Set initial view (table view)
         showTableView();
 

@@ -19,7 +19,7 @@ html, body {
 
 .airport-board {
   width: 100%;
-  height: 100%;  /* Full parent height (not viewport) for Android TV scaling */
+  height: 100vh;  /* Full viewport height */
   padding: 20px;
   background: linear-gradient(135deg, #505962 0%, #716F81 100%);  /* Iron to Kimberly gradient */
   font-family: 'Courier New', Courier, monospace;

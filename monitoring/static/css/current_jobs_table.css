@@ -250,7 +250,7 @@ html, body {
   font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  min-width: 360px;  /* Twice as wide */
+  min-width: 0;
 }
 
 /* Center the status badge in its column */
@@ -349,4 +349,18 @@ html, body {
     font-size: 14px;
     padding: 6px 12px;
   }
+}
+
+/* Kiosk / Android TV - compact status badges that fit within column */
+.kiosk-device .status-badge {
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  gap: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.kiosk-device .status-icon {
+  font-size: 12px;
 }
