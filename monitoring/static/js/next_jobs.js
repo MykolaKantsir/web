@@ -93,14 +93,6 @@
     function startAutoScroll() {
         stopAutoScroll();
 
-        // Debug: Check if scrolling is possible
-        if (boardBody) {
-            const scrollHeight = boardBody.scrollHeight;
-            const clientHeight = boardBody.clientHeight;
-            const maxScroll = scrollHeight - clientHeight;
-            console.log(`[AUTO-SCROLL] Starting: scrollHeight=${scrollHeight}, clientHeight=${clientHeight}, maxScroll=${maxScroll}`);
-        }
-
         const intervalDelay = 1000 / SCROLL_FPS;
         autoScrollInterval = setInterval(performScroll, intervalDelay);
     }
@@ -246,64 +238,6 @@
         });
     }
 
-    // ==========================================
-    // Kiosk Scaling (Original Code)
-    // ==========================================
-
-    function scaleForKioskLayout() {
-        const DESIGN_WIDTH = 1280;
-        const DESIGN_HEIGHT = 720;
-
-        const isKioskDevice = /Android|SmartTV|TV|AFTT|AFTM/i.test(navigator.userAgent);
-
-        if (!isKioskDevice) {
-            return;
-        }
-
-        function applyScale() {
-            const body = document.body;
-
-            // Reset transform first to get accurate viewport dimensions
-            body.style.transform = 'none';
-            body.style.width = '';
-            body.style.height = '';
-
-            // Force a reflow to ensure dimensions are updated
-            void body.offsetHeight;
-
-            // Use screen dimensions instead of viewport for Android TV
-            // because viewport meta tag is ignored by Fully Kiosk Browser
-            // Also account for device pixel ratio if present
-            const dpr = window.devicePixelRatio || 1;
-            const actualWidth = window.screen.width * dpr;
-            const actualHeight = window.screen.height * dpr;
-
-            // Calculate scale with actual screen dimensions
-            const scaleW = actualWidth / DESIGN_WIDTH;
-            const scaleH = actualHeight / DESIGN_HEIGHT;
-            const scale = Math.min(scaleW, scaleH);
-
-            // Apply the transform
-            body.style.transformOrigin = "top left";
-            body.style.transform = `scale(${scale})`;
-            body.style.width = DESIGN_WIDTH + "px";
-            body.style.height = DESIGN_HEIGHT + "px";
-            body.style.overflow = "hidden";
-        }
-
-        // Apply with multiple attempts at different delays
-        function applyScaleMultiple() {
-            setTimeout(applyScale, 100);   // First try
-            setTimeout(applyScale, 500);   // Second try
-            setTimeout(applyScale, 1000);  // Third try
-        }
-
-        window.addEventListener("resize", applyScale);
-        document.addEventListener("DOMContentLoaded", applyScaleMultiple);
-
-        // Initial application with multiple attempts
-        applyScaleMultiple();
-    }
 
     // ==========================================
     // Initialization
@@ -319,8 +253,6 @@
         // Start AJAX polling
         setInterval(checkForUpdates, 120000);
 
-        // Initialize kiosk scaling
-        scaleForKioskLayout();
     }
 
     // Initialize when DOM is ready
