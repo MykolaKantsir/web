@@ -6,7 +6,14 @@
       "Bash(./venv/Scripts/python.exe -m pip:*)",
       "Bash(python -m pip:*)",
       "Read(//c/Users/Gaston/Pictures/gaston web related/**)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(./venv/Scripts/python.exe \"C:/Users/Gaston/AppData/Local/Temp/claude/D--Projects-Gaston-Web-web/0fcb4408-648b-48e1-a0f8-fcb96639c57a/scratchpad/check_dupes.py\")",
+      "Bash(PYTHONPATH=\"D:/Projects/Gaston Web/web\" ./venv/Scripts/python.exe \"C:/Users/Gaston/AppData/Local/Temp/claude/D--Projects-Gaston-Web-web/0fcb4408-648b-48e1-a0f8-fcb96639c57a/scratchpad/check_dupes.py\")",
+      "Bash(PYTHONPATH=\"D:/Projects/Gaston Web/web\" ./venv/Scripts/python.exe \"C:/Users/Gaston/AppData/Local/Temp/claude/D--Projects-Gaston-Web-web/0fcb4408-648b-48e1-a0f8-fcb96639c57a/scratchpad/simulate.py\")",
+      "Bash(PYTHONPATH=\"D:/Projects/Gaston Web/web\" ./venv/Scripts/python.exe \"C:/Users/Gaston/AppData/Local/Temp/claude/D--Projects-Gaston-Web-web/0fcb4408-648b-48e1-a0f8-fcb96639c57a/scratchpad/verify_fix.py\")",
+      "Bash(PYTHONPATH='D:/Projects/Gaston Web/web' ./venv/Scripts/python.exe -c ' *)",
+      "Bash(./venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\('monitoring/views.py',encoding='utf-8'\\).read\\(\\)\\); print\\('views.py parses OK'\\)\")",
+      "Bash(PYTHONPATH=\"D:/Projects/Gaston Web/web\" ./venv/Scripts/python.exe \"C:/Users/Gaston/AppData/Local/Temp/claude/D--Projects-Gaston-Web-web/0fcb4408-648b-48e1-a0f8-fcb96639c57a/scratchpad/analyze_pool.py\")"
     ]
   }
 }

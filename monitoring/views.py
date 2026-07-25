@@ -1089,15 +1089,24 @@ def update_next_monitor_operation(request):
         if not machine_pk:
             return JsonResponse({'error': 'Machine PK is required'}, status=400)
 
-        # Try to find operation by monitor_operation_id first (for manual assignments)
-        # Fall back to finding by machine + is_in_progress (for regular operations)
+        # See update_current_monitor_operation for the full rationale. Same two flows:
+        #   1. Manual-assignment tracking -> update the machine's manual NEXT override.
+        #   2. Regular monitor update     -> rewrite the machine's planned (next) row.
+        # Regular operations must be scoped by machine (never by monitor_operation_id
+        # alone) because pool sync creates duplicate rows sharing the same id.
+        monitor_operation = None
+
         if monitor_operation_id:
-            # Manual assignment: look up by monitor_operation_id
-            monitor_operation = Monitor_operation.objects.filter(
-                monitor_operation_id=monitor_operation_id
-            ).first()
-        else:
-            # Regular operation: look up by machine and is_in_progress
+            # Case 1: is this operation the machine's manual next override?
+            assignment = MachineOperationAssignment.objects.filter(
+                machine_id=machine_pk,
+                manual_next_operation__monitor_operation_id=monitor_operation_id,
+            ).select_related('manual_next_operation').first()
+            if assignment:
+                monitor_operation = assignment.manual_next_operation
+
+        if monitor_operation is None:
+            # Case 2: the machine's planned (next) operation
             monitor_operation = Monitor_operation.objects.filter(
                 machine_id=machine_pk,
                 is_in_progress=False
@@ -1163,15 +1172,32 @@ def update_current_monitor_operation(request):
         if not machine_pk:
             return JsonResponse({'error': 'Machine PK is required'}, status=400)
 
-        # Try to find operation by monitor_operation_id first (for manual assignments)
-        # Fall back to finding by machine + is_in_progress (for regular operations)
+        # Determine which Monitor_operation row to update. Two distinct flows share
+        # this endpoint, and they must NOT be disambiguated by "is monitor_operation_id
+        # present" (the regular monitor update sends it too):
+        #
+        #   1. Manual-assignment tracking: the payload targets this machine's manual
+        #      override (a pool operation, often machine=NULL). Update that exact record.
+        #   2. Regular monitor update: rewrite the machine's single in-progress row in
+        #      place (new monitor_operation_id / name / quantity / made count / ...).
+        #
+        # IMPORTANT: regular operations must be looked up by (machine + is_in_progress),
+        # never by monitor_operation_id alone. Pool sync creates duplicate rows that
+        # share the same monitor_operation_id (with machine=NULL), so an unscoped
+        # .first() can update the wrong row and the dashboard never changes.
+        monitor_operation = None
+
         if monitor_operation_id:
-            # Manual assignment: look up by monitor_operation_id
-            monitor_operation = Monitor_operation.objects.filter(
-                monitor_operation_id=monitor_operation_id
-            ).first()
-        else:
-            # Regular operation: look up by machine and is_in_progress
+            # Case 1: is this operation the machine's manual current override?
+            assignment = MachineOperationAssignment.objects.filter(
+                machine_id=machine_pk,
+                manual_current_operation__monitor_operation_id=monitor_operation_id,
+            ).select_related('manual_current_operation').first()
+            if assignment:
+                monitor_operation = assignment.manual_current_operation
+
+        if monitor_operation is None:
+            # Case 2: the machine's in-progress operation (rewritten in place)
             monitor_operation = Monitor_operation.objects.filter(
                 machine_id=machine_pk,
                 is_in_progress=True
@@ -1346,32 +1372,36 @@ def mobile_dashboard(request):
 def sync_operation_pool(request):
     """
     Sync operation pool from Monitor G5.
-    Receives daily catalog of available operations.
+
+    The "pool" is Django's catalog of every operation currently available across all
+    machines. It is what the planning page's dropdown offers when an admin wants to
+    manually assign a different operation to a machine. Pool rows are NOT tied to a
+    specific machine (machine=NULL) and are flagged is_in_pool=True.
+
+    Monitor G5 sends the FULL current catalog on each sync; this endpoint reconciles
+    the stored pool to exactly match it.
 
     POST /monitoring/api/sync-operation-pool/
 
     Request Body:
     {
         "operations": [
-            {
-                "monitor_operation_id": "OP-001",
-                "report_id": "REP-001",
-                "part_name": "Part A",
-                "quantity": 100
-            },
+            {"monitor_operation_id": "OP-001", "report_id": "REP-001",
+             "part_name": "Part A", "quantity": 100},
             ...
         ]
     }
 
-    Logic:
-    1. Pool operations have machine=NULL (not assigned to a specific machine)
-    2. Clean duplicates from payload (keep first occurrence)
-    3. Fetch all existing pool operations in ONE query
-    4. Compare with received data - create new ones in bulk, skip existing
-    5. Mark operations NOT in the new list as is_in_pool=False
+    Reconcile logic (one row per monitor_operation_id):
+    1. Dedupe the incoming payload by monitor_operation_id (keep first occurrence).
+    2. Load every existing pool row (machine=NULL) grouped by monitor_operation_id.
+    3. For each received operation: keep a single row (collapsing any duplicates),
+       refresh its display fields, and ensure is_in_pool=True. Create it if missing.
+    4. Delete pool rows whose id is no longer offered by the monitor.
 
-    Note: We don't update existing operations because pool data is minimal.
-    The full operation data comes from update_current/next_monitor_operation endpoints.
+    This keeps the pool bounded: no duplicate rows accumulate and stale rows are
+    removed instead of merely flagged. Machine-assigned rows (machine set) are never
+    touched here - they hold the live current/next state for each machine.
     """
     try:
         data = json.loads(request.body)
@@ -1380,79 +1410,79 @@ def sync_operation_pool(request):
         if not operations_data:
             return JsonResponse({'error': 'No operations provided'}, status=400)
 
-        # Step 1: Build a dict of received operations keyed by monitor_operation_id
-        # This also removes duplicates from the payload (keeps first occurrence)
+        # Step 1: Dedupe the incoming payload by monitor_operation_id (keep first)
         received_ops = {}
-        duplicates_in_payload = []
+        duplicates_in_payload = 0
         for op_data in operations_data:
             monitor_op_id = op_data.get('monitor_operation_id')
-            if monitor_op_id:
-                str_id = str(monitor_op_id)
-                if str_id in received_ops:
-                    duplicates_in_payload.append(str_id)
-                else:
-                    received_ops[str_id] = op_data
+            if not monitor_op_id:
+                continue
+            str_id = str(monitor_op_id)
+            if str_id in received_ops:
+                duplicates_in_payload += 1
+            else:
+                received_ops[str_id] = op_data
 
-        received_monitor_ids = set(received_ops.keys())
+        received_ids = set(received_ops.keys())
 
-        # Step 2: Get all existing pool operations in ONE query
-        # Pool operations are those with machine=NULL
-        existing_pool_ops = Monitor_operation.objects.filter(
-            machine__isnull=True,
-            is_in_pool=True
-        ).values_list('monitor_operation_id', flat=True)
-        existing_pool_ids = set(str(id) for id in existing_pool_ops)
-
-        # Step 3: Determine which operations to create (new ones)
-        ids_to_create = received_monitor_ids - existing_pool_ids
-        ids_already_exist = received_monitor_ids & existing_pool_ids
-
-        # Step 4: Bulk create new operations
         created_count = 0
-        if ids_to_create:
-            new_operations = []
-            for monitor_op_id in ids_to_create:
-                op_data = received_ops[monitor_op_id]
-                new_operations.append(Monitor_operation(
-                    monitor_operation_id=monitor_op_id,
-                    name=op_data.get('part_name', ''),
-                    report_number=op_data.get('report_id', ''),
-                    quantity=op_data.get('quantity', 0),
-                    is_in_pool=True,
-                    machine=None,  # Pool operations have no machine
-                ))
-            Monitor_operation.objects.bulk_create(new_operations)
-            created_count = len(new_operations)
-
-        # Step 5: Mark operations that are no longer in the pool
-        # But protect operations that are assigned as manual overrides
-        assigned_operation_ids = set()
-        for assignment in MachineOperationAssignment.objects.all():
-            if assignment.manual_current_operation:
-                assigned_operation_ids.add(assignment.manual_current_operation.pk)
-            if assignment.manual_next_operation:
-                assigned_operation_ids.add(assignment.manual_next_operation.pk)
-
-        # Find pool operations not in the received list
-        ids_to_remove = existing_pool_ids - received_monitor_ids
-
+        updated_count = 0
+        deleted_duplicates = 0
         removed_count = 0
-        if ids_to_remove:
-            removed_count = Monitor_operation.objects.filter(
-                monitor_operation_id__in=ids_to_remove,
-                machine__isnull=True,
-                is_in_pool=True
-            ).exclude(
-                pk__in=assigned_operation_ids
-            ).update(is_in_pool=False)
+
+        with transaction.atomic():
+            # Step 2: Group ALL existing pool rows (machine=NULL) by their id.
+            # Includes rows previously flagged is_in_pool=False so they get reused
+            # or cleaned up rather than duplicated.
+            existing_by_id = {}
+            for op in Monitor_operation.objects.filter(
+                machine__isnull=True
+            ).exclude(monitor_operation_id=''):
+                existing_by_id.setdefault(str(op.monitor_operation_id), []).append(op)
+
+            # Step 3: Reconcile each received operation to exactly one pool row
+            for str_id, op_data in received_ops.items():
+                rows = existing_by_id.get(str_id, [])
+                if rows:
+                    # Keep the lowest-pk row; delete any duplicate copies
+                    rows.sort(key=lambda o: o.pk)
+                    keep = rows[0]
+                    for extra in rows[1:]:
+                        extra.delete()
+                        deleted_duplicates += 1
+                    keep.name = op_data.get('part_name', keep.name)
+                    keep.report_number = op_data.get('report_id', keep.report_number)
+                    keep.quantity = op_data.get('quantity', keep.quantity)
+                    keep.is_in_pool = True
+                    keep.save(update_fields=['name', 'report_number', 'quantity', 'is_in_pool'])
+                    updated_count += 1
+                else:
+                    Monitor_operation.objects.create(
+                        monitor_operation_id=str_id,
+                        name=op_data.get('part_name', ''),
+                        report_number=op_data.get('report_id', ''),
+                        quantity=op_data.get('quantity', 0),
+                        is_in_pool=True,
+                        machine=None,
+                    )
+                    created_count += 1
+
+            # Step 4: Delete pool rows no longer offered by the monitor
+            stale_ids = set(existing_by_id.keys()) - received_ids
+            if stale_ids:
+                removed_count, _ = Monitor_operation.objects.filter(
+                    machine__isnull=True,
+                    monitor_operation_id__in=stale_ids,
+                ).delete()
 
         return JsonResponse({
             'success': True,
             'created': created_count,
-            'already_in_pool': len(ids_already_exist),
+            'updated': updated_count,
+            'deleted_duplicates': deleted_duplicates,
             'removed_from_pool': removed_count,
-            'total_in_pool': len(received_monitor_ids),
-            'duplicates_in_payload': len(duplicates_in_payload)
+            'total_in_pool': len(received_ids),
+            'duplicates_in_payload': duplicates_in_payload,
         })
 
     except json.JSONDecodeError:
