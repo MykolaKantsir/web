@@ -23,6 +23,8 @@
     let currentOperationId = null;
     let latestRequestedOpId = null; // guards against out-of-order async refreshes
     let drawingsCache = {}; // {operation_id: {name, drawing_base64}}
+    let lastActive = false;   // previous cursor active-state (for edge detection)
+    let baselineSet = false;  // skip reload on the first status check after load
 
     // DOM Elements
     const logoScreen = document.getElementById('logo-screen');
@@ -55,11 +57,23 @@
         try {
             const response = await fetch('/monitoring/api/drawing/cursor-status/');
             const data = await response.json();
+            const active = !!data.is_active;
 
-            if (data.is_active && !ws) {
+            // Reload the whole page when the cursor goes from inactive -> active,
+            // so the preloaded drawing cache is refreshed. The kiosk can be open
+            // for weeks; without this it serves weeks-old drawings. Skip the very
+            // first check so an already-active cursor at load time doesn't loop.
+            if (baselineSet && active && !lastActive) {
+                location.reload();
+                return;
+            }
+            baselineSet = true;
+            lastActive = active;
+
+            if (active && !ws) {
                 // Cursor became active - connect WebSocket
                 connectWebSocket();
-            } else if (!data.is_active && ws) {
+            } else if (!active && ws) {
                 // Cursor became inactive - disconnect and show logo
                 disconnectWebSocket();
                 showLogo();

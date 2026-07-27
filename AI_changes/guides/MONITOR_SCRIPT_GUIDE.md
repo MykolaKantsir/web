@@ -68,6 +68,13 @@ Called when an operation is currently running on a machine.
 }
 ```
 
+**Payload behavior:** the client only includes optional fields that are not
+`None`, and the Django endpoint only updates fields present in the payload — an
+omitted field keeps its existing DB value. This matters for
+`drawing_image_base64`: on a lookup miss the resolver sends `""` (clear) rather
+than omitting it, so a new operation never inherits the previous job's drawing.
+See **Drawing Resolution** below.
+
 ### 2. Update Next Operation
 ```
 POST /monitoring/update-next-monitor-operation/
@@ -135,13 +142,76 @@ GET Manufacturing/ManufacturingOrderOperationReportings
 
 ### Get Part Name
 ```
-GET Inventory/Parts('{part_id}')
-?$select=Number
+GET Inventory/Parts?$filter=Id eq '{part_id}'
+&$select=PartNumber,ActiveRevisionId,ExtraDescription
 ```
+`PartNumber` becomes the operation name (a leading `THOR ` prefix is stripped);
+`ExtraDescription` feeds `material`; `ActiveRevisionId` feeds drawing resolution.
 
 ### Get Drawing PDF
+
+> **Note:** the script does **not** use `GetRelatedDrawingPdf`. It resolves the
+> drawing itself from Monitor's revision / drawing-register / comment entities,
+> then renders the linked PDF file from disk. See **Drawing Resolution** below.
+
+## Drawing Resolution
+
+Implemented in `update_watcher.py` (`Operation.resolve_drawing` and its helpers).
+The goal: find the operation's part drawing, render page 1 of the PDF to a JPEG,
+and set `drawing_image_base64`.
+
+### Where drawings come from
+A part's drawing PDF is reached through a chain of Monitor entities:
+
 ```
-GET Manufacturing/ManufacturingOrderOperations('{operation_id}')/GetRelatedDrawingPdf
+Part (ActiveRevisionId)
+  └─ Revision ──┐
+Drawing ────────┼─ RevisionCommentId ─► Comment ─► FileLinks ─► {Directory, Filename}
+  └─ Revision ──┘                                                   └─► on-disk .pdf
+```
+
+The PDF lives on a file share, e.g.
+`\\gc.lan\SE\Gemensam\Monitor connected documents\Thorlabs\<part>\130-<part>-<rev>.pdf`.
+
+### Candidate sources, in priority order
+Monitor data is imperfect (the active revision often has no attached PDF,
+`ActiveRevisionId` is not always populated, and old revisions occasionally have
+the **wrong part's** drawing mis-linked). So the script gathers *all* candidate
+comments and tries them in this order, using the first that yields a renderable
+PDF:
+
+1. **Active revision** — the comment on the part's `ActiveRevisionId` (`Common/Revisions`)
+2. **Drawings register** — `Manufacturing/Drawings` → `Revisions[].RevisionCommentId`
+3. **Other revisions** — any non-active revision comment (last resort)
+
+Within a comment's `FileLinks`, filenames starting with `130`/`132` (Monitor's
+drawing-sheet convention) are preferred over other attachments such as reject
+reports (`Reklamation\...\*.pdf`).
+
+### Queries used
+```
+GET Common/Revisions?$filter=PartId eq '{part_id}'&$expand=Comment
+GET Manufacturing/Drawings?$filter=PartId eq '{part_id}'&$expand=Revisions
+GET Common/Comments?$filter=Id eq '{comment_id}'&$expand=FileLinks
+```
+
+### When no drawing resolves
+If none of the candidates yields a renderable PDF, the script sets
+`drawing_image_base64 = ""` and sends it, **clearing** the field.
+
+> **Important — stale-image rule:** `drawing_image_base64` is only sent when it
+> is non-`None` (see *Payload behavior* below). The resolver therefore always
+> sets it to either a real image **or** `""` on a miss, so a machine's row can
+> never keep the *previous* operation's drawing. Earlier versions omitted the
+> field on a lookup miss, which left the prior job's (or the "not planned"
+> placeholder) image in place — the cause of the "wrong drawing" reports.
+
+### Diagnostics
+`drawing_path_probe.py` (read-only) logs into Monitor and prints, for every
+active operation, each candidate PDF path with an on-disk EXISTS/MISSING check:
+```
+python drawing_path_probe.py            # all active operations
+python drawing_path_probe.py "105 3041" # filter by part-number substring
 ```
 
 ## Machine Types
@@ -216,6 +286,19 @@ POST /monitoring/api/sync-operation-pool/
 1. Check ManufacturingOrderOperationReportings query
 2. Verify operation ID is correct
 3. Check if reports exist in Monitor G5
+
+### Wrong / placeholder drawing on the dashboard
+Run `python drawing_path_probe.py "<part-number>"` to see every candidate PDF
+path for that part and whether it exists on disk. Common causes:
+1. **Wrong part's drawing** — an old revision has another part's PDF mis-linked
+   in Monitor. The resolver ranks the active revision and Drawings register
+   ahead of non-active revisions, so fix the mis-link in Monitor to be safe.
+2. **"NOT PLANNED" placeholder on a real op** — the part's drawing lives in the
+   Drawings register but its revision comment has no PDF. The resolver now tries
+   all sources, so this should resolve; check the probe output and the
+   `[part] drawing resolved via ...` / `no drawing found` log lines.
+3. **Blank drawing** — no PDF exists for the part anywhere in Monitor (genuine),
+   or the file is missing on the share (probe shows `MISSING`).
 
 ## Related Documentation
 
