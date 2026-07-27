@@ -13,7 +13,8 @@
     <div class="board-row"
          data-machine-pk="{{ machine.pk }}"
          data-job-monitor-operation-id="{% if machine.next_job %}{{ machine.next_job.monitor_operation_id }}{% endif %}"
-         data-job-name="{% if machine.next_job %}{{ machine.next_job.name }}{% endif %}">
+         data-job-name="{% if machine.next_job %}{{ machine.next_job.name }}{% endif %}"
+         {% if machine.next_job %}data-operation-pk="{{ machine.next_job.pk }}"{% endif %}>
 
       {# Machine Name #}
       <div class="board-cell machine-col">

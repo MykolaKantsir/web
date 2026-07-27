@@ -21,6 +21,7 @@
     let ws = null;
     let cursorCheckInterval = null;
     let currentOperationId = null;
+    let latestRequestedOpId = null; // guards against out-of-order async refreshes
     let drawingsCache = {}; // {operation_id: {name, drawing_base64}}
 
     // DOM Elements
@@ -120,13 +121,48 @@
     }
 
     /**
+     * Refetch a single operation's drawing from the DB and update the cache.
+     * Returns the updated cache entry (or null on failure / not found).
+     */
+    async function refreshDrawing(opId) {
+        try {
+            const response = await fetch(`/monitoring/api/drawing/${opId}/`);
+            if (!response.ok) return null;
+            const data = await response.json();
+            drawingsCache[String(opId)] = {
+                name: data.name,
+                drawing_base64: data.drawing_base64
+            };
+            return drawingsCache[String(opId)];
+        } catch (error) {
+            console.error(`Failed to refresh drawing ${opId}:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Show drawing screen with operation image
-     * Looks up drawing from preloaded cache for instant display
+     * Looks up drawing from preloaded cache for instant display.
+     *
+     * Monitor operations are rewritten in place (same pk, new name + drawing),
+     * so the once-preloaded cache can go stale. The WebSocket sends the CURRENT
+     * operation_name; if it disagrees with the cached name (or the pk is not
+     * cached at all), refetch just this one drawing before displaying.
      * @param {Object} data - Drawing data from WebSocket (operation_id, operation_name)
      */
-    function showDrawing(data) {
+    async function showDrawing(data) {
         const opId = String(data.operation_id);
-        const cached = drawingsCache[opId];
+        latestRequestedOpId = opId;
+        let cached = drawingsCache[opId];
+
+        const isStale = !cached ||
+            (data.operation_name != null && cached.name !== data.operation_name);
+        if (isStale) {
+            const fresh = await refreshDrawing(opId);
+            // A newer cursor move arrived while we were fetching - drop this one.
+            if (latestRequestedOpId !== opId) return;
+            if (fresh) cached = fresh;
+        }
 
         // Get drawing from cache
         const drawingBase64 = cached?.drawing_base64;
@@ -138,7 +174,7 @@
         } else {
             drawingImage.style.display = 'none';
             noDrawingMsg.style.display = 'flex';
-            console.warn(`No cached drawing for operation ${opId}`);
+            console.warn(`No drawing for operation ${opId}`);
         }
 
         logoScreen.style.display = 'none';

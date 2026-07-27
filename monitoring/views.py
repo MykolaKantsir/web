@@ -853,7 +853,13 @@ def get_machine_job_data(machine):
 # Logic:
 # - If manual override exists AND monitor hasn't changed operation -> show manual override
 # - Otherwise show monitor's operation
-def next_jobs_view(request):
+def resolve_next_job_machines():
+    """
+    Resolve each machine's "next job" (monitor's next op, honoring manual/idle
+    overrides) and annotate the machine objects with `.next_job` and
+    `.is_idle_override`. Shared by the next-jobs page and the cursor next-rows
+    API so both use identical ordering and resolution.
+    """
     # Step 1: Get all non-test machines with their monitor operations
     # Only prefetch operations assigned to machines (not pool-only operations)
     machine_operations_prefetch = Prefetch(
@@ -928,7 +934,44 @@ def next_jobs_view(request):
         m.next_job = display_op
         m.is_idle_override = is_idle_override
 
+    return machines
+
+
+def next_jobs_view(request):
+    machines = resolve_next_job_machines()
     return render(request, 'monitoring/next_jobs.html', {'machines': machines})
+
+
+def get_cursor_next_rows(request):
+    """
+    Ordered next-jobs rows for the Current-Jobs cursor controller, matching the
+    order the Next-Jobs board renders. Lets the controller navigate onto the
+    Next-Jobs screen (Left/Right) using each row's Django operation pk.
+
+    GET /monitoring/api/cursor/next-rows/
+
+    Response:
+    {
+        "rows": [
+            {"machine_pk": 12, "machine_name": "NLX1500 1",
+             "operation_pk": 379, "name": "MKD 105 3041"},
+            {"machine_pk": 15, "machine_name": "DMU40",
+             "operation_pk": null, "name": null},
+            ...
+        ]
+    }
+    """
+    machines = resolve_next_job_machines()
+    rows = []
+    for m in machines:
+        op = getattr(m, 'next_job', None)
+        rows.append({
+            'machine_pk': m.pk,
+            'machine_name': m.name,
+            'operation_pk': op.pk if op else None,
+            'name': op.name if op else None,
+        })
+    return JsonResponse({'rows': rows})
 
 # View to display the current job for each machine
 # Supports both card view and table view (airport-style)
@@ -1828,6 +1871,36 @@ def get_all_drawings(request):
         }
 
     return JsonResponse({'drawings': drawings})
+
+
+def get_drawing(request, pk):
+    """
+    Return a single operation's current drawing (fresh from the DB).
+
+    GET /monitoring/api/drawing/<pk>/
+
+    Used by the drawing monitor to refresh a stale cache entry: monitor
+    operations are rewritten in place (same pk, new name + drawing), so the
+    once-preloaded cache can go stale. The client refetches just this one
+    drawing when the pushed operation name no longer matches the cache.
+
+    Response:
+    {
+        "operation_id": 123,
+        "name": "Part A",
+        "drawing_base64": "data:image/..."  // may be "" if none
+    }
+    """
+    try:
+        op = Monitor_operation.objects.get(pk=pk)
+    except Monitor_operation.DoesNotExist:
+        return JsonResponse({'error': 'Operation not found'}, status=404)
+
+    return JsonResponse({
+        'operation_id': op.id,
+        'name': op.name,
+        'drawing_base64': op.drawing_image_base64 or ''
+    })
 
 
 @login_required

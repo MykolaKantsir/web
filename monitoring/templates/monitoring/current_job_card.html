@@ -1,7 +1,8 @@
 {# templates/monitoring/current_job_card.html #}
 <div class="col job-card"
      data-machine-pk="{{ machine.pk }}"
-     data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}">
+     data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}"
+     {% if machine.current_job %}data-operation-pk="{{ machine.current_job.pk }}"{% endif %}>
   <div class="card h-100 no-border" id="card-{{ machine.pk }}">
     <div class="card-body p-0">
 

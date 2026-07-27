@@ -129,6 +129,18 @@ html, body {
   border-color: #5F9EA0;  /* Cadet Blue */
 }
 
+/* Cursor Highlight - the row the remote/pointer is on.
+   Uses outline + glow (not background) so it stays visible even on rows
+   with an inline progress-gradient background. */
+.board-row.cursor-current {
+  outline: 5px solid #00E5FF;  /* Bright cyan - unmistakable vs cadet-blue border */
+  outline-offset: -3px;
+  border-color: #00E5FF !important;
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.9);
+  transform: translateX(6px);
+  transition: outline 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
 /* Warning Row */
 .board-row.row-warning {
   border: 3px solid #dc3545;  /* Keep red for warnings */

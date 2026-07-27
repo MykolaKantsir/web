@@ -13,6 +13,7 @@
     <div class="board-row {% if machine.current_warning %}row-warning{% elif machine.current_status == 'none' or machine.current_status == 'idle' %}row-idle{% elif machine.current_job.is_setup %}row-setup{% elif machine.current_status == 'ok' %}row-in-progress{% endif %}"
          data-machine-pk="{{ machine.pk }}"
          data-job-monitor-operation-id="{% if machine.current_job %}{{ machine.current_job.monitor_operation_id }}{% endif %}"
+         {% if machine.current_job %}data-operation-pk="{{ machine.current_job.pk }}"{% endif %}
          {% if machine.current_status == 'ok' and not machine.current_job.is_setup and not machine.current_warning %}style="background: linear-gradient(90deg, #2d5a3f 0%, #2d5a3f {{ machine.progress_percent|floatformat:1 }}%, #1a337e {{ machine.progress_percent|floatformat:1 }}%, #1a337e 100%);"{% endif %}>
 
       {# Machine Name #}

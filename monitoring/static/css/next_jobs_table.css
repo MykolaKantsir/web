@@ -128,6 +128,18 @@ html, body {
   border-color: #5F9EA0;  /* Cadet Blue */
 }
 
+/* Cursor Highlight - the row the remote cursor is on (pushed over WebSocket
+   from the Current-Jobs controller). Outline + glow so it stays visible
+   regardless of row background. */
+.board-row.cursor-current {
+  outline: 5px solid #00E5FF;  /* Bright cyan */
+  outline-offset: -3px;
+  border-color: #00E5FF !important;
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.9);
+  transform: translateX(6px);
+  transition: outline 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
 /* No Operation Row - Red warning for missing jobs */
 .board-row.row-no-operation {
   border: 3px solid #dc3545;  /* Red border */

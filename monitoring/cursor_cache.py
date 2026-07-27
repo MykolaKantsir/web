@@ -10,7 +10,7 @@ _cursor_state = {
 _cursor_lock = threading.Lock()
 
 # Configuration
-CURSOR_TIMEOUT_SECONDS = 180  # 3 minutes
+CURSOR_TIMEOUT_SECONDS = 90  # seconds of no cursor movement before returning to logo
 
 def set_cursor(operation_id):
     """

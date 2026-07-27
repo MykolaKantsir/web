@@ -60,6 +60,8 @@ urlpatterns = [
     path('api/drawing/set-cursor/', views.set_drawing_cursor, name='set_drawing_cursor'),
     path('api/drawing/cursor-status/', views.get_cursor_status, name='get_cursor_status'),
     path('api/drawing/all/', views.get_all_drawings, name='get_all_drawings'),
+    path('api/drawing/<int:pk>/', views.get_drawing, name='get_drawing'),
+    path('api/cursor/next-rows/', views.get_cursor_next_rows, name='get_cursor_next_rows'),
 
     # --------------------
     # 📋 Planning Interface (Admin)

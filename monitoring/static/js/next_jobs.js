@@ -1,13 +1,20 @@
 /**
- * Next Jobs View Switcher with Auto-Scroll
- * Toggles between card view and table (airport-style) view using arrow keys
- * Auto-scrolls in table view with pause at top and bottom
+ * Next Jobs View
+ *
+ * Airport-style table board with auto-scroll + AJAX change polling.
+ *
+ * Cursor receiver (Phase 2): this screen sits to the RIGHT of Current-Jobs.
+ * The Current-Jobs remote can move the cursor onto this screen; the cursor
+ * position is broadcast over the existing drawing WebSocket (ws/drawing/).
+ * This page listens, highlights the row whose operation pk matches, and
+ * pauses auto-scroll while a row is highlighted. It never sends anything -
+ * it is a pure display (the remote lives on the Current-Jobs TV).
  */
 
 (function() {
     'use strict';
 
-    // View switching state
+    // View state
     let currentView = 'table';
     const cardView = document.getElementById('card-view');
     const tableView = document.getElementById('table-view');
@@ -26,6 +33,13 @@
 
     // AJAX update state
     let isRequestInProgress = false;
+
+    // Cursor / WebSocket state
+    const CURSOR_STATUS_URL = '/monitoring/api/drawing/cursor-status/';
+    const POLL_INTERVAL = 10000;      // check cursor status every 10s
+    let ws = null;
+    let cursorCheckInterval = null;
+    let highlightActive = false;      // pauses auto-scroll while a row is highlighted
 
     /**
      * Stop auto-scroll
@@ -57,7 +71,8 @@
      * Perform the scrolling animation
      */
     function performScroll() {
-        if (isPaused || currentView !== 'table' || !boardBody) {
+        // Freeze scrolling while the cursor highlights a row on this screen.
+        if (highlightActive || isPaused || currentView !== 'table' || !boardBody) {
             return;
         }
 
@@ -139,23 +154,88 @@
         }
     }
 
+    // ==========================================
+    // Cursor highlight (received over WebSocket)
+    // ==========================================
+
     /**
-     * Handle keyboard navigation
+     * Highlight the row for the given operation pk. If this board has no such
+     * row (cursor is on another screen), clear any highlight and let auto-scroll
+     * resume.
      */
-    function handleKeyPress(e) {
-        // Arrow Right (→) - switch to table view
-        if (e.keyCode === 39 || e.key === 'ArrowRight') {
-            if (currentView === 'card') {
-                showTableView();
-            }
-            e.preventDefault();
+    function highlightRow(pk) {
+        document.querySelectorAll('.board-row.cursor-current').forEach(el => {
+            el.classList.remove('cursor-current');
+        });
+
+        const row = pk != null
+            ? document.querySelector(`.board-row[data-operation-pk="${pk}"]`)
+            : null;
+
+        if (row) {
+            row.classList.add('cursor-current');
+            highlightActive = true;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            highlightActive = false;
         }
-        // Arrow Left (←) - switch to card view
-        else if (e.keyCode === 37 || e.key === 'ArrowLeft') {
-            if (currentView === 'table') {
-                showCardView();
+    }
+
+    function clearHighlight() {
+        highlightRow(null);
+    }
+
+    /**
+     * Connect to the drawing WebSocket to receive cursor moves.
+     */
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/drawing/`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'drawing') {
+                highlightRow(String(data.operation_id));
             }
-            e.preventDefault();
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = () => {
+            ws = null;
+        };
+    }
+
+    function disconnectWebSocket() {
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+    }
+
+    /**
+     * Poll cursor status: open the socket while a cursor is active, close it and
+     * clear the highlight when the cursor goes inactive (times out).
+     */
+    async function checkCursorStatus() {
+        try {
+            const response = await fetch(CURSOR_STATUS_URL);
+            const data = await response.json();
+
+            if (data.is_active && !ws) {
+                connectWebSocket();
+            } else if (!data.is_active && ws) {
+                disconnectWebSocket();
+                clearHighlight();
+            } else if (!data.is_active) {
+                clearHighlight();
+            }
+        } catch (error) {
+            console.error('Failed to check cursor status:', error);
         }
     }
 
@@ -247,12 +327,12 @@
         // Set initial view (table view)
         showTableView();
 
-        // Add keyboard event listener
-        document.addEventListener('keydown', handleKeyPress);
+        // Start cursor status polling (opens the socket when a cursor is active)
+        cursorCheckInterval = setInterval(checkCursorStatus, POLL_INTERVAL);
+        checkCursorStatus();
 
         // Start AJAX polling
         setInterval(checkForUpdates, 120000);
-
     }
 
     // Initialize when DOM is ready
