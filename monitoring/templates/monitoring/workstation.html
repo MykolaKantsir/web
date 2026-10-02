@@ -8,19 +8,38 @@
     <title>Workstation</title>
     <link rel="stylesheet" href="{% static 'css/workstation.css' %}">
 </head>
-<body class="state-idle" data-theme="flat" data-machine-id="{{ machine_id }}"
-      data-api-url="{% url 'workstation_data' machine_id %}">
-    <div class="ws">
-        <div class="ws-top">
-            <div class="panel ws-article"><span id="article" class="fit">—</span></div>
-            <div class="panel ws-users"><div id="users" class="users"></div></div>
+<body class="state-idle" data-machine-id="{{ machine_id }}"
+      data-api-url="{% url 'workstation_data' machine_id %}"
+      data-drawing-url="{% url 'get_drawing' 0 %}">
+    {# Swipe right / ArrowRight: next slide. Order: info -> drawing -> long time plan #}
+    <div class="slides" id="slides">
+
+        {# Slide 1: workcenter info #}
+        <div class="slide">
+            <div class="ws">
+                <div class="ws-top">
+                    <div class="panel ws-article"><span id="article" class="fit">—</span></div>
+                    <div class="panel ws-users"><div id="users" class="users"></div></div>
+                </div>
+                <div class="panel ws-numbers" id="numbers">
+                    <div class="ws-made"><span id="made">—</span></div>
+                    <div class="ws-slash">/</div>
+                    <div class="ws-required"><span id="required">—</span></div>
+                </div>
+                <div class="panel ws-next"><span class="next-label">Next :</span><span class="next-value"><span id="next" class="fit">—</span></span></div>
+            </div>
         </div>
-        <div class="panel ws-numbers" id="numbers">
-            <div class="ws-made"><span id="made">—</span></div>
-            <div class="ws-slash">/</div>
-            <div class="ws-required"><span id="required">—</span></div>
+
+        {# Slide 2: drawing of the current operation #}
+        <div class="slide slide-drawing">
+            <img id="drawing-image" src="" alt="Drawing">
+            <p id="no-drawing">No drawing available</p>
         </div>
-        <div class="panel ws-next"><span class="next-label">Next :</span><span class="next-value"><span id="next" class="fit">—</span></span></div>
+
+        {# Slide 3: long time plan (placeholder - not written yet) #}
+        <div class="slide slide-plan">
+            <p>Long time plan</p>
+        </div>
     </div>
     <script src="{% static 'js/workstation.js' %}"></script>
 </body>

@@ -1,39 +1,35 @@
 // Workstation screen: polls JSON and updates the DOM in place (no page reload).
-// Themes: swipe right / ArrowRight = next theme, swipe left / ArrowLeft = previous.
-// ?theme=<name> picks one explicitly; the choice is remembered per tablet.
+// Slides: info -> drawing -> long time plan.
+// Swipe right / ArrowRight = next slide, swipe left / ArrowLeft = previous.
 (function () {
   var POLL_MS = 120 * 1000;  // matches the Monitor G5 update_watcher loop
-  var THEMES = ['flat', 'minimal'];
+  var SLIDE_COUNT = 3;
   var body = document.body;
   var apiUrl = body.dataset.apiUrl;
+  var drawingUrlTemplate = body.dataset.drawingUrl;  // .../api/drawing/0/
   var last = null;
+  var slideIndex = 0;
+  var drawingKey = null;  // "<operation pk>:<article>" of the drawing currently shown
 
   var el = {
+    slides: document.getElementById('slides'),
     article: document.getElementById('article'),
     users: document.getElementById('users'),
     numbers: document.getElementById('numbers'),
     made: document.getElementById('made'),
     required: document.getElementById('required'),
-    next: document.getElementById('next')
+    next: document.getElementById('next'),
+    drawing: document.getElementById('drawing-image'),
+    noDrawing: document.getElementById('no-drawing')
   };
 
-  // ---- Themes ----
-  function storedTheme() {
-    try { return localStorage.getItem('workstationTheme'); } catch (e) { return null; }
+  // ---- Slides ----
+  function showSlide(i) {
+    slideIndex = (i + SLIDE_COUNT) % SLIDE_COUNT;
+    el.slides.style.transform = 'translateX(-' + (slideIndex * 100 / SLIDE_COUNT) + '%)';
   }
-  function setTheme(name) {
-    if (THEMES.indexOf(name) === -1) name = THEMES[0];
-    body.dataset.theme = name;
-    try { localStorage.setItem('workstationTheme', name); } catch (e) {}
-    // Clear sizes set by the other theme's fitting, then re-fit
-    [el.made, el.required, el.article, el.next].forEach(function (n) { n.style.fontSize = ''; });
-    el.numbers.style.removeProperty('--num-size');
-    refit();
-  }
-  function stepTheme(delta) {
-    var i = THEMES.indexOf(body.dataset.theme);
-    setTheme(THEMES[(i + delta + THEMES.length) % THEMES.length]);
-  }
+  var fromUrl = parseInt(new URLSearchParams(location.search).get('slide'), 10);
+  if (!isNaN(fromUrl)) showSlide(fromUrl);
 
   // ---- Fitting ----
   // Shrink text until it fits its container (long article names, big quantities).
@@ -50,21 +46,30 @@
     }
   }
 
-  // Minimal theme: made / required share one line, sized together via --num-size.
-  function fitNumbers() {
-    var cs = getComputedStyle(el.numbers);
-    var avail = el.numbers.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 8;
-    var size = Math.max(120, Math.min(560, Math.floor(el.numbers.clientHeight * 0.95)));  // also fit the row height
-    function rowWidth() {
-      var w = 0;
-      Array.prototype.forEach.call(el.numbers.children, function (c) { w += c.getBoundingClientRect().width; });
-      return w;
+  // ---- Drawing ----
+  function showDrawing(src) {
+    if (src) {
+      el.drawing.src = src;
+      el.drawing.style.display = 'block';
+      el.noDrawing.style.display = 'none';
+    } else {
+      el.drawing.removeAttribute('src');
+      el.drawing.style.display = 'none';
+      el.noDrawing.style.display = 'block';
     }
-    el.numbers.style.setProperty('--num-size', size + 'px');
-    while (rowWidth() > avail && size > 120) {
-      size -= 10;
-      el.numbers.style.setProperty('--num-size', size + 'px');
-    }
+  }
+
+  // Fetch the drawing only when the operation (or its name, since monitor
+  // operations are rewritten in place) changed; drawings are large base64 blobs.
+  function updateDrawing(d) {
+    var key = d.operation_id ? d.operation_id + ':' + d.article : '';
+    if (key === drawingKey) return;
+    drawingKey = key;
+    if (!d.operation_id) { showDrawing(''); return; }
+    fetch(drawingUrlTemplate.replace(/0\/$/, d.operation_id + '/'), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { if (drawingKey === key) showDrawing(j.drawing_base64); })
+      .catch(function () { drawingKey = null; });  // retry on next poll
   }
 
   function render(d) {
@@ -82,17 +87,13 @@
     el.made.textContent = d.made === null ? '—' : d.made;
     el.required.textContent = d.required === null ? '—' : d.required;
     var pct = d.article ? Math.max(0, Math.min(100, d.progress_percent)) : 0;
-    body.style.setProperty('--p', pct + '%');  // read by every theme's progress gradient
+    body.style.setProperty('--p', pct + '%');
     el.next.textContent = d.next_article || 'NOT PLANNED';
-
-    if (body.dataset.theme === 'minimal') {
-      fitNumbers();
-    } else {
-      fit(el.made, 120);
-      fit(el.required, 120);
-      fit(el.article, 70);
-    }
+    fit(el.made, 120);
+    fit(el.required, 120);
+    fit(el.article, 70);
     fit(el.next, 20);
+    updateDrawing(d);
   }
 
   function refit() { if (last) render(last); }
@@ -115,7 +116,7 @@
   });
   document.addEventListener('fullscreenchange', function () { setTimeout(refit, 100); });
 
-  // Swipe right = next theme, swipe left = previous
+  // Swipe right = next slide, swipe left = previous
   var touchStart = null;
   document.addEventListener('touchstart', function (e) {
     var t = e.changedTouches[0];
@@ -126,16 +127,12 @@
     var t = e.changedTouches[0];
     var dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
     touchStart = null;
-    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) stepTheme(dx > 0 ? 1 : -1);
+    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) showSlide(slideIndex + (dx > 0 ? 1 : -1));
   }, { passive: true });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') stepTheme(1);
-    else if (e.key === 'ArrowLeft') stepTheme(-1);
+    if (e.key === 'ArrowRight') showSlide(slideIndex + 1);
+    else if (e.key === 'ArrowLeft') showSlide(slideIndex - 1);
   });
-
-  var fromUrl = new URLSearchParams(location.search).get('theme');
-  body.dataset.theme = THEMES.indexOf(fromUrl) !== -1 ? fromUrl :
-                       THEMES.indexOf(storedTheme()) !== -1 ? storedTheme() : THEMES[0];
 
   poll();
   setInterval(poll, POLL_MS);

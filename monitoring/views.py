@@ -1123,6 +1123,7 @@ def _workstation_payload(machine_pk):
 
     return {
         'state': state,
+        'operation_id': job.pk if job else None,  # used to fetch the drawing via api/drawing/<pk>/
         'article': job.name if job else None,
         'users': list(job.employee_names or []) if job else [],
         'made': job.currently_made_quantity if job else None,

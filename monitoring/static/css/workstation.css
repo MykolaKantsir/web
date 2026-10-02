@@ -117,63 +117,46 @@ body.stale::after {
 }
 
 /* =====================================================================
-   Theme: minimal  (body[data-theme="minimal"])
-   Dark rounded card, small article / operator on top, one big number with a
-   small "/ required", thin divider, small "Next" row. The state colour tints
-   the card gradient, and progress is a soft glow sweeping left to right.
+   Slides: info -> drawing -> long time plan (workstation.js moves between them)
    ===================================================================== */
-body[data-theme="minimal"] {
-  padding: 22px;
-  --bg: #070b0a;
-  --fg: #e6f4ee;
-  --line: rgba(255, 255, 255, 0.12);
-  --g1: #10151b; --g2: #1c2530; --glow: transparent;      /* idle */
+.slides {
+  position: fixed;
+  top: 0; left: 0;
+  width: 300%;
+  height: 100%;
+  display: flex;
+  transition: transform 0.35s ease;
 }
-body[data-theme="minimal"].state-running { --bg: #070b0a; --fg: #e6f4ee; --g1: #0d1a16; --g2: #14342a; --glow: rgba(46, 204, 113, 0.38); }
-body[data-theme="minimal"].state-setup   { --bg: #0d0903; --fg: #fff3dc; --g1: #1c1407; --g2: #4a3009; --glow: rgba(245, 158, 11, 0.42); --line: rgba(255, 255, 255, 0.14); }
-body[data-theme="minimal"].state-idle    { --bg: #070a0e; --fg: #c9d3de; }
-
-body[data-theme="minimal"] .ws {
-  border-radius: 28px;
-  border: 1px solid var(--line);
+.slide {
+  flex: 0 0 33.3333%;
+  height: 100%;
+  position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, var(--glow) 0%, var(--glow) var(--p), transparent calc(var(--p) + 30%)),
-    linear-gradient(135deg, var(--g1) 0%, var(--g2) 100%);
 }
 
-/* Top: small article left, small operators right */
-body[data-theme="minimal"] .ws-top { flex: 0 0 120px; border-bottom: none; }
-body[data-theme="minimal"] .ws-article { padding: 0 56px; }
-body[data-theme="minimal"] .ws-article .fit { font-size: 44px; font-weight: 400; opacity: 0.7; }
-body[data-theme="minimal"] .ws-users { flex: 0 1 700px; border-left: none; padding: 0 56px; justify-content: flex-end; }
-body[data-theme="minimal"] .ws-users .users { text-align: right; }
-body[data-theme="minimal"] .ws-users .user { font-size: 44px; font-weight: 400; line-height: 1.2; opacity: 0.7; }
-
-/* Middle: one huge number, small "/ required" on the same baseline */
-body[data-theme="minimal"] .ws-numbers {
-  --num-size: 560px;
-  background: none;
-  align-items: baseline;
+.slide-drawing {
+  background: #000;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
-body[data-theme="minimal"] .ws-made,
-body[data-theme="minimal"] .ws-required,
-body[data-theme="minimal"] .ws-slash {
-  display: block;
-  flex: none;
-  overflow: visible;
-  padding: 0;
-  line-height: 1;
+#drawing-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;       /* keep aspect ratio, fill width or height */
+  display: none;
 }
-body[data-theme="minimal"] .ws-made { font-size: var(--num-size); font-weight: 400; opacity: 1; }
-body[data-theme="minimal"] .ws-slash { font-size: calc(var(--num-size) * 0.22); font-weight: 300; opacity: 0.5; margin-left: 0.25em; }
-body[data-theme="minimal"] .ws-required { font-size: calc(var(--num-size) * 0.22); font-weight: 300; opacity: 0.6; margin-left: 0.2em; }
+#no-drawing {
+  display: none;
+  color: #888;
+  font-size: 40px;
+}
 
-/* Bottom: thin divider, small "Next  article" */
-body[data-theme="minimal"] .ws-next { flex: 0 0 110px; padding: 0 56px; border-top: 1px solid var(--line); margin: 0 0 0; }
-body[data-theme="minimal"] .ws-next .next-label { font-size: 32px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.6; }
-body[data-theme="minimal"] .ws-next .fit { font-size: 32px; font-weight: 500; }
-
-body[data-theme="minimal"].state-idle .ws-article .fit { opacity: 0.55; }
-body[data-theme="minimal"].state-idle .ws-made { opacity: 0.55; }
+.slide-plan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  font-weight: 700;
+  opacity: 0.5;
+}
