@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '10.0.2.2',  # Android emulator localhost
-    '192.168.112.145',
+    '192.168.112.180',
     'gastoninternal.azurewebsites.net',
     'https://gastoninternal.azurewebsites.net',
     'http://gastoninternal.azurewebsites.net',

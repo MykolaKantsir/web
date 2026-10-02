@@ -1,0 +1,179 @@
+/**
+ * Workstation screen - one machine, one tablet (Samsung Galaxy Tab A11+, Chrome).
+ * Flat full-bleed design for reading from a distance: the whole screen is one
+ * state colour, plain text, thin dividers. No headers/labels by design.
+ *
+ * The page declares viewport width=1920 and Chrome scales it to the screen.
+ * Heights are fluid (flex), so the layout fills whatever height it gets.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  color: var(--fg);
+  --bg: #475569;                          /* idle: slate */
+  --fg: #ffffff;
+  --line: rgba(255, 255, 255, 0.3);
+  --wash: rgba(255, 255, 255, 0.24);
+  --p: 0%;                                /* progress, set by workstation.js */
+}
+body.state-running { --bg: #1e8e4e; }     /* green */
+body.state-setup   { --bg: #f59e0b; --fg: #1b2433; --line: rgba(27, 36, 51, 0.3); --wash: rgba(255, 255, 255, 0.35); }  /* orange, dark text */
+
+.ws {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ws-top     { display: flex; flex: 0 0 210px; min-height: 0; border-bottom: 3px solid var(--line); }
+.ws-article { flex: 1 1 0; padding: 0 60px; }
+.ws-users   { flex: 0 0 560px; padding: 0 50px; border-left: 3px solid var(--line); }
+.ws-numbers { flex: 4 1 0; padding: 0 30px; justify-content: center; }
+.ws-next    { flex: 0 0 90px; padding: 0 60px; border-top: 3px solid var(--line); }
+
+.ws-article .fit {
+  font-size: 130px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ws-users .users { width: 100%; }
+.ws-users .user {
+  font-size: 44px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Quantities: progress is a soft lighter wash behind the numbers */
+.ws-numbers {
+  background: linear-gradient(90deg, var(--wash) 0%, var(--wash) var(--p), transparent calc(var(--p) + 14%));
+}
+body.state-idle .ws-numbers { background: none; }
+
+.ws-made, .ws-required {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 460px;
+  font-weight: 800;
+  line-height: 1;
+}
+.ws-required { opacity: 0.65; }
+.ws-slash { font-size: 360px; font-weight: 300; opacity: 0.4; padding: 0 10px; line-height: 1; }
+
+.ws-next .next-label {
+  flex: 0 0 auto;
+  margin-right: 20px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.ws-next .next-value { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.ws-next .fit {
+  font-size: 40px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Idle: muted */
+body.state-idle .ws-article .fit,
+body.state-idle .ws-made,
+body.state-idle .ws-required { opacity: 0.55; }
+
+/* Poll failed: keep last data, tiny red dot */
+body.stale::after {
+  content: '';
+  position: fixed;
+  top: 8px; right: 8px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #dc3545;
+}
+
+/* =====================================================================
+   Theme: minimal  (body[data-theme="minimal"])
+   Dark rounded card, small article / operator on top, one big number with a
+   small "/ required", thin divider, small "Next" row. The state colour tints
+   the card gradient, and progress is a soft glow sweeping left to right.
+   ===================================================================== */
+body[data-theme="minimal"] {
+  padding: 22px;
+  --bg: #070b0a;
+  --fg: #e6f4ee;
+  --line: rgba(255, 255, 255, 0.12);
+  --g1: #10151b; --g2: #1c2530; --glow: transparent;      /* idle */
+}
+body[data-theme="minimal"].state-running { --bg: #070b0a; --fg: #e6f4ee; --g1: #0d1a16; --g2: #14342a; --glow: rgba(46, 204, 113, 0.38); }
+body[data-theme="minimal"].state-setup   { --bg: #0d0903; --fg: #fff3dc; --g1: #1c1407; --g2: #4a3009; --glow: rgba(245, 158, 11, 0.42); --line: rgba(255, 255, 255, 0.14); }
+body[data-theme="minimal"].state-idle    { --bg: #070a0e; --fg: #c9d3de; }
+
+body[data-theme="minimal"] .ws {
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, var(--glow) 0%, var(--glow) var(--p), transparent calc(var(--p) + 30%)),
+    linear-gradient(135deg, var(--g1) 0%, var(--g2) 100%);
+}
+
+/* Top: small article left, small operators right */
+body[data-theme="minimal"] .ws-top { flex: 0 0 120px; border-bottom: none; }
+body[data-theme="minimal"] .ws-article { padding: 0 56px; }
+body[data-theme="minimal"] .ws-article .fit { font-size: 44px; font-weight: 400; opacity: 0.7; }
+body[data-theme="minimal"] .ws-users { flex: 0 1 700px; border-left: none; padding: 0 56px; justify-content: flex-end; }
+body[data-theme="minimal"] .ws-users .users { text-align: right; }
+body[data-theme="minimal"] .ws-users .user { font-size: 44px; font-weight: 400; line-height: 1.2; opacity: 0.7; }
+
+/* Middle: one huge number, small "/ required" on the same baseline */
+body[data-theme="minimal"] .ws-numbers {
+  --num-size: 560px;
+  background: none;
+  align-items: baseline;
+  justify-content: center;
+}
+body[data-theme="minimal"] .ws-made,
+body[data-theme="minimal"] .ws-required,
+body[data-theme="minimal"] .ws-slash {
+  display: block;
+  flex: none;
+  overflow: visible;
+  padding: 0;
+  line-height: 1;
+}
+body[data-theme="minimal"] .ws-made { font-size: var(--num-size); font-weight: 400; opacity: 1; }
+body[data-theme="minimal"] .ws-slash { font-size: calc(var(--num-size) * 0.22); font-weight: 300; opacity: 0.5; margin-left: 0.25em; }
+body[data-theme="minimal"] .ws-required { font-size: calc(var(--num-size) * 0.22); font-weight: 300; opacity: 0.6; margin-left: 0.2em; }
+
+/* Bottom: thin divider, small "Next  article" */
+body[data-theme="minimal"] .ws-next { flex: 0 0 110px; padding: 0 56px; border-top: 1px solid var(--line); margin: 0 0 0; }
+body[data-theme="minimal"] .ws-next .next-label { font-size: 32px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.6; }
+body[data-theme="minimal"] .ws-next .fit { font-size: 32px; font-weight: 500; }
+
+body[data-theme="minimal"].state-idle .ws-article .fit { opacity: 0.55; }
+body[data-theme="minimal"].state-idle .ws-made { opacity: 0.55; }

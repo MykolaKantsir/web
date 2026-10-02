@@ -32,7 +32,7 @@
             "program": "${workspaceFolder}\\manage.py",
             "args": [
                 "runserver",
-                "192.168.112.145:8000",
+                "192.168.112.180:8000",
             ],
             "django": true,
             "justMyCode": true,

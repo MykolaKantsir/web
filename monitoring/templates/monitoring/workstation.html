@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Workstation</title>
+    <link rel="stylesheet" href="{% static 'css/workstation.css' %}">
+</head>
+<body class="state-idle" data-theme="flat" data-machine-id="{{ machine_id }}"
+      data-api-url="{% url 'workstation_data' machine_id %}">
+    <div class="ws">
+        <div class="ws-top">
+            <div class="panel ws-article"><span id="article" class="fit">—</span></div>
+            <div class="panel ws-users"><div id="users" class="users"></div></div>
+        </div>
+        <div class="panel ws-numbers" id="numbers">
+            <div class="ws-made"><span id="made">—</span></div>
+            <div class="ws-slash">/</div>
+            <div class="ws-required"><span id="required">—</span></div>
+        </div>
+        <div class="panel ws-next"><span class="next-label">Next :</span><span class="next-value"><span id="next" class="fit">—</span></span></div>
+    </div>
+    <script src="{% static 'js/workstation.js' %}"></script>
+</body>
+</html>

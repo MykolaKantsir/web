@@ -31,6 +31,8 @@ urlpatterns = [
     path('check-next-jobs/', views.check_next_jobs, name='check_next_jobs'),
     path("current-jobs/", views.current_jobs_view, name="current_jobs"),
     # path("check-current-jobs/", views.check_current_jobs, name="check_current_jobs"),
+    path('workstation/<int:machine_id>/', views.workstation_view, name='workstation'),
+    path('api/workstation/<int:machine_id>/', views.workstation_data, name='workstation_data'),
 
     # --------------------
     # 🔄 Update APIs (called from machine scripts or automation)

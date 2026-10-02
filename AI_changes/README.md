@@ -126,7 +126,13 @@ Outdated or superseded documentation (kept for historical reference):
 
 Design documents and planned features (not yet implemented):
 
-*Currently empty - add planning documents here as features are designed*
+### [PLANNING_deployment_security.md](planning/PLANNING_deployment_security.md)
+**Deployed Server Security Hardening** (raised 2026-07-31, not yet done)
+- Production config findings in `web/settings.py`: `DEBUG=True`, hardcoded
+  `SECRET_KEY`, plaintext Postgres password, hardcoded web-push key
+- Fix checklist: move secrets to Azure App Settings / env vars, `DEBUG=False`,
+  rotate the exposed credentials
+- No code changed by the doc; the fix is a separate scheduled work item
 
 ## Quick Reference
 

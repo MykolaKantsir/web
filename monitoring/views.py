@@ -853,7 +853,7 @@ def get_machine_job_data(machine):
 # Logic:
 # - If manual override exists AND monitor hasn't changed operation -> show manual override
 # - Otherwise show monitor's operation
-def resolve_next_job_machines():
+def resolve_next_job_machines(machine_pk=None):
     """
     Resolve each machine's "next job" (monitor's next op, honoring manual/idle
     overrides) and annotate the machine objects with `.next_job` and
@@ -873,6 +873,8 @@ def resolve_next_job_machines():
     ).prefetch_related(
         machine_operations_prefetch
     ).order_by('name')
+    if machine_pk is not None:
+        machines = machines.filter(pk=machine_pk)
 
     # Step 2: Build dict of manual overrides keyed by machine_pk
     manual_overrides = {}
@@ -984,6 +986,17 @@ def get_cursor_next_rows(request):
 # - If manual override exists AND monitor hasn't changed operation -> show manual override
 # - Otherwise show monitor's operation
 def current_jobs_view(request):
+    machines = resolve_current_job_machines()
+    return render(request, 'monitoring/current_jobs.html', {'machines': machines})
+
+
+def resolve_current_job_machines(machine_pk=None):
+    """
+    Resolve each machine's current job (monitor's in-progress op, honoring
+    manual/idle overrides) and annotate machines with `.current_job`,
+    `.current_status`, `.progress_percent`, `.is_idle_override`. Shared by the
+    current-jobs board and the per-machine workstation screen.
+    """
     # Step 1: Get all non-test machines with their monitor operations
     # Only prefetch operations assigned to machines (not pool-only operations)
     machine_operations_prefetch = Prefetch(
@@ -997,6 +1010,8 @@ def current_jobs_view(request):
     ).prefetch_related(
         machine_operations_prefetch
     ).order_by('name')
+    if machine_pk is not None:
+        machines = machines.filter(pk=machine_pk)
 
     # Step 2: Build dict of manual overrides keyed by machine_pk
     manual_overrides = {}
@@ -1086,7 +1101,49 @@ def current_jobs_view(request):
             else:
                 m.progress_percent = 0
 
-    return render(request, 'monitoring/current_jobs.html', {'machines': machines})
+    return machines
+
+
+def _workstation_payload(machine_pk):
+    """Build the workstation-screen data for one machine, or None if unknown."""
+    current = list(resolve_current_job_machines(machine_pk))
+    if not current:
+        return None
+    m = current[0]
+    next_machines = list(resolve_next_job_machines(machine_pk))
+    next_job = getattr(next_machines[0], 'next_job', None) if next_machines else None
+
+    job = m.current_job
+    if job is None:
+        state = 'idle'
+    elif job.is_setup:
+        state = 'setup'
+    else:
+        state = 'running'
+
+    return {
+        'state': state,
+        'article': job.name if job else None,
+        'users': list(job.employee_names or []) if job else [],
+        'made': job.currently_made_quantity if job else None,
+        'required': job.quantity if job else None,
+        'progress_percent': round(m.progress_percent, 1),
+        'next_article': next_job.name if next_job else None,
+    }
+
+
+def workstation_view(request, machine_id):
+    """Per-machine screen shown on the tablet next to the machine."""
+    get_object_or_404(Machine, pk=machine_id, is_test_machine=False)
+    return render(request, 'monitoring/workstation.html', {'machine_id': machine_id})
+
+
+def workstation_data(request, machine_id):
+    """JSON polled by the workstation screen."""
+    payload = _workstation_payload(machine_id)
+    if payload is None:
+        return JsonResponse({'error': 'Machine not found'}, status=404)
+    return JsonResponse(payload)
 
 # View to check if the next jobs have changed
 def check_next_jobs(request):
