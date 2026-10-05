@@ -1,6 +1,6 @@
 // Workstation screen: polls JSON and updates the DOM in place (no page reload).
 // Slides: info -> drawing -> long time plan.
-// Swipe right / ArrowRight = next slide, swipe left / ArrowLeft = previous.
+// Drag right-to-left / ArrowRight = next slide, drag left-to-right / ArrowLeft = previous.
 (function () {
   var POLL_MS = 120 * 1000;  // matches the Monitor G5 update_watcher loop
   var SLIDE_COUNT = 3;
@@ -20,8 +20,19 @@
     required: document.getElementById('required'),
     next: document.getElementById('next'),
     drawing: document.getElementById('drawing-image'),
-    noDrawing: document.getElementById('no-drawing')
+    noDrawing: document.getElementById('no-drawing'),
+    queue: document.getElementById('queue'),
+    overlay: document.getElementById('overlay'),
+    overlayImage: document.getElementById('overlay-image'),
+    overlayMsg: document.getElementById('overlay-msg'),
+    overlayBack: document.getElementById('overlay-back')
   };
+  var drawingRequestUrl = body.dataset.drawingRequestUrl;
+  var queueDrawingUrl = body.dataset.queueDrawingUrl;  // .../api/queue-drawing/OPID/
+  var queueItems = [];
+  var overlayToken = 0;  // bumped on every open/close so stale polls stop themselves
+  var QUEUE_POLL_MS = 2000;
+  var QUEUE_GIVE_UP_MS = 30 * 1000;
 
   // ---- Slides ----
   function showSlide(i) {
@@ -72,6 +83,100 @@
       .catch(function () { drawingKey = null; });  // retry on next poll
   }
 
+  // ---- Long time plan (queue) ----
+  function renderQueue(items) {
+    queueItems = items || [];
+    el.queue.innerHTML = '';
+    if (!queueItems.length) {
+      var empty = document.createElement('div');
+      empty.className = 'q-empty';
+      empty.textContent = 'NOT PLANNED';
+      el.queue.appendChild(empty);
+      return;
+    }
+    queueItems.forEach(function (item, i) {
+      var row = document.createElement('div');
+      row.className = 'q-row';
+      row.dataset.index = i;
+      var art = document.createElement('div');
+      art.className = 'q-article';
+      var span = document.createElement('span');
+      span.textContent = item.article;
+      art.appendChild(span);
+      var qty = document.createElement('div');
+      qty.className = 'q-qty';
+      qty.textContent = item.quantity;
+      row.appendChild(art);
+      row.appendChild(qty);
+      el.queue.appendChild(row);
+      fit(span, 40);
+    });
+  }
+
+  // ---- Drawing viewer (tap a queue row) ----
+  function overlayMessage(text) {
+    el.overlayImage.style.display = 'none';
+    el.overlayMsg.textContent = text;
+    el.overlayMsg.style.display = 'block';
+  }
+  function overlayShow(src) {
+    if (!src) { overlayMessage('No drawing available'); return; }
+    el.overlayMsg.style.display = 'none';
+    el.overlayImage.src = src;
+    el.overlayImage.style.display = 'block';
+  }
+  function closeOverlay() {
+    overlayToken++;
+    el.overlay.classList.remove('open');
+    el.overlayImage.removeAttribute('src');
+  }
+  function isOverlayOpen() { return el.overlay.classList.contains('open'); }
+
+  function openDrawing(item) {
+    var token = ++overlayToken;
+    el.overlay.classList.add('open');
+    overlayMessage('Loading…');
+
+    // Already stored (the machine's next job): same endpoint as the drawing slide
+    if (item.drawing_pk) {
+      fetch(drawingUrlTemplate.replace(/0\/$/, item.drawing_pk + '/'), { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (j) { if (token === overlayToken) overlayShow(j.drawing_base64); })
+        .catch(function () { if (token === overlayToken) overlayMessage('Drawing not available right now'); });
+      return;
+    }
+
+    // Otherwise ask the watcher (via Django) to render it, then poll until it arrives
+    var deadline = Date.now() + QUEUE_GIVE_UP_MS;
+    function poll() {
+      if (token !== overlayToken) return;
+      fetch(queueDrawingUrl.replace('OPID', encodeURIComponent(item.monitor_operation_id)), { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (j) {
+          if (token !== overlayToken) return;
+          if (j.status === 'ready') overlayShow(j.drawing_base64);
+          else if (j.status === 'none') overlayMessage('No drawing available');
+          else if (Date.now() > deadline) overlayMessage('Drawing not available right now');
+          else setTimeout(poll, QUEUE_POLL_MS);
+        })
+        .catch(function () { if (token === overlayToken) overlayMessage('Drawing not available right now'); });
+    }
+    fetch(drawingRequestUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ machine_id: parseInt(body.dataset.machineId, 10), monitor_operation_id: item.monitor_operation_id })
+    })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function () { poll(); })
+      .catch(function () { if (token === overlayToken) overlayMessage('Drawing not available right now'); });
+  }
+
+  el.queue.addEventListener('click', function (e) {
+    var row = e.target.closest('.q-row');
+    if (row) openDrawing(queueItems[parseInt(row.dataset.index, 10)]);
+  });
+  el.overlayBack.addEventListener('click', closeOverlay);
+
   function render(d) {
     last = d;
     body.classList.remove('state-running', 'state-setup', 'state-idle');
@@ -94,6 +199,7 @@
     fit(el.article, 70);
     fit(el.next, 20);
     updateDrawing(d);
+    renderQueue(d.queue);
   }
 
   function refit() { if (last) render(last); }
@@ -116,20 +222,22 @@
   });
   document.addEventListener('fullscreenchange', function () { setTimeout(refit, 100); });
 
-  // Swipe right = next slide, swipe left = previous
+  // Swipe (touch) between slides
   var touchStart = null;
   document.addEventListener('touchstart', function (e) {
     var t = e.changedTouches[0];
     touchStart = { x: t.clientX, y: t.clientY };
   }, { passive: true });
   document.addEventListener('touchend', function (e) {
-    if (!touchStart) return;
+    if (!touchStart || isOverlayOpen()) { touchStart = null; return; }  // no swiping while a drawing is open
     var t = e.changedTouches[0];
     var dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
     touchStart = null;
-    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) showSlide(slideIndex + (dx > 0 ? 1 : -1));
+    // Drag right-to-left (dx < 0) = next slide, like the strip itself moves
+    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) showSlide(slideIndex + (dx < 0 ? 1 : -1));
   }, { passive: true });
   document.addEventListener('keydown', function (e) {
+    if (isOverlayOpen()) { if (e.key === 'Escape') closeOverlay(); return; }
     if (e.key === 'ArrowRight') showSlide(slideIndex + 1);
     else if (e.key === 'ArrowLeft') showSlide(slideIndex - 1);
   });

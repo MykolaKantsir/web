@@ -15,6 +15,8 @@ from django.db.models import Min, Max, Prefetch, Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from monitoring.models import Machine, Machine_state, Job, Cycle, Monitor_operation, MachineOperationAssignment
+from monitoring.models import MachineQueueItem
+from monitoring import drawing_cache
 from monitoring.models import PushSubscription, MachineSubscription
 from monitoring.defaults import machines_to_show, machines_to_hide
 from monitoring.utils.utils import is_ajax, machine_current_database_state
@@ -1121,6 +1123,22 @@ def _workstation_payload(machine_pk):
     else:
         state = 'running'
 
+    next_is_idle = next_machines[0].is_idle_override if next_machines else False
+    queue = _workstation_queue(
+        machine_pk,
+        next_job,
+        next_is_idle,
+        exclude_id=str(job.monitor_operation_id) if job else None,
+    )
+
+    # The "Next" row is the first queue entry. The watcher's next-job query also
+    # returns paused operations, so the running job can come back as its own
+    # "next"; the queue skips it, hence this is the real next job.
+    if next_is_idle or not queue:
+        next_article = None
+    else:
+        next_article = queue[0]['article']
+
     return {
         'state': state,
         'operation_id': job.pk if job else None,  # used to fetch the drawing via api/drawing/<pk>/
@@ -1129,8 +1147,186 @@ def _workstation_payload(machine_pk):
         'made': job.currently_made_quantity if job else None,
         'required': job.quantity if job else None,
         'progress_percent': round(m.progress_percent, 1),
-        'next_article': next_job.name if next_job else None,
+        'next_article': next_article,
+        'queue': queue,
     }
+
+
+WORKSTATION_QUEUE_LENGTH = 4
+
+
+def _workstation_queue(machine_pk, next_job, next_is_idle, exclude_id=None):
+    """
+    Upcoming jobs for the long time plan slide: the synced MachineQueueItems in
+    order, with the first row following the same "next job" resolution as the
+    Next row (manual override / idle override). Without a synced queue the
+    list degrades to just the next job. `exclude_id` (the running job's
+    monitor_operation_id) is never listed.
+
+    Each item: {monitor_operation_id, article, quantity, drawing_pk}. drawing_pk is
+    set when that operation already has a stored drawing (the machine's current /
+    next rows), so the tablet can open it via api/drawing/<pk>/ with no waiting.
+    """
+    items = [
+        {'monitor_operation_id': q.monitor_operation_id, 'article': q.name, 'quantity': q.quantity}
+        for q in MachineQueueItem.objects.filter(machine_id=machine_pk).order_by('position')
+        if q.monitor_operation_id != exclude_id
+    ]
+    if next_job is not None and str(next_job.monitor_operation_id) == exclude_id:
+        next_job = None
+
+    if next_is_idle:
+        items = items[1:]
+    elif next_job is not None:
+        next_item = {
+            'monitor_operation_id': str(next_job.monitor_operation_id),
+            'article': next_job.name,
+            'quantity': next_job.quantity,
+        }
+        rest = [i for i in items[1:] if i['monitor_operation_id'] != next_item['monitor_operation_id']]
+        items = [next_item] + rest
+
+    items = items[:WORKSTATION_QUEUE_LENGTH]
+
+    with_drawing = dict(
+        Monitor_operation.objects.filter(
+            machine_id=machine_pk,
+            monitor_operation_id__in=[i['monitor_operation_id'] for i in items],
+        ).exclude(drawing_image_base64__isnull=True).exclude(drawing_image_base64='')
+        .values_list('monitor_operation_id', 'pk')
+    )
+    # A manual override points at a pool row that may carry the drawing instead
+    if next_job is not None and next_job.drawing_image_base64:
+        with_drawing.setdefault(str(next_job.monitor_operation_id), next_job.pk)
+    for i in items:
+        i['drawing_pk'] = with_drawing.get(i['monitor_operation_id'])
+    return items
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def sync_machine_queue(request):
+    """
+    Watcher -> Django: replace each machine's upcoming-job queue.
+
+    POST /monitoring/api/sync-machine-queue/
+    {"machines": [{"machine_pk": 12,
+                   "items": [{"monitor_operation_id": "123", "name": "Part A",
+                              "quantity": 100, "report_number": "R1", "part_id": "55"}, ...]}]}
+
+    Items are stored in the order received (position 0 = first). Rows not present
+    in the payload are removed, so each machine's queue always mirrors Monitor.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+    machines_data = data.get('machines')
+    if not isinstance(machines_data, list):
+        return JsonResponse({'error': 'machines list required'}, status=400)
+
+    synced, skipped = 0, []
+    with transaction.atomic():
+        for entry in machines_data:
+            machine = Machine.objects.filter(pk=entry.get('machine_pk')).first()
+            if machine is None:
+                skipped.append(entry.get('machine_pk'))
+                continue
+
+            wanted = {}
+            for position, item in enumerate(entry.get('items') or []):
+                op_id = str(item.get('monitor_operation_id') or '')
+                if not op_id or op_id in wanted:
+                    continue
+                wanted[op_id] = {
+                    'position': len(wanted),
+                    'name': str(item.get('name') or '')[:50],
+                    'quantity': int(item.get('quantity') or 0),
+                    'report_number': str(item.get('report_number') or '')[:50],
+                    'part_id': str(item.get('part_id') or '')[:50],
+                }
+
+            MachineQueueItem.objects.filter(machine=machine).exclude(monitor_operation_id__in=wanted.keys()).delete()
+            for op_id, fields in wanted.items():
+                MachineQueueItem.objects.update_or_create(
+                    machine=machine, monitor_operation_id=op_id, defaults=fields)
+            synced += 1
+
+    return JsonResponse({'status': 'ok', 'machines_synced': synced, 'machines_skipped': skipped})
+
+
+@csrf_exempt
+@require_POST
+def request_queue_drawing(request):
+    """
+    Tablet -> Django: "I want the drawing for this queued job".
+    POST /monitoring/api/drawing-request/  {"machine_id": 12, "monitor_operation_id": "123"}
+
+    Only operations that are really in that machine's queue are accepted.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+    op_id = str(data.get('monitor_operation_id') or '')
+    item = MachineQueueItem.objects.filter(
+        machine_id=data.get('machine_id'), monitor_operation_id=op_id).first()
+    if item is None:
+        return JsonResponse({'error': 'Operation not in this machine\'s queue'}, status=404)
+
+    drawing_cache.request_image(op_id, part_id=item.part_id, name=item.name)
+    found, _ = drawing_cache.get_image(op_id)
+    return JsonResponse({'status': 'ready' if found else 'pending'})
+
+
+@require_GET
+def get_queue_drawing(request, op_id):
+    """
+    Tablet polls this for a requested drawing.
+    GET /monitoring/api/queue-drawing/<monitor_operation_id>/
+    -> {"status": "pending"} | {"status": "none"} | {"status": "ready", "drawing_base64": "data:image/..."}
+    """
+    found, data_url = drawing_cache.get_image(str(op_id))
+    if not found:
+        return JsonResponse({'status': 'pending'})
+    if not data_url:
+        return JsonResponse({'status': 'none'})
+    return JsonResponse({'status': 'ready', 'drawing_base64': data_url})
+
+
+@require_GET
+@login_required
+def pending_drawing_requests(request):
+    """
+    Watcher polls this every few seconds.
+    GET /monitoring/api/drawing-requests/pending/
+    -> {"requests": [{"monitor_operation_id": "123", "part_id": "55", "name": "Part A"}]}
+    """
+    return JsonResponse({'requests': drawing_cache.claim_pending()})
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def push_queue_drawing(request):
+    """
+    Watcher -> Django: deliver a rendered drawing (RAM only, expires, never stored in the DB).
+    POST /monitoring/api/queue-drawing/  {"monitor_operation_id": "123", "drawing_base64": "data:image/jpeg;base64,..."}
+    An empty drawing_base64 means the part has no drawing.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+    op_id = str(data.get('monitor_operation_id') or '')
+    if not op_id:
+        return JsonResponse({'error': 'monitor_operation_id required'}, status=400)
+    drawing_cache.put_image(op_id, data.get('drawing_base64') or '')
+    return JsonResponse({'status': 'ok'})
 
 
 def workstation_view(request, machine_id):

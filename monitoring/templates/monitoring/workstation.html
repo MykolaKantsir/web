@@ -10,8 +10,10 @@
 </head>
 <body class="state-idle" data-machine-id="{{ machine_id }}"
       data-api-url="{% url 'workstation_data' machine_id %}"
-      data-drawing-url="{% url 'get_drawing' 0 %}">
-    {# Swipe right / ArrowRight: next slide. Order: info -> drawing -> long time plan #}
+      data-drawing-url="{% url 'get_drawing' 0 %}"
+      data-drawing-request-url="{% url 'request_queue_drawing' %}"
+      data-queue-drawing-url="{% url 'get_queue_drawing' 'OPID' %}">
+    {# Drag right-to-left / ArrowRight: next slide. Order: info -> drawing -> long time plan #}
     <div class="slides" id="slides">
 
         {# Slide 1: workcenter info #}
@@ -36,10 +38,17 @@
             <p id="no-drawing">No drawing available</p>
         </div>
 
-        {# Slide 3: long time plan (placeholder - not written yet) #}
+        {# Slide 3: long time plan - upcoming jobs; tap a row to see its drawing #}
         <div class="slide slide-plan">
-            <p>Long time plan</p>
+            <div id="queue" class="queue"></div>
         </div>
+    </div>
+
+    {# Fullscreen drawing viewer for a tapped queue row #}
+    <div id="overlay" class="overlay">
+        <img id="overlay-image" src="" alt="Drawing">
+        <p id="overlay-msg"></p>
+        <button id="overlay-back" class="overlay-back" type="button">&#8249; Back</button>
     </div>
     <script src="{% static 'js/workstation.js' %}"></script>
 </body>

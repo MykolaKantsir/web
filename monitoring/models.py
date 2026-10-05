@@ -1067,6 +1067,26 @@ class Monitor_operation(models.Model):
         return f"{self.machine.name} | {status} | {self.name} - {self.quantity} pcs"
 
 
+# Upcoming jobs per machine (the "long time plan"), pushed by the Monitor G5 watcher.
+# Unlike Monitor_operation (2 rows per machine rewritten in place) this is a small
+# ordered queue that is reconciled on every sync.
+class MachineQueueItem(models.Model):
+    machine = models.ForeignKey('Machine', on_delete=models.CASCADE, related_name='queue_items')
+    position = models.PositiveSmallIntegerField(default=0)  # 0 = first in the queue
+    monitor_operation_id = models.CharField(max_length=50)
+    name = models.CharField(max_length=50)  # article (part number)
+    quantity = models.IntegerField(default=0)
+    report_number = models.CharField(max_length=50, blank=True, default=strings.empty_string)
+    part_id = models.CharField(max_length=50, blank=True, default=strings.empty_string)  # lets the watcher find the drawing
+
+    class Meta:
+        ordering = ['machine', 'position']
+        unique_together = [('machine', 'monitor_operation_id')]
+
+    def __str__(self):
+        return f"{self.machine.name} | #{self.position + 1} | {self.name} - {self.quantity} pcs"
+
+
 # Model for tracking manual operation overrides
 class MachineOperationAssignment(models.Model):
     """

@@ -33,6 +33,12 @@ urlpatterns = [
     # path("check-current-jobs/", views.check_current_jobs, name="check_current_jobs"),
     path('workstation/<int:machine_id>/', views.workstation_view, name='workstation'),
     path('api/workstation/<int:machine_id>/', views.workstation_data, name='workstation_data'),
+    # Long time plan: queue sync + on-demand drawing relay (watcher <-> Django <-> tablet)
+    path('api/sync-machine-queue/', views.sync_machine_queue, name='sync_machine_queue'),
+    path('api/drawing-request/', views.request_queue_drawing, name='request_queue_drawing'),
+    path('api/queue-drawing/', views.push_queue_drawing, name='push_queue_drawing'),
+    path('api/queue-drawing/<str:op_id>/', views.get_queue_drawing, name='get_queue_drawing'),
+    path('api/drawing-requests/pending/', views.pending_drawing_requests, name='pending_drawing_requests'),
 
     # --------------------
     # 🔄 Update APIs (called from machine scripts or automation)

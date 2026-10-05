@@ -152,11 +152,83 @@ body.stale::after {
   font-size: 40px;
 }
 
+/* Long time plan: ordered queue, equal rounded rows, article : quantity = 5 : 3 */
 .slide-plan {
+  padding: 24px;
+}
+.queue {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.q-row {
+  flex: 0 0 calc((100% - 3 * 14px) / 4);    /* always a quarter high, so fewer jobs leave empty space below */
   display: flex;
   align-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  min-height: 0;
+}
+.q-row:active { background: rgba(255, 255, 255, 0.14); }
+.q-article {
+  flex: 0 0 62.5%;                          /* 5 : 3 (about 1.67) */
+  min-width: 0;
+  padding: 0 44px;
+  font-size: 96px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.q-qty {
+  flex: 0 0 37.5%;
+  min-width: 0;
+  padding: 0 44px;
+  text-align: right;
+  font-size: 110px;
+  font-weight: 600;
+}
+.q-empty {
+  margin: auto;
+  font-size: 56px;
+  font-weight: 500;
+  opacity: 0.55;
+}
+
+/* Fullscreen drawing viewer (tap a queue row) */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10;
+  background: #000;
+  align-items: center;
   justify-content: center;
-  font-size: 80px;
-  font-weight: 700;
-  opacity: 0.5;
+}
+.overlay.open { display: flex; }
+#overlay-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+#overlay-msg {
+  display: none;
+  position: absolute;
+  color: #cbd5e1;
+  font-size: 56px;
+  font-weight: 500;
+}
+.overlay-back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  padding: 18px 40px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-family: inherit;
+  font-size: 44px;
+  font-weight: 500;
 }
