@@ -1331,8 +1331,8 @@ def push_queue_drawing(request):
 
 def workstation_view(request, machine_id):
     """Per-machine screen shown on the tablet next to the machine."""
-    get_object_or_404(Machine, pk=machine_id, is_test_machine=False)
-    return render(request, 'monitoring/workstation.html', {'machine_id': machine_id})
+    machine = get_object_or_404(Machine, pk=machine_id, is_test_machine=False)
+    return render(request, 'monitoring/workstation.html', {'machine_id': machine_id, 'machine_name': machine.name})
 
 
 def workstation_data(request, machine_id):

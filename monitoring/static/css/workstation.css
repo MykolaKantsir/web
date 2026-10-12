@@ -95,6 +95,16 @@ body.state-idle .ws-numbers { background: none; }
   opacity: 0.7;
 }
 .ws-next .next-value { flex: 1 1 0; min-width: 0; overflow: hidden; }
+/* Tiny workstation name hint, right corner of the Next row */
+.ws-next .machine-hint {
+  flex: 0 0 auto;
+  margin-left: 24px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  opacity: 0.5;
+  white-space: nowrap;
+}
 .ws-next .fit {
   font-size: 40px;
   font-weight: 600;
