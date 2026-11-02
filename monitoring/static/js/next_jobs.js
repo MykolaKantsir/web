@@ -289,9 +289,9 @@
             data.push({ machine_pk: machinePk, job_monitor_operation_id: jobMonitorOperationId });
         });
 
-        hideError();
-        showLoading();
-
+        // Background poll: stay silent (no loading/error overlay) like the
+        // current-jobs and dashboard screens. A failed poll just keeps the
+        // last data on screen and retries on the next interval.
         $.ajax({
             url: "/monitoring/check-next-jobs/",
             method: "POST",
@@ -303,14 +303,10 @@
             success: function (response) {
                 if (response.changed) {
                     location.reload();
-                } else {
-                    hideLoading();
                 }
             },
             error: function (xhr, status, error) {
                 console.error("Error checking for updates: ", error);
-                hideLoading();
-                showError();
             },
             complete: function () {
                 isRequestInProgress = false;
